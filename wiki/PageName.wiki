@@ -1,0 +1,17 @@
+#summary One-sentence summary of this page.
+
+= Сборка проекта =
+
+== Необходимые компоненты: ==
+  * Python >= 2.6 ([http://www.python.org/download/ ссылка])
+  * Google App Engine ([http://code.google.com/intl/ru/appengine/downloads.html ссылка])
+Опционально
+  * Aptana ([http://www.aptana.org/studio/download ссылка])
+
+== Исходные коды ==
+Получить командой:
+{{{ svn checkout http://gps-maps.googlecode.com/svn/trunk/ gps-maps }}}
+или через [http://code.google.com/p/gps-maps/source/browse/ веб-сервис]
+или с помощью Aptana
+
+Ничего компилировать не нужно, можно сразу запускать и пользоваться или опубликовать на хостинге Google.
