@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application_name }} Просмотр записей в глобальном логе {% endblock %}
+
+{% block head %}
+  <!--meta http-equiv="refresh" content="10"-->
+  <style type="text/css">{% include "css/logs.css" %}</style>
+{% endblock %}
+
+{% block body %}
+    <h1>Записи в логе:</h1>
+	{{ urlprev }}{{ urlnext }}
+    <table>
+        <thead>
+        	<tr>
+        		<th>ID</th>
+        		<th>IMEI пользователя</th>
+				<th>Строка лога</th>
+				<th>Дата и время лога</th>
+			</tr>
+		</thead>
+        {% for gpslog in gpslogs %}
+            <tr>
+            	<td>{{ gpslog.key.id }}</td>
+            	<td>{{ gpslog.imei }}<a href="logs?imei={{ gpslog.imei }}" title="filter">[x]</a></td>
+				<td>{{ gpslog.text }}</td><td>{{ gpslog.sdate }}</td>
+			</tr>
+	{% endfor %}
+    </table>
+	<a class="pushLink" href="dellogs" title="Удаляет 100 самых старых записей">Очистить логи сервера</a>
+    
+{% endblock %}
+
+{% block final %}
+{% endblock %}
