@@ -26,16 +26,34 @@
 Доустанавливаем PyDev.
 
 == Импортируем проект из SVN ==
-File -> Import -> SVN/Checkout Projects from SVN
+*File* -> *Import* -> *SVN/Checkout Projects from SVN*
 
-Next
+*Next*
 
-Create a new repository location
+*Create a new repository location*
 
-Указываем https://gps-maps.googlecode.com/svn/trunk/
+Указываем *https://gps-maps.googlecode.com/svn/trunk/*
 
-Select the folder to be checked out from SNV - Указываем верхний уровень. (https://gps-maps.googlecode.com/svn/trunk/) -> Next
+*Select the folder to be checked out from SNV* - Указываем верхний уровень. (https://gps-maps.googlecode.com/svn/trunk/) -> *Next*
 
-Project name: gps-maps, Depth: full recursive (вобщем ничего не трогаем)
+Project name: gps-maps, Depth: full recursive (вобщем ничего не трогаем) -> *Next*
 
-{{{ https://gps-maps.googlecode.com/svn/trunk/ }}}
+И наконец *Finish*.
+
+Началось скачивание.
+
+Проект должен появиться в списке проектов (*Projects*).
+
+== Запускаем Google App Engine Launcher ==
+Собственно запускаем (ярлык на рабочем столе).
+
+Идем *File* -> *Add Existing Application...*
+
+Указываем каталог проекта, например, *D:\Work\MAIN\GPS\GGT-200\SRC\SITE\svn\gps-maps*
+И порт 8080 (в Google App Engine Launcher есть неприятный глюк, так что пока указываем 8080) -> Жмем *Add*.
+
+Приложение появится в списке.
+Можно сменить порт локального сервера на 80-тый, но необходимо быть уверенным что на 80-том порту нет других веб-серверов. Жмем двойной щелчек. И меняем порт на 80.
+
+Все, можно запускать. Жмем *Run*. Ждем несколько секунд.
+Жмем *Browse* и можем попробовать приложение в действии на локальном компьютере.
