@@ -17,3 +17,20 @@
 Ничего компилировать не нужно, можно сразу запускать и пользоваться или опубликовать на хостинге Google.
 
 Более подробное (в идеале пошаговое) описание будет чуть позже.
+
+----
+Итак пробуем описать...
+== Ставим Aptana Studio. ==
+Качаем инсталляцию с ([http://www.aptana.org/studio/download сайта])
+Ставим.
+Доустанавливаем PyDev.
+
+== Импортируем проект из SVN ==
+File -> Import -> SVN/Checkout Projects from SVN
+Next
+Create a new repository location
+Указываем https://gps-maps.googlecode.com/svn/trunk/
+Select the folder to be checked out from SNV - Указываем верхний уровень. (https://gps-maps.googlecode.com/svn/trunk/) -> Next
+Project name: gps-maps, Depth: full recursive (вобщем ничего не трогаем)
+
+{{{ https://gps-maps.googlecode.com/svn/trunk/ }}}
