@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application_name }} Просмотр записей в GEO-логе {% endblock %}
+
+{% block head %}
+  <!--meta http-equiv="refresh" content="10"-->
+  <style type="text/css">{% include "css/geos.css" %}</style>
+{% endblock %}
+
+{% block body %}
+    <h1>Записи в GEO-логе:</h1>
+	{{ urlprev }}{{ urlnext }}
+    <table>
+        <thead>
+        	<tr>
+        		<th>ID</th>
+        		<th>IMEI пользователя</th>
+				<th>Дата и время</th>
+				<th>Долгота<br><i>Град</i></th>
+				<th>Широта<br><i>Град</i></th>
+				<th>Спутники<br>(Fix)</th>
+				<th>Скорость<br><i>км/ч</i></th>
+				<th>Направление<br><i>Град</i></th>
+				<th>Высота<br><i>м</i></th>
+				<th>Вход 1<br><i>%</i></th>
+				<th>Вход 2<br><i>%</i></th>
+			</tr>
+		</thead>
+        {% for geolog in geologs %}
+            <tr>
+            	<td>{{ geolog.key.id }}</td>
+            	<td>{{ geolog.imei }}<a href="logs?imei={{ geolog.imei }}" title="filter">[x]</a></td>
+				<td>{{ geolog.cdate|date:"d/m/y G:i" }}</td>
+				<td>{{ geolog.latitude|floatformat:4 }}</td>
+				<td>{{ geolog.longitude|floatformat:4 }}</td>
+				<td>{{ geolog.sats }}({{ geolog.fix }})</td>
+				<td>{{ geolog.speed|floatformat:1 }}</td>
+				<td>{{ geolog.course|floatformat:1 }}</td>
+				<td>{{ geolog.altitude|floatformat:1 }}</td>
+				<td>{{ geolog.in1|floatformat:2 }}</td>
+				<td>{{ geolog.in2|floatformat:2 }}</td>
+			</tr>
+	{% endfor %}
+    </table>
+	<a class="pushLink" href="geos?format=nmea" title="Получить лог в NMEA-формате">Получить NMEA</a>
+	<div style="float:right; margin-right:20px;"></span><a class="pushLink" href="delgeos" title="Удаляет 100 самых старых записей">Очистить логи сервера</a></div>
+    
+{% endblock %}
+
+{% block final %}
+{% endblock %}

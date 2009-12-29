@@ -1,0 +1,241 @@
+BODY
+{
+    color: black;
+    background-color: #d5d5df;
+    font-family: sans-serif;
+    font-size: 28px;
+    margin:0px;
+    text-align: center;
+/*
+	height: 100%;
+*/
+}
+
+table, th, td {
+    background: #FFF0FF;
+    border: 2px solid blue;
+    border-collapse: collapse;
+}
+
+caption, th, td {
+    text-align: center;
+    font-weight: normal;
+}
+
+h1 {
+    background-color: #F0F0F0;
+    text-align: center;
+    padding:0.2em;
+    margin:0;
+}
+
+h2 {
+    background-color: #F0F0F0;
+    text-align: center;
+    padding:0.1em;
+    margin:0;
+    font-size: 24px;
+}
+
+A.pushLink {
+    padding:10px 20px 10px 20px;
+    line-height:2.5em;
+    font-weight: bold;
+    text-decoration: none;
+    color: blue;
+    background-color: #FFF0FF;
+    border: 4px solid blue;
+    -moz-border-radius:10px;
+    -webkit-border-radius:10px;
+    -moz-box-shadow:0 0 10px #808080;
+    -webkit-box-shadow:0 0 10px #808080;
+}
+
+A:hover.pushLink {
+    padding:10px 10px 10px 10px;
+    background-color: #8080FF;
+}
+
+A:hover.pushLink span {
+    margin: 0 10px;
+    color: white;
+}
+
+A.filterLink {
+    padding: 0px 5px;
+    margin: 2px;
+    text-decoration: none;
+    color: blue;
+    background-color: #FFF0FF;
+    border: 2px solid blue;
+    font-size: 0.8em;
+}
+
+.navigate-bar {
+    background-color:#808080;
+    width: 100%;
+    height: 36px;
+    position:relative;
+    text-align:center;
+    padding: 5px;
+    margin: 0;
+}
+
+.navigate-bar A {
+    background-color:#EDEDED;
+    _border:4px solid #000000;
+    -moz-border-radius:10px;
+    -webkit-border-radius:10px;
+    -moz-box-shadow:0 0 10px #000000;
+    -webkit-box-shadow:0 0 10px #000000;
+    text-align: center;
+}
+
+.navigate-bar A {
+    padding:2px 10px;
+    font-size: 0.8em;
+}
+
+.navigate-bar A:hover {
+    background-color: #8080FF;
+    color: white;
+}
+
+.navigate-bar A.next {
+    position:absolute;
+    right:20px;
+    top:8px;
+}
+
+.navigate-bar .prev {
+    position:absolute;
+    left:10px;
+    top:8px;
+}
+
+
+.css-arrow-multicolor {
+    border-color: red green blue orange;
+    border-style:solid;
+    border-width:20px;
+    width:0;
+    height:0;
+}
+
+.chat-bubble {
+    background-color:#EDEDED;
+    border:2px solid #666666;
+    font-size:35px;
+    line-height:1.3em;
+    margin:10px auto;
+    padding:10px;
+    position:relative;
+    text-align:center;
+    width:300px;
+    -moz-border-radius:10px;
+    -webkit-border-radius:10px;
+    -moz-box-shadow:0 0 5px #888888;
+    -webkit-box-shadow:0 0 5px #888888;
+}
+
+.chat-bubble-arrow-border {
+    _border-color: #666666 transparent transparent transparent;
+    border-style: solid;
+    border-width: 10px;
+    height:0;
+    width:0;
+    position:absolute;
+    bottom:-22px;
+    left:30px;
+}
+
+.chat-bubble-arrow {
+    _border-color: #EDEDED transparent transparent transparent;
+    border-style: solid;
+    border-width: 10px;
+    height:0;
+    width:0;
+    position:absolute;
+    bottom:-19px;
+    left:30px;
+}
+
+
+.book-pages li:target {
+    display:block;
+}
+
+.book-pages, .book-pages li {
+    list-style-type:none;
+    margin:0;
+    padding:0;
+}
+ul.book-pages {
+    margin:30px 0;
+}
+.book-pages li {
+    background-color:#EDEDED;
+    display:none;
+    width:98%;
+    height:400px;
+    margin:0 auto;
+    position:relative;
+    text-align:center;
+    color: #000010;
+}
+.book-pages div {
+    _font-size:1.5em;
+    padding:20px 25px 0;
+    line-height:1.5em;
+}
+.book-pages li:target {
+    display:block;
+}
+.book-pages .next {
+    position:absolute;
+    right:0;
+    bottom:-5px;
+}
+.book-pages .prev {
+    position:absolute;
+    left:0;
+    bottom:-5px;
+}
+.book-pages .slide-info {
+    position:absolute;
+    bottom:-5px;
+    left:40%;
+    color:#333333;
+}
+
+#ae-content {
+	background-color: #008000;
+/*
+	margin: 32px 0 64px 0;
+*/
+	overflow-x: hidden;
+}
+
+#main{
+	position: absolute;
+	width: 100%;
+	height: 100%;
+}
+
+#head {
+	width: 100%;
+	height: 32px;
+	position: absolute;
+	left: 0px;
+	z-index: 100;
+	border: none;
+	background-color: #8080FF;
+	text-align: left;
+}
+
+#foot {
+	width: 100%;
+	position: absolute;
+	bottom: 0px; 
+	background-color: #808000;
+}

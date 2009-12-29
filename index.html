@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application_name }} GPS avto {% endblock %}
+
+{% block head %}
+	<style type="text/css">{% include "css/index.css" %}</style>
+	<script type="text/javascript" language="JavaScript">
+		function MakeBinRequest(url, data) {
+			http_request = false;
+			if (window.XMLHttpRequest) { // Mozilla, Safari,...
+				http_request = new XMLHttpRequest();
+				if (http_request.overrideMimeType) {
+					// set type accordingly to anticipated content type
+					//http_request.overrideMimeType('text/xml');
+					//http_request.overrideMimeType('text/html');
+					http_request.overrideMimeType('application/octet-stream');
+				}
+			} else if (window.ActiveXObject) { // IE
+				try {
+					http_request = new ActiveXObject("Msxml2.XMLHTTP");
+				} catch (e) {
+					try {
+					http_request = new ActiveXObject("Microsoft.XMLHTTP");
+					} catch (e) {}
+				}
+			}
+			if (!http_request) {
+				alert('Cannot create XMLHTTP instance');
+				return false;
+			}
+			http_request.onreadystatechange = alertContents;
+			http_request.open('POST', url, true);
+			http_request.setRequestHeader("Content-type", "application/octet-stream");
+			http_request.setRequestHeader("Content-length", data.length);
+			http_request.setRequestHeader("Connection", "close");
+			http_request.send(data);			
+		}
+		
+		function alertContents() {
+			if (http_request.readyState == 4) {
+				if (http_request.status == 200) {
+					//alert(http_request.responseText);
+					result = http_request.responseText;
+					document.getElementById('myspan').innerHTML = result;            
+				} else {
+					alert('There was a problem with the request.');
+				}
+			}
+		}
+		function binpost(obj) {
+			var data = "ABCDEFG";
+			MakeBinRequest('bingeos?imei=123456789012', data);
+		}
+	</script>
+{% endblock %}
+
+{% block body %}
+	<h1>Тестовые функции</h1>
+		<a class="pushLink" href="regid?imei=123456789012&phone=%2B380679332332&pass=333">Регистрация тестового пользователя</a>
+		<a class="pushLink" href="regid?imei=123456789013&phone=%2B380679332332&pass=333">Еще</a>
+		<a class="pushLink" href="regid?imei=123456789013&phone=%2B380679332333&pass=333">Еще</a>
+		<a class="pushLink" href="regid?imei=123456789013&phone=%2B380679332333&pass=343">Еще</a>
+		<br>
+		
+        <a class="pushLink" href="users">Просмотреть список пользователей</a>
+        <a class="pushLink" href="logs">Просмотреть логи сервера</a>
+        <a class="pushLink" href="geos">Просмотреть гео-данные</a>
+		<br>
+
+        <a class="pushLink" href="/addlog?imei=123456789013&text=Sample%20message">Добавление в лог методом GET</a>
+        <a class="pushLink" href="/lastpos?imei=123456789013&datetime={{ now|date:"dmyGis" }}&latitude=48.4082&longitude=35.0492&sats=4&fix=2&speed=0.0&course=0.0&alt=150.0&in1=0&in2=234">Добавление координат методом GET</a>
+		<!--a class="pushLink" href="/testbin">Проба bin-посылки</a-->
+		<form action="javascript:binpost(document.getElementById('myform'));" name="myform" id="myform">
+			<input type="button" name="button" value="Отправка бинарных данных" onclick="javascript:binpost(this.parentNode);">
+			Ответ сервера:
+			<hr>
+			<span name="myspan" id="myspan"></span>
+			<hr>
+		</form>
+		
+		<br>
+        <a class="pushLink" href="/config">Конфигурация системы</a>
+
+        <form action="/addlog?id=1" method="post">
+            <div><textarea name="content" rows="8" style="width:98%;"></textarea></div>
+            <div><input type="file" name="file"></div>
+            <div><input type="submit" value="Sign Guestbook"></div>
+        </form>
+
+        <a href="/addlog?id=1&text=Sample%20message">Протестировать добавление в лог методом POST</a><br>
+		<a href="http://localhost/_ah/admin/datastore" target="_blank">Админка на локалхосте</a>
+		<a href="https://appengine.google.com/dashboard?&app_id=gps-maps" target="_blank">Админка в онлайн</a>
+		
+	<h1>Главное меню</h1>
+        <!--a class="pushLink" href="test.php">[ <span>Тест</span> ]</a><br-->
+        <a class="pushLink" href="login.php">[ <span>Войти под своим именем</span> ]</a>
+        <!--a class="pushLink" href="register.php">[ <span>Зарегестрироваться в системе</span> ]</a><br-->
+
+	<h1>Меню пользователя</h1>
+        <!--a class="pushLink" href="gps.php">[ <span>Просмотреть треки на карте</span> ]</a><br-->
+        <!--a class="pushLink" href="debuglogo.php?name=baden&text=Test_message">[ <span>Добавить тестовую строку в лог</span> ]</a-->
+        <!--a class="pushLink" href="debuglogo.php?name=alex&text=Test_message">[ <span>(пользователь №2)</span> ]</a><br-->
+
+        <!--a class="pushLink" href="debugadduser.php?user=380679332332">[ <span>Добавить пользователя (380679332332)</span> ]</a><br-->
+
+        <!--div class="chat-bubble">
+          Небезопасные операции!
+          <div class="chat-bubble-arrow-border"></div>
+          <div class="chat-bubble-arrow"></div>
+        </div-->
+
+	<h1>Меню инициализации</h1>
+        <a class="pushLink" href="init.php">[ <span>Очистить базу данных/создать базу данных</span> ]</a><br>
+
+{% endblock %}
+
+{% block final %}
+{% endblock %}

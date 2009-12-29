@@ -1,0 +1,26 @@
+application: gps-maps
+version: 1
+runtime: python
+api_version: 1
+
+handlers:
+- url: /stylesheets
+  static_dir: stylesheets
+  expiration: 30d
+
+- url: /(.*\.(gif|png|jpg|ico))
+  static_files: static/\1
+  upload: static/(.*\.(gif|png|jpg|ico))
+
+- url: /flatcgi
+  script: flatcgi.py
+
+- url: /admin/.*
+  script: admin.py
+  login: required
+#  login: admin
+#- url: /a
+#  script: gps-maps.py
+
+- url: /.*
+  script: gps-maps.py

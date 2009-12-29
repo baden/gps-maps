@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application_name }} Зарегестрированные пользователи {% endblock %}
+
+{% block head %}
+  <!--meta http-equiv="refresh" content="10"-->
+  <style type="text/css">{% include "css/users.css" %}</style>
+{% endblock %}
+
+{% block body %}
+    <h1>Зарегестрированные пользователи</h1>
+    <table>
+            <thead>
+                <tr>
+                    <th>Идентификатор</th>
+                    <th>IMEI</th>
+                    <th>Номер телефона</th>
+                    <th>Пароль</th>
+                    <th>Дата регистрации</th>
+					<th>Ключ</th>
+					<th>X</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dbuser in dbusers %}
+                <tr>
+                    <td>{{ dbuser.key.id }}</td>
+                    <td>{{ dbuser.imei }}</td>
+                    <td>{{ dbuser.phone }}</td>
+                    <td>{{ dbuser.password }}</td>
+                    <td>{{ dbuser.date }}</td>
+                    <td>{{ dbuser.key }}</td>
+					<td><a href="delUser?id={{ dbuser.key.id }}" title="Удалить пользователя.">X</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+    </table>
+    Количество записей: <b>{{ gpslogs_count }}</b><br>
+{% endblock %}
+
+{% block final %}
+{% endblock %}

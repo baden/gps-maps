@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application_name }} Конфигурация системы {% endblock %}
+
+{% block head %}
+{% endblock %}
+
+{% block body %}
+    <h1>Конфигурация системы:</h1>
+	<form action="/config" enctype="multipart/form-data" method="post" style="border:solid;">
+		<table>
+			<tr>
+				<th>Задать</th>
+				<th>Параметр</th>
+				<th>Значение</th>
+				<th>Ед. измерения</th>
+				<th>Рекомендуемое значение</th>
+				<th>Диапазон</th>
+				<th>Примечание</th>
+			</tr>
+			<tr>
+				<td><input type="checkbox" id="distid"></td>
+				<td><label for="distid">Дистанция&nbsp;1</label></td>
+				<td><input type="text" value="500"></td>
+				<td>метры</td>
+				<td>100...10000</td>
+				<td>100...65000</td>
+				<td><a class="Help" href="help?topic=config&subtopic=param01" title="Изменения менее установленных не будут добавлены в лог.">?</a></td>
+			</tr>
+			<tr>
+				<td><input type="checkbox" id="distid"></td>
+				<td><label for="distid">Дистанция&nbsp;2</label></td>
+				<td><input type="text" value="5000"></td>
+				<td>метры</td>
+				<td>100...10000</td>
+				<td>100...65000</td>
+				<td><a class="Help" href="help?topic=config&subtopic=param01" title="Изменения менее установленных не будут добавлены в лог.">?</a></td>
+			</tr>
+			<tr>
+				<td><input type="checkbox" id="distid"></td>
+				<td><label for="distid">Период&nbsp;1</label></td>
+				<td><input type="text" value="60"></td>
+				<td>секунды</td>
+				<td>60...3600</td>
+				<td>1...65000</td>
+				<td><a class="Help" href="help?topic=config&subtopic=param01" title="Изменения менее установленных не будут добавлены в лог.">?</a></td>
+			</tr>
+			<tr>
+				<td><input type="checkbox" id="distid"></td>
+				<td><label for="distid">Период&nbsp;2</label></td>
+				<td><input type="text" value="3600"></td>
+				<td>секунды</td>
+				<td>60...3600</td>
+				<td>1...65000</td>
+				<td><a class="Help" href="help?topic=config&subtopic=param01" title="Изменения менее установленных не будут добавлены в лог.">?</a></td>
+			</tr>
+			<tr>
+				<td><input type="checkbox" id="distid"></td>
+				<td><label for="distid">Угол&nbsp;1</label></td>
+				<td><input type="text" value="10"></td>
+				<td>градусы</td>
+				<td>5...30</td>
+				<td>1...180</td>
+				<td><a class="Help" href="help?topic=config&subtopic=param01" title="Если направление движение изменяется незначительно, то данные не будут добавлены в лог.">?</a></td>
+			</tr>
+			<tr>
+				<td><input type="checkbox" id="distid"></td>
+				<td><label for="distid">Часовой&nbsp;пояс</label></td>
+				<td><input type="text" value="2"></td>
+				<td>часовой пояс</td>
+				<td>-12...13</td>
+				<td>-12...13</td>
+				<td><a class="Help" href="help?topic=config&subtopic=param01" title="Можно задавать дробные значения, например 6.5 означает +06:30">?</a></td>
+			</tr>
+		</table>
+            <div><label>Дополнительные команды:</label></div>
+            <div><textarea name="custom" rows="3" style="width:98%;" onfocus="this.form.submit.disabled=0"></textarea></div>
+            <div><input type="submit" name="submit" value="Поставить в очередь." disabled></div>
+	</form>
+	<div style="background-color:#FFFFC0;">
+    <font color="red">Внимание!</font> Изменения вступят в силу при следующем сеансе связи системы с сервером.
+	Можно принудительно вызвать процедуру обновления отправив SMS на номер системы со словом <b>config</b>.
+	</div> 
+{% endblock %}
+
+{% block final %}
+{% endblock %}
