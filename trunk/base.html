@@ -1,28 +1,129 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-    <title>{% block title %}{% endblock %}</title>
-	<meta name="keywords" content="GPS" />
-	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
-    <link type="text/css" rel="stylesheet" href="stylesheets/main.css" />
-	<!--style type="text/css">{% include "stylesheets/main.css" %}</style-->
-    {% block head %}{% endblock %}
-  </head>
-  <body {% block bodyattributes %}{% endblock %}>
-  	<div id="main">
-  		<div id="header">
-  			Навигация
-			<a class="pushLink" href="/">Главная</a>
-			<a class="pushLink" href="/logout">Выйти</a>
+	<head>
+		<title>{% block title %}{% endblock %}</title>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+		<meta name="keywords" content="GPS" />
+		<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+		<link type="text/css" rel="stylesheet" href="stylesheets/main.css" />
+		<script type="text/javascript" src="http://www.google.com/jsapi?key=ABQIAAAADIf1TyW8EOrlksPTOSU_ahRSRM19lJ9EelRQvSBfwIzY3S55QBS-8_3mcz6GYcDrbbRrvEniskCZzw"></script>
+
+		<script type="text/javascript">
+		google.load("jquery", "1.3.2");
+		google.load("jqueryui", "1.7.2");
+		</script>
+
+
+		<script type="text/javascript">
+		function resizeApp() {
+			widget = document.getElementById('Widget');
+
+			//var width = document.documentElement.clientWidth - 200;
+			var width = 0;
+			var height = 0;
+
+			if( typeof( window.innerWidth ) == 'number' ) {
+				//Non-IE
+				width = window.innerWidth;
+				height = window.innerHeight;
+			} else if( document.documentElement && ( document.documentElement.clientWidth || document.documentElement.clientHeight ) ) {
+				//IE 6+ in 'standards compliant mode'
+				width = document.documentElement.clientWidth;
+				height = document.documentElement.clientHeight;
+			} else if( document.body && ( document.body.clientWidth || document.body.clientHeight ) ) {
+				//IE 4 compatible
+				width = document.body.clientWidth;
+				height = document.body.clientHeight;
+			}
+			width = width - 200;
+			if(width < 200) width = 200;
+			widget.style.width = width + "px";
+
+			//cont = document.getElementById('#content');
+			//cont.style.width = width + "px";
+			//$('#content').style.width = "100px";
+//			var position = $('#draggable-handle-div').position();
+			//alert(position);
+//			position.top = 100;
+//			$('#draggable-handle-div').css("top:"+position.top+"px");
+//			$('#draggable-handle-div').css("top: 100px;");
+//			var fp = $('#draggable-handle-div');
+//			if(fp){
+//				fp.style.width = "100px;";
+//			}
+			cont = document.getElementById('draggable-handle-div');
+			if(cont){
+				cont.style.left = "0px";
+				cont.style.top = height - 70 + "px";
+			}
+		}
+
+		var scrollTID = null;
+		function restoreScroll() {
+			if( document.body && ( document.body.scrollLeft || document.body.scrollTop ) ) {
+				//DOM compliant
+//				scrOfY = document.body.scrollTop;
+//				scrOfX = document.body.scrollLeft;
+				document.body.scrollTop = 0;
+			} else if( document.documentElement && ( document.documentElement.scrollLeft || document.documentElement.scrollTop ) ) {
+				//IE6 standards compliant mode
+//				scrOfY = document.documentElement.scrollTop;
+//				scrOfX = document.documentElement.scrollLeft;
+				document.documentElement.scrollTop = 0;
+			}
+			scrollTID = null;
+		}
+
+
+		function scrollApp(){
+			return;
+			if(scrollTID == null) scrollTID = setTimeout(restoreScroll, 1000);
+//			document.documentElement.
+			//alert("Scroll");
+			if( document.body && ( document.body.scrollLeft || document.body.scrollTop ) ) {
+				//DOM compliant
+//				scrOfY = document.body.scrollTop;
+//				scrOfX = document.body.scrollLeft;
+				document.body.scrollTop = 0;
+			} else if( document.documentElement && ( document.documentElement.scrollLeft || document.documentElement.scrollTop ) ) {
+				//IE6 standards compliant mode
+//				scrOfY = document.documentElement.scrollTop;
+//				scrOfX = document.documentElement.scrollLeft;
+				document.documentElement.scrollTop = 0;
+			}
+		}
+
+		function loadApp() {
+			//initialize();
+			//setInterval(periodicalApp, 1000);
+			{% block javainit %}{% endblock %}
+
+			//$('#content').html('<div id="draggable-handle-div" style="width:194px;border:1px solid #999;-moz-border-radius:10px;-webkit-border-radius:10px;padding: 2px 2px 2px 2px;position:absolute;top:100px;left:0px;">' +
+			//	'<div style="background-color:#999;-moz-border-radius:6px;-webkit-border-radius:6px;padding-left:10px;cursor: pointer;">Спонсоры</div><a href="http://code.google.com/p/gps-maps/"><img src="http://code.google.com/appengine/images/appengine-noborder-120x30.gif" alt="Технология Google App Engine" /></a></div>');
+			//$("#draggable-handle-div").draggable({"handle": "div"});
+			resizeApp();
+
+		}
+		</script>
+		{% block head %}{% endblock %}
+	</head>
+	<body onload="loadApp();" onresize="resizeApp();" onscroll="scrollApp();" {% block bodyattributes %}{% endblock %}>
+		<div id="Menu">
+			<a href="/"><div id="menu-main">Главная</div></a>
+			<a href="/map"><div id="menu-map">Карта</div></a>
+			<a href="/config"><div id="menu-config">Конфигурация</div></a>
+			<a href="/logs"><div id="menu-logs">Логи</div></a>
+			<a href="/geos"><div id="menu-geos">Логи GPS</div></a>
+			<!--a href="/logout"><div>Выйти</div></a-->
+			{% block menu %}{% endblock %}
 		</div>
-        <!--div id="ae-content" class="g-unit"-->
-          {% block body %}{% endblock %}
-        <!--/div-->
-    {% block final %}{% endblock %}
-    
-	<a href="http://code.google.com/p/gps-maps/"><img src="http://code.google.com/appengine/images/appengine-noborder-120x30.gif"
-       alt="Технология Google App Engine" /></a>
-	</div>
+		<div id="Widget">
+{% block body %}{% endblock %}
+		</div>
+{% block final %}{% endblock %}
+		<div id="content">Loading...</div>
+                <!--div style="position: absolute; top:95%; left: 0%;">
+		<a href="http://code.google.com/p/gps-maps/"><img src="http://code.google.com/appengine/images/appengine-noborder-120x30.gif" alt="Технология Google App Engine" /></a>
+		</div-->
   </body>
 </html>
