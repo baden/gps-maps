@@ -379,10 +379,16 @@ class LastPos(webapp.RequestHandler):
 			gpspoint.put()
 		else:
 			self.response.out.write('User not found\r\n')
+
 class Geos(webapp.RequestHandler):
 	def get(self):
 		geologs = DBGPSPoint.all().order('-date').fetch(MAXLOGS+1)
 		for geolog in geologs:
+			try:
+				uuser = geolog.user
+				geolog.imei = uuser.imei 
+			except:
+				geolog.imei = 'deleted' 
 			geolog.sdate = geolog.cdate.strftime("%d/%m/%Y %H:%M") 
 		template_values = {
 			'geologs': geologs,
@@ -391,6 +397,13 @@ class Geos(webapp.RequestHandler):
 		self.response.out.write(template.render(path, template_values))
 
 		pass
+
+class DelGeos(webapp.RequestHandler):
+	def get(self):
+		geologs = DBGPSPoint.all().order('-date').fetch(100)
+		for geolog in geologs:
+			geolog.delete()
+		self.redirect("/geos")
 
 class CSSfiles(webapp.RequestHandler):
 	def get(self):
@@ -498,13 +511,17 @@ class BinGeos(webapp.RequestHandler):
 			_log += '\nData (HEX):'
 			for data in pdata:
 				_log += ' %02X' % ord(data)
+
 			_log += '\nGPS DATA:'
+
 			day = ord(pdata[0])
 			month = ord(pdata[1]) & 0x0F
 			year = (ord(pdata[1]) & 0xF0)/16 + 2010
 			hours = ord(pdata[2])
 			minutes = ord(pdata[3])
 			seconds = ord(pdata[4])
+
+			datestamp = datetime(year, month, day, hours, minutes, seconds)
 
 			latitude = float(ord(pdata[6])) + (float(ord(pdata[7])) + float(ord(pdata[8]) + ord(pdata[9])*256)/10000.0)/60.0
 			longitude = float(ord(pdata[10])) + (float(ord(pdata[11])) + float(ord(pdata[12]) + ord(pdata[13])*256)/10000.0)/60.0
@@ -514,34 +531,69 @@ class BinGeos(webapp.RequestHandler):
 			if ord(pdata[5]) & 2:
 				longitude = - longitude
 
-			satelites = ord(pdata[14])
+			sats = ord(pdata[14])
+			fix = 1
 			speed = float(ord(pdata[15])) + float(ord(pdata[16])) / 100.0;
 			course = float(ord(pdata[17])) + float(ord(pdata[18])) / 100.0;
 			altitude = float(ord(pdata[20]) + 256*ord(pdata[21])) / 10.0;
 
-			sdatetime = datetime(year, month, day, hours, minutes, seconds)
+			#in1 = float(self.request.get('in1'))*100.0/65535 
+			#in2 = float(self.request.get('in2'))*100.0/65535 
+			in1 = 0.0
+			in2 = 0.0
 
-			#if sdatetime:
-			#	try:
-			#		datestamp = datetime.strptime(sdatetime, "%d%m%y%H%M%S")
-			#	except:
-			#		datestamp = datetime.now()
-			#else:
-			#	datestamp = datetime.now() 
 
-			_log += '\n Date: %s' % sdatetime.strftime("%d/%m/%Y %H:%M:%S")
+			_log += '\n Date: %s' % datestamp.strftime("%d/%m/%Y %H:%M:%S")
 			_log += '\n Latitude: %.5f' % latitude
 			_log += '\n Longitude: %.5f' % longitude
-			_log += '\n Satelits: %d' % satelites
+			_log += '\n Satelits: %d' % sats
 			_log += '\n Speed: %.5f' % speed
 			_log += '\n Course: %.5f' % course
 			_log += '\n Altitude: %.5f' % altitude
 			#self.response.out.write('data: %s\r\n' % pdata)
+
+
+			#self.response.out.write('LastPos\r\n')
+			#self.response.out.write('IMEI: %s\r\n' % userdb.imei)
+			#self.response.out.write('User phone: %s\r\n' % userdb.phone)        
+			#self.response.out.write('datetime: %s\r\n' % datestamp)
+			#self.response.out.write('latitude: %.2f\r\n' % latitude)
+			#self.response.out.write('longitude: %.2f\r\n' % longitude)
+			#self.response.out.write('sats: %d\r\n' % sats)
+			#self.response.out.write('fix: %d\r\n' % fix)
+			#self.response.out.write('speed: %.2f\r\n' % speed)
+			#self.response.out.write('course: %.2f\r\n' % course)
+			#self.response.out.write('altitude: %.2f\r\n' % altitude)
+			#self.response.out.write('in1: %.2f%%\r\n' % in1)
+			#self.response.out.write('in2: %.2f%%\r\n' % in2)
+
+			gpspoint = DBGPSPoint()
+			gpspoint.user = userdb
+			gpspoint.date = datestamp
+			gpspoint.latitude = latitude
+			gpspoint.longitude = longitude
+			gpspoint.sats = sats
+			gpspoint.fix = fix
+			gpspoint.speed = speed
+			gpspoint.course = course
+			gpspoint.altitude = altitude
+			gpspoint.in1 = in1
+			gpspoint.in2 = in2
+			gpspoint.put()
+
 			self.response.out.write('OK\r\n')
 		else:
 			self.response.out.write('USER_NOT_FOUND\r\n')
 
 		logging.info(_log)
+
+class Map(webapp.RequestHandler):
+	def get(self):
+		template_values = {
+			'now': datetime.now(),
+		}
+		path = os.path.join(os.path.dirname(__file__), 'map.html')
+		self.response.out.write(template.render(path, template_values))
 
 #class myWSGIApplication(webapp.WSGIApplication):
 #	def __call__(self, environ, start_response):
@@ -558,6 +610,7 @@ application = webapp.WSGIApplication(
 	('/delUser.*', DelUser),
 	('/logs.*', ViewLogs),
 	('/dellogs.*', DelLogs),
+	('/delgeos.*', DelGeos),
 	('/lastpos.*', LastPos),
 	('/geos.*', Geos),
 	('/stylesheets.*', CSSfiles),
@@ -565,6 +618,7 @@ application = webapp.WSGIApplication(
 	('/help.*', Help),
 	('/testbin.*', TestBin),
 	('/bingeos.*', BinGeos),
+	('/map.*', Map),
 	],
 	debug=True
 )
