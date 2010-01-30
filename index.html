@@ -2,9 +2,37 @@
 
 {% block title %}{{ application_name }} GPS avto {% endblock %}
 
+{% block javainit %}
+
+/*
+$("#menu-main").hover(function () {
+      $(this).css({'background-color' : 'yellow', 'font-weight' : 'bolder'});
+    }, function () {
+      var cssObj = {
+        'background-color' : 'blue',
+        'font-weight' : '',
+        'color' : 'rgb(0,40,244)'
+      }
+      $(this).css(cssObj);
+    });
+*/
+/*		var cssObj = {
+			'font-weight' : 'bolder',
+			'color' : 'rgb(0,128,0)'
+		}
+		$('#menu-main').css(cssObj);
+*/
+{% endblock %}
+
 {% block head %}
-	<style type="text/css">{% include "css/index.css" %}</style>
+  <style type="text/css">{% include "css/index.css" %}</style>
+	<style type="text/css">
+</style>
+
 	<script type="text/javascript" language="JavaScript">
+
+
+		//$('#menu-main').css({'background-color' : 'green'});
 		function MakeBinRequest(url, data) {
 			http_request = false;
 			if (window.XMLHttpRequest) { // Mozilla, Safari,...

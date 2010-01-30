@@ -1,46 +1,247 @@
 
-
-
 {% extends "base.html" %}
 
 {% block title %}{{ application_name }}     {% endblock %}
 
+
 {% block head %}
   <!--meta http-equiv="refresh" content="10"-->
   <!--style type="text/css">{% include "css/geos.css" %}</style-->
+  <style type="text/css">{% include "css/map.css" %}</style>
   <link type="text/css" rel="stylesheet" href="stylesheets/calendar.css" />
 	<!-- localhost -->
 	<!--script type="text/javascript" src="http://www.google.com/jsapi?key=ABQIAAAADIf1TyW8EOrlksPTOSU_ahT2yXp_ZAY8_ufC3CFXhHIE1NvwkxQA1Z3_lxzOW0j5WczdNXZJcWiYrQ"></script-->
 	<!-- gps-maps.appspot.com -->
-	<script type="text/javascript" src="http://www.google.com/jsapi?key=ABQIAAAADIf1TyW8EOrlksPTOSU_ahRSRM19lJ9EelRQvSBfwIzY3S55QBS-8_3mcz6GYcDrbbRrvEniskCZzw"></script>
+	<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
 	<script type="text/javascript" src="js/mootools.js"></script>
 	<script type="text/javascript" src="js/calendar.js"></script>
+
 	<script type="text/javascript">
 		window.addEvent('domready', function() {
-			myCal1 = new Calendar({ datefrom: 'd/m/Y' }, {navigation: 1});
-			myCal2 = new Calendar({ dateto: 'd/m/Y' }, {navigation: 1});
+			var callang = {
+				days: ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'],
+				offset: 1,
+				months: ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
+			};
+			myCal1 = new Calendar({ datefrom: 'd/m/Y' }, callang);
+			myCal2 = new Calendar({ dateto: 'd/m/Y' }, callang);
 		});
-	</script>
 
-	<!--script src="http://maps.google.com/maps?file=api&amp;v=2&amp;sensor=true_or_false&amp;key=ABQIAAAADIf1TyW8EOrlksPTOSU_ahRSRM19lJ9EelRQvSBfwIzY3S55QBS-8_3mcz6GYcDrbbRrvEniskCZzw" type="text/javascript"></script-->
-	<script type="text/javascript">
-		google.load("maps", "2", {"language" : "ru"});
-		google.load("search", "1");
+	var map;
+	var object1 = new google.maps.LatLng(48.408206, 35.048925);
+	var points = 1;
 
+	// Define a property to hold the Home state
+	HomeControl.prototype.home_ = null;
+
+	// Define setters and getters for this property
+	HomeControl.prototype.getHome = function() {
+		return this.home_;
+	}
+
+	HomeControl.prototype.setHome = function(home) {
+		this.home_ = home;
+	}
+
+	function HomeControl(controlDiv, map, object) {
+
+		var control = this;
+		control.home_ = object;
+
+		// Set CSS styles for the DIV containing the control
+		// Setting padding to 5 px will offset the control
+		// from the edge of the map
+		controlDiv.style.padding = '5px';
+
+		// Set CSS for the control border
+		var controlUI = document.createElement('div');
+		controlUI.setAttribute('class', 'MapNav');
+		controlUI.title = 'Нажмите чтобы центровать на "объект №1"';
+		controlDiv.appendChild(controlUI);
+
+		// Set CSS for the control interior
+		var controlText = document.createElement('div');
+		controlText.setAttribute('class', 'MapNavText');
+		controlText.innerHTML = 'Объект №1';
+		controlUI.appendChild(controlText);
+
+		var controlNav = document.createElement('div');
+		controlNav.setAttribute('class', 'MapNav');
+		controlNav.title = 'Click to set navigation';
+		controlDiv.appendChild(controlNav);
+
+		var navText = document.createElement('div');
+		navText.setAttribute('class', 'MapNavText');
+		navText.innerHTML = 'Слежение';
+		controlNav.appendChild(navText);
+
+		// Setup the click event listeners: simply set the map to
+		// Chicago
+		google.maps.event.addDomListener(controlUI, 'click', function() {
+			map.setCenter(object);
+		});
+		google.maps.event.addDomListener(controlNav, 'click', function() {
+			if(controlNav.style.backgroundColor == 'lime')
+				controlNav.style.backgroundColor = 'white';
+			else
+				controlNav.style.backgroundColor = 'lime';
+		});
+	}
+
+	var image = new google.maps.MarkerImage('stylesheets/marker1.png',
+		// This marker is 20 pixels wide by 32 pixels tall.
+		new google.maps.Size(32, 32),
+		// The origin for this image is 0,0.
+		new google.maps.Point(0,0),
+		// The anchor for this image is the base of the flagpole at 0,32.
+		new google.maps.Point(16, 16));
+/*	var shadow = new google.maps.MarkerImage('stylesheets/beachflag_shadow.png',
+		// The shadow image is larger in the horizontal dimension
+		// while the position and offset are the same as for the main image.
+		new google.maps.Size(37, 32),
+		new google.maps.Point(0,0),
+		new google.maps.Point(0, 32));
+		// Shapes define the clickable region of the icon.
+		// The type defines an HTML <area> element 'poly' which
+		// traces out a polygon as a series of X,Y points. The final
+		// coordinate closes the poly by connecting to the first
+		// coordinate.
+*/	var shape = {
+//		coord: [1, 1, 1, 20, 18, 20, 18 , 1],
+		coord: [0, 16, 0, 32, 32, 32, 32 ,16, 18, 0],
+		type: 'poly'
+	};
+
+	var beaches = [
+	  ['Bondi Beach', 48.408206, 35.048925, 4],
+	  ['Coogee Beach', 48.409206, 35.049925, 5],
+	  ['Cronulla Beach', 48.406206, 35.049925, 3],
+	  ['Manly Beach', 48.407206, 35.046925, 2],
+	  ['Maroubra Beach', 48.404206, 35.045925, 1]
+	];
+
+	function setMarkers(map, locations) {
+		// Add markers to the map
+
+		// Marker sizes are expressed as a Size of X,Y
+		// where the origin of the image (0,0) is located
+		// in the top left of the image.
+
+		// Origins, anchor positions and coordinates of the marker
+		// increase in the X direction to the right and in
+		// the Y direction down.
+/*		var image = new google.maps.MarkerImage('stylesheets/marker1.png',
+			// This marker is 32 pixels wide by 32 pixels tall.
+			new google.maps.Size(32, 32),
+			// The origin for this image is 0,0.
+			new google.maps.Point(0, 0),
+			// The anchor for this image is the base of the flagpole at 0,32.
+			new google.maps.Point(32, 32));
+		var shadow = new google.maps.MarkerImage('stylesheets/beachflag_shadow.png',
+			// The shadow image is larger in the horizontal dimension
+			// while the position and offset are the same as for the main image.
+			new google.maps.Size(37, 32),
+			new google.maps.Point(0,0),
+			new google.maps.Point(0, 32));
+			// Shapes define the clickable region of the icon.
+			// The type defines an HTML <area> element 'poly' which
+			// traces out a polygon as a series of X,Y points. The final
+			// coordinate closes the poly by connecting to the first
+			// coordinate.
+		var shape = {
+			coord: [1, 1, 1, 20, 18, 20, 18 , 1],
+			type: 'poly'
+		};
+*/
+		for (var i = 0; i < locations.length; i++) {
+			var beach = locations[i];
+			var myLatLng = new google.maps.LatLng(beach[1], beach[2]);
+			var marker = new google.maps.Marker({
+				position: myLatLng,
+				map: map,
+//				shadow: shadow,
+				icon: image,
+				shape: shape,
+				title: beach[0],
+				zIndex: beach[3]
+			});
+		}
+	}
+
+	var pathCoordinates = [];
+	var poly;
+	var obj1x = 48.408206;
+	var obj1y = 35.048925;
+	function initialize() {
+//		$(window).resize(function(){
+//			alert("Stop it!");
+//		});
+
+		var myOptions = {
+			zoom: 14,
+			center: object1,
+			mapTypeControl: true,
+			mapTypeControlOptions: {style: google.maps.MapTypeControlStyle.DROPDOWN_MENU},
+			navigationControl: true,
+			navigationControlOptions: {style: google.maps.NavigationControlStyle.SMALL},
+			mapTypeId: google.maps.MapTypeId.ROADMAP
+		};
+		map = new google.maps.Map(document.getElementById("map"), myOptions);
+
+		var homeControlDiv = document.createElement('div');
+		var homeControl = new HomeControl(homeControlDiv, map, object1);
+
+		homeControlDiv.index = 1;
+		map.controls[google.maps.ControlPosition.TOP_LEFT].push(homeControlDiv);
+
+		setMarkers(map, beaches);
+
+		// We create pathCoordinates as an MVCArray so we can
+		// manipulate it using the insertAt() method
+		pathCoordinates = new google.maps.MVCArray();
+
+/*		var flightPlanCoordinates = [
+			new google.maps.LatLng(48.408206, 35.048925),
+			new google.maps.LatLng(48.409206, 35.047925),
+			new google.maps.LatLng(48.410206, 35.049925),
+			new google.maps.LatLng(48.411206, 35.047925),
+			new google.maps.LatLng(48.412206, 35.047925),
+			new google.maps.LatLng(48.413206, 35.047925),
+			new google.maps.LatLng(48.414206, 35.047925),
+			new google.maps.LatLng(48.415206, 35.047925),
+			new google.maps.LatLng(48.416206, 35.047925),
+		];
+*/
+		var polyOptions = {
+			path: pathCoordinates,
+			strokeColor: '#008000',
+			strokeOpacity: 0.8,
+			strokeWeight: 4
+		}
+		poly = new google.maps.Polyline(polyOptions);
+		poly.setMap(map);
+
+		var path = poly.getPath();
+		path.insertAt(pathCoordinates.length, new google.maps.LatLng(obj1x, obj1y));
+
+//		map.controls[google.maps.ControlPosition.TOP_RIGHT].push(homeControlDiv);
+	}
+		//google.load("maps", "2", {"language" : "uk"});
+		//google.load("maps", "2", {"language" : "ru"});
+		//google.load("search", "1");
 		// Call this function when the page has been loaded
+/*
 		function initialize() {
-			var map = new google.maps.Map2(document.getElementById("map"));
+
+			map = new google.maps.Map2(document.getElementById("map"));
 //			map.setCenter(new google.maps.LatLng(37.4419, -122.1419), 13);
 
 			var map_ctrl = new GSmallMapControl();
 			var map_type_ctrl = new GMapTypeControl(); 
 			var map_scale_ctrl = new GScaleControl();
 
-			/*    */
 			map.addControl(map_ctrl);
-			/*    */
-			map.addControl(map_type_ctrl); 
-			/*    */
+			map.addControl(map_type_ctrl);
 			map.addControl(map_scale_ctrl);
 
 			pntx = 48.40820667;
@@ -48,6 +249,7 @@
 			var mcenter = new GLatLng(pntx, pnty);
 			map.setCenter(mcenter, 14);
 
+			map.addControl(new TextualZoomControl());
 
 			var polyPoints = Array();
 			var startX = 48.40820667;
@@ -62,30 +264,26 @@
 			var line = new GPolyline(polyPoints,"#0000C0", 4, 1);
 			map.addOverlay(line);
 
-//			var p1 = new GPoint(48.40820667, 35.048925);
 
-/*
-			clockPoint = map.getCenter();
-			var mapNormalProj = G_NORMAL_MAP.getProjection();
-			var origoPixel = mapNormalProj.fromLatLngToPixel(clockPoint, map.getZoom());
-			for(var a = 0; a<10; a++) {
-				var pX = origoPixel.x + a;
-				var pY = origoPixel.y + a;
-				var npix = new GPoint(pX, pY);
-				var point = mapNormalProj.fromPixelToLatLng(origoPixel, map.getZoom());
+//			clockPoint = map.getCenter();
+//			var mapNormalProj = G_NORMAL_MAP.getProjection();
+//			var origoPixel = mapNormalProj.fromLatLngToPixel(clockPoint, map.getZoom());
+//			for(var a = 0; a<10; a++) {
+//				var pX = origoPixel.x + a;
+//				var pY = origoPixel.y + a;
+//				var npix = new GPoint(pX, pY);
+//				var point = mapNormalProj.fromPixelToLatLng(origoPixel, map.getZoom());
+//
+//				polyPoints.push(point);
+//			}
+//
+//			var line = new GPolyline(polyPoints,"#000000", 2, 1);
+//			map.addOverlay(line);
 
-				polyPoints.push(point);
-			}
-
-			var line = new GPolyline(polyPoints,"#000000", 2, 1);
-			map.addOverlay(line);
-*/
 
 //			marker = new GMarker(mcenter);
 //			marker.setPoint(mcenter);
 //			map.addOverlay(marker);
-
-
 
 			var searchControl = new google.search.SearchControl();
 			searchControl.addSearcher(new google.search.WebSearch());
@@ -93,15 +291,83 @@
 			searchControl.draw(document.getElementById("searchcontrol"));
 		}
 		google.setOnLoadCallback(initialize);
+*/
+		function periodicalApp() {
+			//widget = document.getElementById('Time');
+			//widget.value = "1234";
+			//var map = new google.maps.Map2(document.getElementById("map"));
+/*			var pntx = map.getCenter().lat() + 0.0001;
+			var pnty = map.getCenter().lng();
+			var zoom = map.getZoom();
+			var mcenter = new GLatLng(pntx, pnty);
+			map.setCenter(mcenter, zoom);
+*/
+			var path = poly.getPath();
+			obj1x = obj1x + (Math.random()*0.001)-0.0007;
+			obj1y = obj1y + (Math.random()*0.001)-0.0007;
+			var pos = new google.maps.LatLng(obj1x, obj1y);
+//			path.insertAt(pathCoordinates.length, pos);
+			path.insertAt(path.length, pos);
+			points = points + 1;
+//			path.insertAt(points, pos);
+			document.getElementById('points').innerHTML = path.length;
+
+			var marker = new google.maps.Marker({
+				position: pos,
+				icon: image,
+				shape: shape,
+//				shadow: shadow,
+				map: map
+			});
+			marker.setTitle("#" + path.length)
+			//marker.setTitle("#" + points)
+
+		}
 	</script>
 
+<!--script type="text/javascript" src="http://www.google.com/jsapi"></script>
+  <script type="text/javascript">
+    google.load('visualization', '1', {packages: ['piechart']});
+
+    var visualization;
+    function draw() {
+      drawVisualization();
+      //drawToolbar();
+    }
+    
+    function drawVisualization() {
+      var container = document.getElementById('visualization_div');
+      visualization = new google.visualization.PieChart(container);
+      new google.visualization.Query('http://spreadsheets.google.com/tq?key=pCQbetd-CptHnwJEfo8tALA&pub=1').
+      send(queryCallback);
+    }
+    
+    function queryCallback(response) {
+      visualization.draw(response.getDataTable(), {is3D: true});
+    }
+    
+    function drawToolbar() {
+      var components = [
+        {type: 'igoogle', datasource: 'http://spreadsheets.google.com/tq?key=pCQbetd-CptHnwJEfo8tALA&pub=1',
+          gadget: 'http://www.google.com/ig/modules/pie-chart.xml',
+          userprefs: {'3d': 1}},
+        {type: 'html', datasource: 'http://spreadsheets.google.com/tq?key=pCQbetd-CptHnwJEfo8tALA&pub=1'},
+        {type: 'csv', datasource: 'http://spreadsheets.google.com/tq?key=pCQbetd-CptHnwJEfo8tALA&pub=1'},
+        {type: 'htmlcode', datasource: 'http://spreadsheets.google.com/tq?key=pCQbetd-CptHnwJEfo8tALA&pub=1',
+          gadget: 'http://www.google.com/ig/modules/pie-chart.xml'}
+      ];
+    
+      var container = document.getElementById('toolbar_div');
+      google.visualization.drawToolbar(container, components);
+    };
+
+//    google.setOnLoadCallback(draw);
+  </script-->
 {% endblock %}
 
-{% block body %}
-	<!--div id="map" style="width: 100%; height: 400px"></div-->
-	<div id="map" style="width: 80%; height: 90%; position: absolute; left: 0;"></div>
-	<div id="control" style="width: 20%; height: 90%; position: absolute; left: 80%; border: none;">
-		Управление<br>
+{% block menu %}
+	<div id="control" style="width: 100%; position: relative; border: none;">
+		Управление
 		<form action="/map" enctype="multipart/form-data" method="get" style="border:none;">
 		<table>
 			<tr>
@@ -127,8 +393,22 @@
 					<input type="submit" name="submit" value="Показать.">
 				</td>
 			</tr>
+		</table>
 		</form>
 	</div>
+	<div style="background: white;">Точек:<div id="points" style="float: right;">0</div></div>
+{% endblock %}
+
+
+{% block javainit %}
+			initialize();
+			setInterval(periodicalApp, 1000);
+{% endblock %}
+
+{% block body %}
+	<!--div id="map" style="width: 100%; height: 400px"></div-->
+	<!--div id="map" style="width: 100%; height: 100%; position: absolute; left: 0;"></div-->
+	<div id="map" style="width: 100%; height: 100%;"></div>
 
         <!--script src="http://www.gmodules.com/ig/ifr?url=http://code.google.com/apis/kml/embed/embedkmlgadget.xml&amp;up_kml_url=http%3A%2F%2Fmw1.google.com%2Fmw-earth-vectordb%2FImagery_Updates%2F12-17-2009_Imagery_Update.kmz%20&amp;up_view_mode=earth&amp;up_earth_2d_fallback=0&amp;up_earth_fly_from_space=1&amp;up_earth_show_nav_controls=1&amp;up_earth_show_buildings=1&amp;up_earth_show_terrain=1&amp;up_earth_show_roads=1&amp;up_earth_show_borders=1&amp;up_earth_sphere=earth&amp;up_maps_zoom_out=0&amp;up_maps_default_type=map&amp;synd=open&amp;w=470&amp;h=500&amp;title=December+17th+Imagery+Update&amp;border=%23ffffff%7C3px%2C1px+solid+%23999999&amp;output=js"></script-->
 {% endblock %}

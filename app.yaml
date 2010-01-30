@@ -26,5 +26,9 @@ handlers:
 #- url: /a
 #  script: gps-maps.py
 
+- url: /layout.html
+  static_files: layout.html
+  upload: layout.html
+
 - url: /.*
   script: gps-maps.py
