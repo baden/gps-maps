@@ -14,8 +14,6 @@ html, body {
 	max-height:100%;
 	background-color: #14718f;
 	overflow: auto;
-	/*overflow-x: hidden;
-	overflow-y: scroll;*/
 	height:auto !important;
 }
 
@@ -51,7 +49,6 @@ form {
 
 
 h1 {
-    /*background-color: #F0F0D0;*/
     text-align: center;
     padding: 0.5em 0 0.2em 0;
     margin:0;

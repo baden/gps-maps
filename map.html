@@ -1,0 +1,137 @@
+
+
+
+{% extends "base.html" %}
+
+{% block title %}{{ application_name }}     {% endblock %}
+
+{% block head %}
+  <!--meta http-equiv="refresh" content="10"-->
+  <!--style type="text/css">{% include "css/geos.css" %}</style-->
+  <link type="text/css" rel="stylesheet" href="stylesheets/calendar.css" />
+	<!-- localhost -->
+	<!--script type="text/javascript" src="http://www.google.com/jsapi?key=ABQIAAAADIf1TyW8EOrlksPTOSU_ahT2yXp_ZAY8_ufC3CFXhHIE1NvwkxQA1Z3_lxzOW0j5WczdNXZJcWiYrQ"></script-->
+	<!-- gps-maps.appspot.com -->
+	<script type="text/javascript" src="http://www.google.com/jsapi?key=ABQIAAAADIf1TyW8EOrlksPTOSU_ahRSRM19lJ9EelRQvSBfwIzY3S55QBS-8_3mcz6GYcDrbbRrvEniskCZzw"></script>
+	<script type="text/javascript" src="js/mootools.js"></script>
+	<script type="text/javascript" src="js/calendar.js"></script>
+	<script type="text/javascript">
+		window.addEvent('domready', function() {
+			myCal1 = new Calendar({ datefrom: 'd/m/Y' }, {navigation: 1});
+			myCal2 = new Calendar({ dateto: 'd/m/Y' }, {navigation: 1});
+		});
+	</script>
+
+	<!--script src="http://maps.google.com/maps?file=api&amp;v=2&amp;sensor=true_or_false&amp;key=ABQIAAAADIf1TyW8EOrlksPTOSU_ahRSRM19lJ9EelRQvSBfwIzY3S55QBS-8_3mcz6GYcDrbbRrvEniskCZzw" type="text/javascript"></script-->
+	<script type="text/javascript">
+		google.load("maps", "2", {"language" : "ru"});
+		google.load("search", "1");
+
+		// Call this function when the page has been loaded
+		function initialize() {
+			var map = new google.maps.Map2(document.getElementById("map"));
+//			map.setCenter(new google.maps.LatLng(37.4419, -122.1419), 13);
+
+			var map_ctrl = new GSmallMapControl();
+			var map_type_ctrl = new GMapTypeControl(); 
+			var map_scale_ctrl = new GScaleControl();
+
+			/*    */
+			map.addControl(map_ctrl);
+			/*    */
+			map.addControl(map_type_ctrl); 
+			/*    */
+			map.addControl(map_scale_ctrl);
+
+			pntx = 48.40820667;
+			pnty = 35.048925;
+			var mcenter = new GLatLng(pntx, pnty);
+			map.setCenter(mcenter, 14);
+
+
+			var polyPoints = Array();
+			var startX = 48.40820667;
+			var startY = 35.048925;
+
+			for(var a = 0; a<50; a++) {
+				polyPoints.push(new GLatLng(startX, startY));
+				startX += (Math.random()*0.002)-0.0005;
+				startY += (Math.random()*0.002)-0.0005;
+			}
+
+			var line = new GPolyline(polyPoints,"#0000C0", 4, 1);
+			map.addOverlay(line);
+
+//			var p1 = new GPoint(48.40820667, 35.048925);
+
+/*
+			clockPoint = map.getCenter();
+			var mapNormalProj = G_NORMAL_MAP.getProjection();
+			var origoPixel = mapNormalProj.fromLatLngToPixel(clockPoint, map.getZoom());
+			for(var a = 0; a<10; a++) {
+				var pX = origoPixel.x + a;
+				var pY = origoPixel.y + a;
+				var npix = new GPoint(pX, pY);
+				var point = mapNormalProj.fromPixelToLatLng(origoPixel, map.getZoom());
+
+				polyPoints.push(point);
+			}
+
+			var line = new GPolyline(polyPoints,"#000000", 2, 1);
+			map.addOverlay(line);
+*/
+
+//			marker = new GMarker(mcenter);
+//			marker.setPoint(mcenter);
+//			map.addOverlay(marker);
+
+
+
+			var searchControl = new google.search.SearchControl();
+			searchControl.addSearcher(new google.search.WebSearch());
+			searchControl.addSearcher(new google.search.NewsSearch());
+			searchControl.draw(document.getElementById("searchcontrol"));
+		}
+		google.setOnLoadCallback(initialize);
+	</script>
+
+{% endblock %}
+
+{% block body %}
+	<!--div id="map" style="width: 100%; height: 400px"></div-->
+	<div id="map" style="width: 80%; height: 90%; position: absolute; left: 0;"></div>
+	<div id="control" style="width: 20%; height: 90%; position: absolute; left: 80%; border: none;">
+		Управление<br>
+		<form action="/map" enctype="multipart/form-data" method="get" style="border:none;">
+		<table>
+			<tr>
+				<th>Интервал времени с:</th>
+			</tr>
+			<tr>
+				<td>
+					<input id="datefrom" name="datefrom" type="text" value="29/01/2010" size="10"/>
+					<input id="timefrom" name="timefrom" type="text" value="00:00" size="5" />
+				</td>
+			</tr>
+			<tr>
+				<th>по:</th>
+			</tr>
+			<tr>
+				<td>
+					<input id="dateto" name="dateto" type="text"  value="30/01/2010" size="10"/>
+					<input id="timeto" name="timeto" type="text" value="00:00" size="5" />
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<input type="submit" name="submit" value="Показать.">
+				</td>
+			</tr>
+		</form>
+	</div>
+
+        <!--script src="http://www.gmodules.com/ig/ifr?url=http://code.google.com/apis/kml/embed/embedkmlgadget.xml&amp;up_kml_url=http%3A%2F%2Fmw1.google.com%2Fmw-earth-vectordb%2FImagery_Updates%2F12-17-2009_Imagery_Update.kmz%20&amp;up_view_mode=earth&amp;up_earth_2d_fallback=0&amp;up_earth_fly_from_space=1&amp;up_earth_show_nav_controls=1&amp;up_earth_show_buildings=1&amp;up_earth_show_terrain=1&amp;up_earth_show_roads=1&amp;up_earth_show_borders=1&amp;up_earth_sphere=earth&amp;up_maps_zoom_out=0&amp;up_maps_default_type=map&amp;synd=open&amp;w=470&amp;h=500&amp;title=December+17th+Imagery+Update&amp;border=%23ffffff%7C3px%2C1px+solid+%23999999&amp;output=js"></script-->
+{% endblock %}
+
+{% block final %}
+{% endblock %}
