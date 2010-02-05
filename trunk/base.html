@@ -51,6 +51,12 @@
 //			if(fp){
 //				fp.style.width = "100px;";
 //			}
+			mfill = document.getElementById('MenuFill');
+			if(mfill){
+				mfilltop = $(mfill).position().top;
+				mfill.style.height = height - mfilltop - 6 + "px";
+			}
+
 			cont = document.getElementById('draggable-handle-div');
 			if(cont){
 				cont.style.left = "0px";
@@ -115,7 +121,8 @@
 			<a href="/logs"><div id="menu-logs">Логи</div></a>
 			<a href="/geos"><div id="menu-geos">Логи GPS</div></a>
 			<!--a href="/logout"><div>Выйти</div></a-->
-			{% block menu %}{% endblock %}
+			
+			<div id="MenuFill">{% block menu %}{% endblock %}</div>
 		</div>
 		<div id="Widget">
 {% block body %}{% endblock %}
@@ -125,5 +132,8 @@
                 <!--div style="position: absolute; top:95%; left: 0%;">
 		<a href="http://code.google.com/p/gps-maps/"><img src="http://code.google.com/appengine/images/appengine-noborder-120x30.gif" alt="Технология Google App Engine" /></a>
 		</div-->
+		<div style="position:absolute; border-top: 2px solid black; width: 95%; height: 2px;top:0px;right:0px;"></div>
+		<div style="position:absolute; border-bottom: 2px solid black; width: 100%; height: 2px;bottom:0px;right:0px;"></div>
+		<div style="position:absolute; border-right: 2px solid black; width: 2px; height: 100%;top:0px;right:0px;"></div>
   </body>
 </html>

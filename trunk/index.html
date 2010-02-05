@@ -77,13 +77,20 @@ $("#menu-main").hover(function () {
 				}
 			}
 		}
+
+		var dataid = 0;
 		function binpost(obj) {
 			//var data = "ABCDEFG\x01\x80\xFF" + String.fromCharCode(65) + String.fromCharCode(150);
-			//var data = "";
-			//var i;
-			//for(i=0; i<=255; i++) data += String.fromCharCode(i);
+			var data = "";
+			var i;
+			var j;
+			data += "\x23\x02\xDB\x24\x03\x07\x01\x45\x1B\x58\x06"
+			for(j=0; j<=750; j++)
+				data += "\xF2\x1D\x01\x10\x14\x13\x30\x18\x00\x58\x13\x23\x02\xDB\x24\x03\x07\x01\x45\x1B\x58\x06"
+					//data += String.fromCharCode(i);
+			data += "\xF2\x1D\x01\x10\x14\x13\x30\x18\x00"
 			//var data = "\x1D\x01\x10\x14\x13\x30\x18\x00\x58\x13\x23\x02\xDB\x24\x03\x07\x00\x01\x45\x1B\x58\x06"
-			var data = "\x1D\x01\x12\x38\x2B\x00\x30\x18\x2C\x13\x23\x02\xD0\x24\x08\x00\x0B\x00\x00\x00\x47\x06"
+			//var data = "\x1D\x01\x12\x38\x2B\x00\x30\x18\x2C\x13\x23\x02\xD0\x24\x08\x00\x0B\x00\x00\x00\x47\x06"
 
 			//var data1 = data.encodeUTF8();
 
@@ -91,22 +98,24 @@ $("#menu-main").hover(function () {
 			//data.Type = 2;
 			//data.Charset = "Windows-1251";
 			//data.WriteText("ABCDEFG");
-			MakeBinRequest('bingeos?imei=123456789012&enc=utf8', data);
+			MakeBinRequest('bingeos?imei=123456789012&enc=utf8&dataid=' + dataid.toString(16).toUpperCase(), data);
+			dataid++;
 		}
 	</script>
 {% endblock %}
 
 {% block body %}
+	<h1>Главное меню</h1>
+        <!--a class="pushLink" href="test.php">[ <span>Тест</span> ]</a><br-->
+        <a class="pushLink" href="login.php">[ <span>Войти под своим именем</span> ]</a>
+        <!--a class="pushLink" href="register.php">[ <span>Зарегестрироваться в системе</span> ]</a><br-->
+
 	<h1>Тестовые функции</h1>
-		<a class="pushLink" href="regid?imei=123456789012&phone=%2B380679332332&pass=333">Регистрация тестового пользователя</a>
-		<a class="pushLink" href="regid?imei=123456789013&phone=%2B380679332332&pass=333">Еще</a>
-		<a class="pushLink" href="regid?imei=123456789013&phone=%2B380679332333&pass=333">Еще</a>
-		<a class="pushLink" href="regid?imei=123456789013&phone=%2B380679332333&pass=343">Еще</a>
-		<br>
-		
-        <a class="pushLink" href="users">Просмотреть список пользователей</a>
-        <a class="pushLink" href="logs">Просмотреть логи сервера</a>
-        <a class="pushLink" href="geos">Просмотреть гео-данные</a>
+		<a class="pushLink" href="regid?imei=123456789012&phone=%2B380679332332&pass=333">Регистрация пользователя</a>
+		<a class="pushLink" href="regid?imei=123456789013&phone=%2B380679332332&pass=333">+</a>
+		<a class="pushLink" href="regid?imei=123456789013&phone=%2B380679332333&pass=333">+</a>
+		<a class="pushLink" href="regid?imei=123456789013&phone=%2B380679332333&pass=343">+</a>
+		<a class="pushLink" href="users">Просмотреть список пользователей</a>
 		<br>
 
         <a class="pushLink" href="/addlog?imei=123456789013&text=Sample%20message">Добавление в лог методом GET</a>
@@ -119,9 +128,8 @@ $("#menu-main").hover(function () {
 			<span name="myspan" id="myspan"></span>
 			<hr>
 		</form>
+		<a class="pushLink" href="/parsebingeos">Обработка бинарных данных</a>
 		
-		<br>
-        <a class="pushLink" href="/config">Конфигурация системы</a>
 
         <form action="/addlog?id=1" method="post">
             <div><textarea name="content" rows="8" style="width:98%;"></textarea></div>
@@ -134,10 +142,6 @@ $("#menu-main").hover(function () {
 		<a href="http://localhost:8080/_ah/admin/datastore" target="_blank">(порт 8080)</a>
 		<a href="https://appengine.google.com/dashboard?&app_id=gps-maps" target="_blank">Админка в онлайн</a>
 		
-	<h1>Главное меню</h1>
-        <!--a class="pushLink" href="test.php">[ <span>Тест</span> ]</a><br-->
-        <a class="pushLink" href="login.php">[ <span>Войти под своим именем</span> ]</a>
-        <!--a class="pushLink" href="register.php">[ <span>Зарегестрироваться в системе</span> ]</a><br-->
 
 	<h1>Меню пользователя</h1>
         <!--a class="pushLink" href="gps.php">[ <span>Просмотреть треки на карте</span> ]</a><br-->

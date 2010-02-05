@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #import cgi
 #from google.appengine.tools.dev_appserver import datastore
 import logging
@@ -5,18 +6,21 @@ import os
 
 from datetime import date
 from datetime import datetime
+from django.utils import simplejson as json
 from google.appengine.api import users
 from google.appengine.api import datastore
 from google.appengine.api import urlfetch
+from google.appengine.api.labs import taskqueue
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
 
+
 class DBUser(db.Model):
-	userid = db.IntegerProperty()					# Unique
-	imei = db.StringProperty(multiline=False)		# IMEI
-	phone = db.StringProperty(multiline=False)		# Phone number, for example: +380679332332
+	userid = db.IntegerProperty()			# Unique
+	imei = db.StringProperty(multiline=False)	# IMEI
+	phone = db.StringProperty(multiline=False)	# Phone number, for example: +380679332332
 	password = db.StringProperty(multiline=False)	# User password
 	date = db.DateTimeProperty(auto_now_add=True)	# Registration date
 
@@ -41,8 +45,16 @@ class DBGPSPoint(db.Model):
 	speed = db.FloatProperty()
 	course = db.FloatProperty()
 	altitude = db.FloatProperty()
-	in1 = db.FloatProperty()
-	in2 = db.FloatProperty()
+	in1 = db.FloatProperty()		# Значение на аналоговом входе 1
+	in2 = db.FloatProperty()		# Значение на агалоговом входе 2
+	#power = db.FloatProperty()		# Уровень заряда батареи (на
+
+class DBGPSBin(db.Model):
+	user = db.ReferenceProperty(DBUser)
+	cdate = db.DateTimeProperty(auto_now_add=True)
+	dataid = db.IntegerProperty()
+#	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
+	data = db.TextProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
 
 class MainPage(webapp.RequestHandler):
 	def get(self):
@@ -383,6 +395,7 @@ class LastPos(webapp.RequestHandler):
 class Geos(webapp.RequestHandler):
 	def get(self):
 		geologs = DBGPSPoint.all().order('-date').fetch(MAXLOGS+1)
+		#geologs = DBGPSPoint.all().order('-date').fetch(100)
 		for geolog in geologs:
 			try:
 				uuser = geolog.user
@@ -396,6 +409,170 @@ class Geos(webapp.RequestHandler):
 		path = os.path.join(os.path.dirname(__file__), 'geos.html')
 		self.response.out.write(template.render(path, template_values))
 
+class GeosJSON(webapp.RequestHandler):
+	def get(self):
+		start_time = datetime.now()
+		logging.info("GeosJSON start (%s)" % start_time.strftime("%H:%M:%S"))
+
+		userdb = getUser(self.request)
+
+		if userdb:
+			pass
+
+		dif_time = datetime.now() - start_time
+		logging.info("GeosJSON user ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+
+		self.response.headers['Content-Type']   = 'text/javascript; charset=utf-8'
+
+		callback = self.request.get('callback')
+
+		datefrom_s = self.request.get('datefrom')
+		if datefrom_s:
+			datefrom = datetime.strptime(datefrom_s, "%d%m%Y%H%M")
+		else:
+			datefrom = datetime.now()
+		dateto_s = self.request.get('dateto')
+		if dateto_s:
+			dateto = datetime.strptime(dateto_s, "%d%m%Y%H%M")
+		else:
+			dateto = datetime.now()
+
+		self.response.out.write("// User imei: %s\r// Date from: %s\r// Date to: %s\r" % (userdb.imei, datefrom, dateto))
+
+#.filter('date <=', datetime.strptime(datemark, "%Y%m%d%H%M%S%f"))
+		#geologs = DBGPSPoint.all().order('-date').filter('user =', userdb)
+		geologs = DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(300)
+		#geologs = DBGPSPoint.all().order('-date').fetch(500)
+		#geologs = DBGPSPoint.all().order('-date').fetch(MAXLOGS+1)
+
+
+		dif_time = datetime.now() - start_time
+		logging.info("GeosJSON db ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+
+		results = []
+
+		for geolog in geologs:
+			result = {
+				"date": geolog.date.strftime("%d/%m/%Y %H:%M"),
+				"lat": geolog.latitude,
+				"long": geolog.longitude,
+				"sats": geolog.sats,
+				"fix": geolog.fix,
+				"speed": geolog.speed,
+				"course": geolog.course,
+				"alt": geolog.altitude,
+				"in1": geolog.in1,
+				"in2": geolog.in2,
+				}
+			#try:
+			#	uuser = geolog.user
+			#	geolog.imei = uuser.imei
+			#	result["imei"] = uuser.imei
+			#except:
+			#	geolog.imei = 'deleted' 
+			#	result["imei"] = "none"
+
+			results.append(result)
+
+			#user = db.ReferenceProperty(DBUser)
+			#cdate = db.DateTimeProperty(auto_now_add=True)
+			#geolog.sdate = geolog.cdate.strftime("%d/%m/%Y %H:%M") 
+
+		jsonresp = {"responseData": {"results": results, "config": 0}}
+
+		dif_time = datetime.now() - start_time
+		logging.info("GeosJSON response ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+
+
+		nejson = json.dumps(jsonresp)
+		self.response.out.write(callback + "(" + nejson + ")\r")
+
+		dif_time = datetime.now() - start_time
+		logging.info("GeosJSON json-out ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+		return
+
+		self.response.out.write("// Old version:\r")
+		jsondata = callback + "("
+		jsondata += """
+		{
+				"responseData": {
+					"results":[
+					{
+						"GsearchResultClass":"GwebSearch",
+						"unescapedUrl":"http://www.google.com/",
+						"url":"http://www.google.com/",
+						"visibleUrl":"www.google.com",
+						"cacheUrl":"http://www.google.com/search?q\u003dcache:zhool8dxBV4J:www.google.com",
+						"title":"\u003cb\u003eGoogle\u003c/b\u003e",
+						"titleNoFormatting":"Google",
+						"content":"Enables users to search the Web, Usenet, and images. Features include PageRank,   caching and translation of results, and an option to find similar pages."
+					},{
+						"GsearchResultClass":"GwebSearch",
+						"unescapedUrl":"http://maps.google.com/",
+						"url":"http://maps.google.com/",
+						"visibleUrl":"maps.google.com",
+						"cacheUrl":"http://www.google.com/search?q\u003dcache:dkf5u2twBXIJ:maps.google.com",
+						"title":"\u003cb\u003eGoogle\u003c/b\u003e Maps",
+						"titleNoFormatting":"Google Maps",
+						"content":"Find local businesses, view maps and get driving directions in \u003cb\u003eGoogle\u003c/b\u003e Maps."
+					},{
+						"GsearchResultClass":"GwebSearch",
+						"unescapedUrl":"http://video.google.com/",
+						"url":"http://video.google.com/",
+						"visibleUrl":"video.google.com",
+						"cacheUrl":"http://www.google.com/search?q\u003dcache:yzZ7MosNOvsJ:video.google.com",
+						"title":"\u003cb\u003eGoogle\u003c/b\u003e Videos",
+						"titleNoFormatting":"Google Videos",
+						"content":"Search and watch millions of videos. Includes forum and personalized   recommendations."
+					},{
+						"GsearchResultClass":"GwebSearch",
+						"unescapedUrl":"http://www.google.org/",
+						"url":"http://www.google.org/",
+						"visibleUrl":"www.google.org",
+						"cacheUrl":"http://www.google.com/search?q\u003dcache:AkOXzKdBYp4J:www.google.org",
+						"title":"\u003cb\u003eGoogle\u003c/b\u003e.org",
+						"titleNoFormatting":"Google.org",
+						"content":"The philanthropic arm of the company. Lists its activities."
+					}],
+					"cursor":{
+						"pages":[
+							{
+								"start":"0",
+								"label":1
+							},{
+								"start":"4",
+								"label":2
+							},{
+								"start":"8",
+								"label":3
+							},{
+								"start":"12",
+								"label":4
+							},{
+								"start":"16",
+								"label":5
+							},{
+								"start":"20",
+								"label":6
+							},{
+								"start":"24",
+								"label":7
+							},{
+								"start":"28",
+								"label":8
+							}
+						],
+						"estimatedResultCount":"166000000",
+						"currentPageIndex":0,
+						"moreResultsUrl":"http://www.google.com/search?oe\u003dutf8\u0026ie\u003dutf8\u0026source\u003duds\u0026start\u003d0\u0026hl\u003dru\u0026q\u003dgoogle"
+					}
+				},
+				"responseDetails": null,
+				"responseStatus": 200
+			}
+		"""
+		jsondata += ")"
+		self.response.out.write(jsondata)
 		pass
 
 class DelGeos(webapp.RequestHandler):
@@ -496,22 +673,136 @@ class BinGeos(webapp.RequestHandler):
 		#logging.info("$=$ TEST_BIN_POST")
 
 		self.response.headers['Content-Type'] = 'text/plain'
+
+		sdataid = self.request.get('dataid')
+		if sdataid:
+			dataid = int(sdataid, 16)
+		else:
+			self.response.out.write('ANSWER: NODATAID\r\n')
+			return
+
 		userdb = getUser(self.request)
+		#if userdb:
+
+		pdata = self.request.body
+
+		_log += '\nData ID: %d' % dataid
+		_log += '\nData size: %d' % len(pdata)
+
+		dataenc = self.request.get('enc')
+		if dataenc:
+			if dataenc == 'utf8':
+				pdata = pdata.decode('utf8')
+
+		#_log += '\nData (HEX):'
+		#for data in pdata:
+		#	_log += ' %02X' % ord(data)
+
 		if userdb:
-			pdata = self.request.body
-			dataenc = self.request.get('enc')
-			if dataenc:
-				if dataenc == 'utf8':
-					pdata = pdata.decode('utf8')
 			#self.response.out.write('headers: %s\r\n' % self.request.headers)
 			#self.response.out.write('imei: %s\r\n' % userdb.imei)
 			#self.response.out.write('phone: %s\r\n' % userdb.phone)
 			#self.response.out.write('datasize: %d\r\n' % len(pdata))
-			_log += '\nData size: %d' % len(pdata)
-			_log += '\nData (HEX):'
-			for data in pdata:
-				_log += ' %02X' % ord(data)
 
+			#	user = db.ReferenceProperty(DBUser)
+			#	cdate = db.DateTimeProperty(auto_now_add=True)
+			#	dataid = db.IntegerProperty()
+			#	#data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
+			#	data = db.TextProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
+			newbin = DBGPSBin()
+			newbin.dataid = dataid
+			newbin.data = db.Text(pdata)
+			newbin.put()
+
+			_log += '\nSaved to DBGPSBin creating tasque'
+
+
+			url = "/parsebingeos?dataid=%s" % dataid
+			#taskqueue.add(url = url % self.key().id(), method="GET", countdown=countdown)
+			countdown=0
+			taskqueue.add(url = url, method="GET", countdown=countdown)
+
+			self.response.out.write('ANSWER: OK\r\n')
+		else:
+			self.response.out.write('ANSWER: USER_NOT_FOUND\r\n')
+
+		#_log += "\n {DATABASE PUT() DISABLED}"
+		logging.info(_log)
+
+class ParseBinGeos(webapp.RequestHandler):
+	def get(self):
+		self.response.headers['Content-Type'] = 'text/plain'
+		self.response.out.write('PARSE\r\n')
+
+		_log = "PARSE_BIN_GEOS{_GET} ["
+
+		query = DBGPSBin().all()
+		result = query.get()
+		if result:
+		#for result in results:
+			dataid = result.dataid
+			odata_s = unicode("")
+			odata_f = unicode("")
+			pdata = result.data
+			_log += '\nDATA ID: %d' % dataid
+			_log += '\nDATA LENGHT: %d' % len(pdata)
+			#_log += '\nData (HEX):'
+			#for data in pdata:
+			#	_log += ' %02X' % ord(data)
+
+			_log += '\nParsing...'
+
+			_log += 'spliting...'
+			parts = pdata.split(u'\xF2')
+			_log += '%d patrs...' % len(parts)
+
+			if len(parts[0]) != 21:
+				_log += 'pat[0] is cutted - its ok...'
+				odata_s = parts[0]
+				del parts[0]
+
+			if len(parts[-1]) != 21:
+				_log += 'pat[-1] is cutted - its ok...'
+				odata_f = parts[-1]
+				del parts[-1]
+
+			_log += '%d patrs now...' % len(parts)
+
+			position = 0
+			for part in parts:
+				if len(part) == 21:
+					_log += '*'
+
+					day = ord(part[0])
+					month = ord(part[1]) & 0x0F
+					year = (ord(part[1]) & 0xF0)/16 + 2010
+					hours = ord(part[2])
+					minutes = ord(part[3])
+					seconds = ord(part[4])
+				else:
+					_log += '\npat%d is corrupted' % position
+				position = position+1
+
+			#position = 0
+			#for data in pdata:
+			#	code = ord(data)
+			#	if code == 0x20:
+			#		_log += 'cathed at position %d' % position
+			#	position = position+1
+
+
+			#result.delete()
+			self.response.out.write('OK\r\n')
+			_log += '\nData deleted.'
+			
+			#for name in os.environ.keys():
+			#	self.response.out.write("%s = %s\n" % (name, os.environ[name]))
+		else:
+			self.response.out.write('OK NODATA\r\n')
+		
+		logging.info(_log)
+
+__hide2comment = """
 			_log += '\nGPS DATA:'
 
 			day = ord(pdata[0])
@@ -579,13 +870,9 @@ class BinGeos(webapp.RequestHandler):
 			gpspoint.altitude = altitude
 			gpspoint.in1 = in1
 			gpspoint.in2 = in2
-			gpspoint.put()
 
-			self.response.out.write('OK\r\n')
-		else:
-			self.response.out.write('USER_NOT_FOUND\r\n')
-
-		logging.info(_log)
+			#gpspoint.put()
+"""
 
 class Map(webapp.RequestHandler):
 	def get(self):
@@ -594,6 +881,12 @@ class Map(webapp.RequestHandler):
 		}
 		path = os.path.join(os.path.dirname(__file__), 'map.html')
 		self.response.out.write(template.render(path, template_values))
+
+class RawData(webapp.RequestHandler):
+	def get(self):
+		print "RAW DATA"
+		logging.info("DO RAW DATA")
+
 
 #class myWSGIApplication(webapp.WSGIApplication):
 #	def __call__(self, environ, start_response):
@@ -612,13 +905,16 @@ application = webapp.WSGIApplication(
 	('/dellogs.*', DelLogs),
 	('/delgeos.*', DelGeos),
 	('/lastpos.*', LastPos),
+	('/geosjson', GeosJSON),
 	('/geos.*', Geos),
 	('/stylesheets.*', CSSfiles),
 	('/config.*', Config),
 	('/help.*', Help),
 	('/testbin.*', TestBin),
 	('/bingeos.*', BinGeos),
+	('/parsebingeos.*', ParseBinGeos),
 	('/map.*', Map),
+	('/raw', RawData),
 	],
 	debug=True
 )
