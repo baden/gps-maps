@@ -12,6 +12,10 @@ handlers:
   static_dir: js
   expiration: 30d
 
+- url: /images/(.*\.(gif|png|jpg|ico))
+  static_files: images/\1
+  upload: images/(.*\.(gif|png|jpg|ico))
+
 - url: /(.*\.(gif|png|jpg|ico))
   static_files: static/\1
   upload: static/(.*\.(gif|png|jpg|ico))
@@ -29,6 +33,30 @@ handlers:
 - url: /layout.html
   static_files: layout.html
   upload: layout.html
+
+- url: /chat
+  script: chat_wsh.py
+
+- url: /pyamftry
+  script: pyamftry.py
+
+- url: /chatpage
+  script: chat_wsh.py
+
+- url: /crossdomain.xml
+  static_files: crossdomain.xml
+  upload: crossdomain.xml
+
+- url: /test.html
+  static_files: test.html
+  upload: test.html
+
+- url: /test.swf
+  static_files: test.swf
+  upload: test.swf
+
+- url: /testqueue.*
+  script: testqueue.py
 
 - url: /.*
   script: gps-maps.py

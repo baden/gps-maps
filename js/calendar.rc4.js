@@ -3,6 +3,7 @@
 
 var Calendar = new Class({	
 
+	Implements: Options,
 	options: {
 		blocked: [], // blocked dates 
 		classes: [], // ['calendar', 'prev', 'next', 'month', 'year', 'today', 'invalid', 'valid', 'inactive', 'active', 'hover', 'hilite']
@@ -56,7 +57,9 @@ var Calendar = new Class({
 		}
 
 		// initialize fade method
-		this.fx = this.calendar.effect('opacity', { 
+		this.fx = function(from, to){
+		}
+/*		this.fx = this.calendar.effect('opacity', { 
 			onStart: function() { 
 				if (this.calendar.getStyle('opacity') == 0) { // show
 					if (window.ie6) { this.iframe.setStyle('display', 'block'); }
@@ -78,7 +81,7 @@ var Calendar = new Class({
 				}
 			}.bind(this)
 		});
-
+*/
 		// initialize drag method
 		if (window.Drag && this.options.draggable) {
 			this.drag = new Drag.Move(this.calendar, { 
@@ -207,7 +210,9 @@ var Calendar = new Class({
 
 		// 3. then we can further filter the limits by using the pre-existing values in the selects
 		cal.els.each(function(el) {	
-			if (el.getTag() == 'select') {		
+// getTag:function(){return this.tagName.toLowerCase();}
+//			if (el.getTag() == 'select') {		
+			if (el.tagName.toLowerCase() == 'select') {		
 				if (el.format.test('(y|Y)')) { // search for a year select
 					var years = [];
 
@@ -569,7 +574,8 @@ var Calendar = new Class({
 		
 		el.format = f;
 		
-		if (el.getTag() == 'select') { // select elements allow the user to manually set the date via select option
+//		if (el.getTag() == 'select') { // select elements allow the user to manually set the date via select option
+		if (el.tagName == 'select') { // select elements allow the user to manually set the date via select option
 			el.addEvent('change', function(cal) { this.changed(cal); }.pass(cal, this));
 		}
 		else { // input (type text) elements restrict the user to only setting the date via the calendar
@@ -777,7 +783,8 @@ var Calendar = new Class({
 			}
 			*/
 
-			if (el.getTag() == 'select' && el.format.test('^(d|j)$')) { // special case for days-only select
+//			if (el.getTag() == 'select' && el.format.test('^(d|j)$')) { // special case for days-only select
+			if (el.tagName.toLowerCase() == 'select' && el.format.test('^(d|j)$')) { // special case for days-only select
 				var d = this.value(cal);
 
 				if (!d) { d = el.value.toInt(); } // if the calendar doesn't have a set value, try to use value from select
@@ -984,7 +991,8 @@ var Calendar = new Class({
 		var years, months, days;
 
 		cal.els.each(function(el) {	
-			if (el.getTag() == 'select') {		
+//			if (el.getTag() == 'select') {		
+			if (el.tagName.toLowerCase() == 'select') {
 				if (el.format.test('(y|Y)')) { // search for a year select
 					years = [];
 
