@@ -1,0 +1,13 @@
+#Работа с SVN.
+
+= Введение =
+
+Тут буду писать заметки по командам svn.
+
+
+= Детали =
+
+Начнем, пожалуй, с получения актуальной версии проекта.
+{{{
+svn checkout https://gps-maps.googlecode.com/svn/trunk/ gps-maps --username baden.i.ua --password xxxxx
+}}}
