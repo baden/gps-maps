@@ -93,6 +93,10 @@ $("#menu-main").hover(function () {
 			//var data = "\x1D\x01\x12\x38\x2B\x00\x30\x18\x2C\x13\x23\x02\xD0\x24\x08\x00\x0B\x00\x00\x00\x47\x06"
 
 			//var data1 = data.encodeUTF8();
+			data = "";
+			for(i=0; i<256; i++){
+				data += String.fromCharCode(i);
+			}
 
 			//var data = new Blob();
 			//data.Type = 2;

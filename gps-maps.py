@@ -53,8 +53,8 @@ class DBGPSBin(db.Model):
 	user = db.ReferenceProperty(DBUser)
 	cdate = db.DateTimeProperty(auto_now_add=True)
 	dataid = db.IntegerProperty()
-#	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
-	data = db.TextProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
+	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
+	#data = db.TextProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
 
 class MainPage(webapp.RequestHandler):
 	def get(self):
@@ -687,13 +687,23 @@ class BinGeos(webapp.RequestHandler):
 		pdata = self.request.body
 
 		_log += '\nData ID: %d' % dataid
-		_log += '\nData size: %d' % len(pdata)
 
 		dataenc = self.request.get('enc')
 		if dataenc:
 			if dataenc == 'utf8':
-				pdata = pdata.decode('utf8')
-
+				bdata = pdata.decode('utf8')
+				pdata = ""
+				for data in bdata:
+					pdata += chr(ord(data))
+				logging.info('type = ')
+				logging.info(type(pdata))
+				logging.info(type(self.request.body))
+				#pdata = pdata.decode('utf8').encode('koi-8')
+				#pdata = str(pdata)
+				
+				pass
+		
+		_log += '\nData size: %d' % len(pdata)
 		#_log += '\nData (HEX):'
 		#for data in pdata:
 		#	_log += ' %02X' % ord(data)
@@ -711,7 +721,7 @@ class BinGeos(webapp.RequestHandler):
 			#	data = db.TextProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
 			newbin = DBGPSBin()
 			newbin.dataid = dataid
-			newbin.data = db.Text(pdata)
+			newbin.data = pdata #db.Text(pdata)
 			newbin.put()
 
 			_log += '\nSaved to DBGPSBin creating tasque'
@@ -741,8 +751,8 @@ class ParseBinGeos(webapp.RequestHandler):
 		if result:
 		#for result in results:
 			dataid = result.dataid
-			odata_s = unicode("")
-			odata_f = unicode("")
+			odata_s = str("")
+			odata_f = str("")
 			pdata = result.data
 			_log += '\nDATA ID: %d' % dataid
 			_log += '\nDATA LENGHT: %d' % len(pdata)
@@ -753,7 +763,7 @@ class ParseBinGeos(webapp.RequestHandler):
 			_log += '\nParsing...'
 
 			_log += 'spliting...'
-			parts = pdata.split(u'\xF2')
+			parts = pdata.split('\xF2')
 			_log += '%d patrs...' % len(parts)
 
 			if len(parts[0]) != 21:
