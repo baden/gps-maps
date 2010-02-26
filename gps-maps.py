@@ -56,6 +56,12 @@ class DBGPSBin(db.Model):
 	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
 	#data = db.TextProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
 
+class DBGPSBinParts(db.Model):
+	user = db.ReferenceProperty(DBUser)
+	cdate = db.DateTimeProperty(auto_now_add=True)
+	dataid = db.IntegerProperty()
+	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
+
 class MainPage(webapp.RequestHandler):
 	def get(self):
 
@@ -720,6 +726,7 @@ class BinGeos(webapp.RequestHandler):
 			#	#data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
 			#	data = db.TextProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
 			newbin = DBGPSBin()
+			newbin.user = userdb
 			newbin.dataid = dataid
 			newbin.data = pdata #db.Text(pdata)
 			newbin.put()
@@ -783,12 +790,66 @@ class ParseBinGeos(webapp.RequestHandler):
 				if len(part) == 21:
 					_log += '*'
 
+					_log += '\nLastPos:'
+					_log += '\n IMEI: %s\r\n' % result.user.imei
+
 					day = ord(part[0])
 					month = ord(part[1]) & 0x0F
 					year = (ord(part[1]) & 0xF0)/16 + 2010
 					hours = ord(part[2])
 					minutes = ord(part[3])
 					seconds = ord(part[4])
+					datestamp = datetime(year, month, day, hours, minutes, seconds)
+					#self.response.out.write('datetime: %s\r\n' % datestamp)
+					#_log += 'Datestamp: %s\r\n' % datestamp
+
+
+					latitude = float(ord(pdata[6])) + (float(ord(pdata[7])) + float(ord(pdata[8]) + ord(pdata[9])*256)/10000.0)/60.0
+					longitude = float(ord(pdata[10])) + (float(ord(pdata[11])) + float(ord(pdata[12]) + ord(pdata[13])*256)/10000.0)/60.0
+					if ord(pdata[5]) & 1:
+						latitude = - latitude
+					if ord(pdata[5]) & 2:
+						longitude = - longitude
+
+
+
+					sats = ord(pdata[14])
+
+					fix = 1
+					speed = float(ord(pdata[15])) + float(ord(pdata[16])) / 100.0;
+					course = float(ord(pdata[17])) + float(ord(pdata[18])) / 100.0;
+					altitude = float(ord(pdata[20]) + 256*ord(pdata[21])) / 10.0;
+
+					#in1 = float(self.request.get('in1'))*100.0/65535 
+					#in2 = float(self.request.get('in2'))*100.0/65535 
+					in1 = 0.0
+					in2 = 0.0
+
+
+					_log += '\n Date: %s' % datestamp.strftime("%d/%m/%Y %H:%M:%S")
+					_log += '\n Latitude: %.5f' % latitude
+					_log += '\n Longitude: %.5f' % longitude
+					_log += '\n Satelits: %d' % sats
+					_log += '\n Speed: %.5f' % speed
+					_log += '\n Course: %.5f' % course
+					_log += '\n Altitude: %.5f' % altitude
+			#self.response.out.write('data: %s\r\n' % pdata)
+					#self.response.out.write('longitude: %.2f\r\n' % longitude)
+
+					gpspoint = DBGPSPoint()
+					gpspoint.user = result.user
+					gpspoint.date = datestamp
+					#gpspoint.latitude = latitude
+					#gpspoint.longitude = longitude
+					#gpspoint.sats = sats
+					#gpspoint.fix = fix
+					#gpspoint.speed = speed
+					#gpspoint.course = course
+					#gpspoint.altitude = altitude
+					#gpspoint.in1 = in1
+					#gpspoint.in2 = in2
+					#gpspoint.put()
+
 				else:
 					_log += '\npat%d is corrupted' % position
 				position = position+1
