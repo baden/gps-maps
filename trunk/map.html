@@ -43,11 +43,11 @@
 			new google.maps.Point(16, 16));
 		var image2 = new google.maps.MarkerImage('stylesheets/marker2.png',
 			// This marker is 20 pixels wide by 32 pixels tall.
-			new google.maps.Size(16, 16),
+			new google.maps.Size(10, 10),
 			// The origin for this image is 0,0.
 			new google.maps.Point(0,0),
 			// The anchor for this image is the base of the flagpole at 0,32.
-			new google.maps.Point(8, 8));
+			new google.maps.Point(5, 5));
 /*		var shadow = new google.maps.MarkerImage('stylesheets/beachflag_shadow.png',
 			// The shadow image is larger in the horizontal dimension
 			// while the position and offset are the same as for the main image.
@@ -101,7 +101,7 @@
 				infowindow = new google.maps.InfoWindow({content: name});
 				infowindow.open(map, marker);
 			});
-			marker.setTitle("#" + name)
+			marker.setTitle(name)
 			return marker;
 		}
 
@@ -191,7 +191,16 @@
 						flightPlanCoordinates.push(pos);
 //						points = points + 1;
 //						path.insertAt(points, pos);
-						map.addMarker(createMarker(results[i].date, pos));
+						map.addMarker(createMarker(
+							'Дата:' + results[i].date +
+							'\nСкорость: ' + results[i].speed +
+							'\nНаправление: ' + results[i].course +
+							'\nДолгота: ' + results[i].lat +
+							'\nШирота: ' + results[i].long +
+							'\nДатчик 1: ' + results[i].in1 +
+							'\nДатчик 2: ' + results[i].in2
+							,
+							pos));
 //
 //						var marker = new google.maps.Marker({
 //							position: pos,

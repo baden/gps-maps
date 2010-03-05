@@ -9,8 +9,8 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="16"
-   height="16"
+   width="10"
+   height="10"
    id="svg2"
    version="1.1"
    inkscape:version="0.47 r22583"
@@ -34,19 +34,6 @@
        inkscape:vp_y="0 : 1000 : 0"
        inkscape:vp_x="0 : 0.5 : 1"
        sodipodi:type="inkscape:persp3d" />
-    <filter
-       inkscape:collect="always"
-       id="filter3676"
-       x="-0.18902954"
-       width="1.3780591"
-       y="-0.34025317"
-       height="1.6805063"
-       color-interpolation-filters="sRGB">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="0.70886076"
-         id="feGaussianBlur3678" />
-    </filter>
     <inkscape:perspective
        id="perspective3688"
        inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
@@ -54,19 +41,6 @@
        inkscape:vp_y="0 : 1000 : 0"
        inkscape:vp_x="0 : 0.5 : 1"
        sodipodi:type="inkscape:persp3d" />
-    <filter
-       color-interpolation-filters="sRGB"
-       inkscape:collect="always"
-       id="filter3676-7"
-       x="-0.18902954"
-       width="1.3780591"
-       y="-0.34025317"
-       height="1.6805063">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="0.70886076"
-         id="feGaussianBlur3678-4" />
-    </filter>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -76,8 +50,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="49.1875"
-     inkscape:cx="4.7573062"
-     inkscape:cy="8"
+     inkscape:cx="1.5146124"
+     inkscape:cy="4.747141"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -93,7 +67,10 @@
        empspacing="5"
        visible="true"
        enabled="true"
-       snapvisiblegridlinesonly="true" />
+       snapvisiblegridlinesonly="true"
+       spacingx="1px"
+       originx="0.5px"
+       originy="0.5px" />
   </sodipodi:namedview>
   <metadata
      id="metadata7">
@@ -111,16 +88,16 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(0,-1036.3622)">
+     transform="translate(0,-1042.3622)">
     <path
        sodipodi:type="arc"
-       style="fill:#00ff00;fill-opacity:0.49803922000000000;stroke:#000000;stroke-opacity:1;opacity:1"
+       style="fill:#00ff00;fill-opacity:0.49803922;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        id="path2824"
        sodipodi:cx="7.5"
        sodipodi:cy="7.5"
        sodipodi:rx="7.5"
        sodipodi:ry="7.5"
        d="m 15,7.5 a 7.5,7.5 0 1 1 -15,0 7.5,7.5 0 1 1 15,0 z"
-       transform="matrix(0.93333333,0,0,0.93333333,1,1037.3622)" />
+       transform="matrix(0.6,0,0,0.6,0.5,1042.8622)" />
   </g>
 </svg>

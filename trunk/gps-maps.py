@@ -54,7 +54,6 @@ class DBGPSBin(db.Model):
 	cdate = db.DateTimeProperty(auto_now_add=True)
 	dataid = db.IntegerProperty()
 	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
-	#data = db.TextProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
 
 class DBGPSBinParts(db.Model):
 	user = db.ReferenceProperty(DBUser)
@@ -583,9 +582,11 @@ class GeosJSON(webapp.RequestHandler):
 
 class DelGeos(webapp.RequestHandler):
 	def get(self):
-		geologs = DBGPSPoint.all().order('-date').fetch(100)
-		for geolog in geologs:
-			geolog.delete()
+		geologs = DBGPSPoint.all().order('-date').fetch(500)
+		if geologs:
+			db.delete(geologs)
+		#for geolog in geologs:
+		#	geolog.delete()
 		self.redirect("/geos")
 
 class CSSfiles(webapp.RequestHandler):
@@ -606,10 +607,76 @@ class CSSfiles(webapp.RequestHandler):
 			self.response.out.write('/* cannot open file %s */' % path)  
 		pass
 
+conf_parms = [
+	{
+		'name':'gps_V0', 'param': 'gps.V0',
+		'title': 'Минимальная фиксируемая скорость', 'units': 'км/ч',
+		'values': [10, 20, 10, 20],
+		'recomends': '5...20',
+		'range': '1...60',
+		'help': 'При скорости движения менее установленной\nсчитается что объект неподвижен.'
+	}, {
+		'name':'gps_T0', 'param': 'gps.T0',
+		'title': 'Время остановки для фиксации значения', 'units': 'сек',
+		'values': [10, 10, 10, 10],
+		'recomends': '5...60',
+		'range': '5...120',
+	}, {
+		'name':'gps_T1', 'param': 'gps.T1',
+		'title': 'Периодичность записи координат', 'units': 'сек',
+		'values': [10, 600, 10, 600],
+		'recomends': '5...20',
+		'range': '1...6000',
+	}, {
+		'name':'gps_T2', 'param': 'gps.T2',
+		'title': 'Периодичность отправки координат при движении объекта', 'units': 'мин',
+		'values': [1, 60, 1, 120],
+		'recomends': '1...240',
+		'range': '1...240',
+	}, {
+		'name':'gps_T3', 'param': 'gps.T3',
+		'title': 'Периодичность отправки координат при стоянке объекта', 'units': 'мин',
+		'values': [10, 120, 10, 240],
+		'recomends': '5...240',
+		'range': '1...240',
+	}, {
+		'name':'gps_T4', 'param': 'gps.T4',
+		'title': 'Время, через которое GPS-приемник обесточивается после остановки объекта', 'units': 'час',
+		'values': [12, 4, 12, 2],
+		'recomends': '1...24',
+		'range': '0...24',
+	}, {
+		'name':'gps_T5', 'param': 'gps.T5',
+		'title': 'Периодичность отправки последних координат в спящем режиме', 'units': 'час',
+		'values': [1, 2, 1, 4],
+		'recomends': '1...24',
+		'range': '1...24',
+	}, {
+		'name':'gps_S1', 'param': 'gps.S1',
+		'title': 'Минимальная фиксируемая дистанция', 'units': 'метры',
+		'values': [100, 1000, 100, 1000],
+		'recomends': '100...2000',
+		'range': '100...10000',
+	}, {
+		'name':'gps_A1', 'param': 'gps.A1',
+		'title': 'Минимальный фиксируемый угол направления движения', 'units': 'градусы',
+		'values': [5, 10, 5, 15],
+		'recomends': '5...15',
+		'range': '1...45',
+	}, {
+		'name':'gps_B1', 'param': 'gps.B1',
+		'title': 'Объем памяти, по заполнению которого производится принудительная отправка', 'units': 'КБайты',
+		'values': [512, 512, 512, 512],
+		'recomends': '5...512',
+		'range': '1...512',
+	},
+]
+
 class Config(webapp.RequestHandler):
 	def get(self):
 		template_values = {
 			'now': datetime.now(),
+			'configs': conf_parms,
 		}
 		path = os.path.join(os.path.dirname(__file__), 'config.html')
 		self.response.out.write(template.render(path, template_values))
@@ -733,8 +800,7 @@ class BinGeos(webapp.RequestHandler):
 
 			_log += '\nSaved to DBGPSBin creating tasque'
 
-
-			url = "/parsebingeos?dataid=%s" % dataid
+			url = "/parsebingeos?dataid=%s&key=%s" % (dataid, newbin.key())
 			#taskqueue.add(url = url % self.key().id(), method="GET", countdown=countdown)
 			countdown=0
 			taskqueue.add(url = url, method="GET", countdown=countdown)
@@ -746,6 +812,72 @@ class BinGeos(webapp.RequestHandler):
 		#_log += "\n {DATABASE PUT() DISABLED}"
 		logging.info(_log)
 
+def SaveGPSPointFromBin(pdata, result):
+	#logging.info('[%d]' % len(pdata))
+	#_log += '*'
+
+	#_log += '\nLastPos:'
+	#_log += '\n IMEI: %s\r\n' % result.user.imei
+
+	day = ord(pdata[0])
+	month = ord(pdata[1]) & 0x0F
+	year = (ord(pdata[1]) & 0xF0)/16 + 2010
+	hours = ord(pdata[2])
+	minutes = ord(pdata[3])
+	seconds = ord(pdata[4])
+	datestamp = datetime(year, month, day, hours, minutes, seconds)
+
+	latitude = float(ord(pdata[5])) + (float(ord(pdata[6])) + float(ord(pdata[7])*100 + ord(pdata[8]))/10000.0)/60.0
+	longitude = float(ord(pdata[9])) + (float(ord(pdata[10])) + float(ord(pdata[11])*100 + ord(pdata[12]))/10000.0)/60.0
+	if ord(pdata[13]) & 1:
+		latitude = - latitude
+	if ord(pdata[13]) & 2:
+		longitude = - longitude
+
+	sats = ord(pdata[14])
+
+	fix = 1
+	speed = float(ord(pdata[15])) + float(ord(pdata[16])) / 100.0;
+	course = float(ord(pdata[17])) + float(ord(pdata[18])) / 100.0;
+	altitude = 100.0 * float(ord(pdata[19]) + ord(pdata[20])) / 10.0;
+
+	if(ord(pdata[21])) != 255:	#CRC
+		#_log += '{CRC_ERROR}skiped'
+		return
+
+	if(ord(pdata[22])) != 255:	#CRC
+		#_log += '{CRC_ERROR}skiped'
+		return
+
+	#in1 = float(self.request.get('in1'))*100.0/65535 
+	#in2 = float(self.request.get('in2'))*100.0/65535 
+	in1 = 0.0
+	in2 = 0.0
+
+	#_log += '\n Date: %s' % datestamp.strftime("%d/%m/%Y %H:%M:%S")
+	#_log += '\n Latitude: %.5f' % latitude
+	#_log += '\n Longitude: %.5f' % longitude
+	#_log += '\n Satelits: %d' % sats
+	#_log += '\n Speed: %.5f' % speed
+	#_log += '\n Course: %.5f' % course
+	#_log += '\n Altitude: %.5f' % altitude
+	#logging.info('[%s]' % datestamp.strftime("%d/%m/%Y %H:%M:%S"))
+
+	gpspoint = DBGPSPoint()
+	gpspoint.user = result.user
+	gpspoint.date = datestamp
+	gpspoint.latitude = latitude
+	gpspoint.longitude = longitude
+	gpspoint.sats = sats
+	gpspoint.fix = fix
+	gpspoint.speed = speed
+	gpspoint.course = course
+	gpspoint.altitude = altitude
+	gpspoint.in1 = in1
+	gpspoint.in2 = in2
+	return gpspoint
+	#gpspoint.put()
+
 class ParseBinGeos(webapp.RequestHandler):
 	def get(self):
 		self.response.headers['Content-Type'] = 'text/plain'
@@ -753,16 +885,43 @@ class ParseBinGeos(webapp.RequestHandler):
 
 		_log = "PARSE_BIN_GEOS{_GET} ["
 
-		query = DBGPSBin().all()
-		result = query.get()
+		#query = DBGPSBin().all()
+		#result = query.get()
+		key = db.Key(self.request.get('key'))
+		#result = DBGPSBin().all().get(key)
+		result = db.get(key)
 		if result:
 		#for result in results:
 			dataid = result.dataid
-			odata_s = str("")
-			odata_f = str("")
 			pdata = result.data
 			_log += '\nDATA ID: %d' % dataid
 			_log += '\nDATA LENGHT: %d' % len(pdata)
+
+			if len(pdata) > (24*450):	# было 24*60 (1 минута на самой высокой скорости)
+				_log += '\nSPLIT BINDATA BY 10800 bytes (450 points):'
+				while len(pdata) > 0:
+					newbin = DBGPSBin()
+					newbin.user = result.user
+					newbin.dataid = result.dataid
+					newbin.data = pdata[:(24*450)]
+					newbin.put()
+
+					_log += '\nSaved to DBGPSBin creating tasque'
+
+					url = "/parsebingeos?dataid=%d&key=%s" % (dataid, newbin.key())
+					#taskqueue.add(url = url % self.key().id(), method="GET", countdown=countdown)
+					countdown=0
+					taskqueue.add(url = url, method="GET", countdown=countdown)
+
+					pdata = pdata[(24*450):]
+
+				self.response.out.write('SPLIT TASK\r\n')
+				result.delete()
+				_log += '\nOriginal data deleted.'
+				logging.info(_log)
+				return
+
+
 			#_log += '\nData (HEX):'
 			#for data in pdata:
 			#	_log += ' %02X' % ord(data)
@@ -773,83 +932,28 @@ class ParseBinGeos(webapp.RequestHandler):
 			parts = pdata.split('\xF2')
 			_log += '%d patrs...' % len(parts)
 
-			if len(parts[0]) != 21:
-				_log += 'pat[0] is cutted - its ok...'
-				odata_s = parts[0]
+			odata_s = None
+			odata_f = None
+			if len(parts[0]) < 23:
+				_log += 'pat[0](%d) is cutted - its ok...' % len(parts[0])
+				if len(parts[0]) != 0:
+					odata_s = parts[0]
 				del parts[0]
 
-			if len(parts[-1]) != 21:
-				_log += 'pat[-1] is cutted - its ok...'
-				odata_f = parts[-1]
-				del parts[-1]
+			if len(parts) > 0:
+				if len(parts[-1]) != 23:
+					_log += 'pat[-1] is cutted - its ok...'
+					odata_f = parts[-1]
+					del parts[-1]
 
 			_log += '%d patrs now...' % len(parts)
 
 			position = 0
+			points = []
 			for part in parts:
-				if len(part) == 21:
+				if len(part) == 23:
 					_log += '*'
-
-					_log += '\nLastPos:'
-					_log += '\n IMEI: %s\r\n' % result.user.imei
-
-					day = ord(part[0])
-					month = ord(part[1]) & 0x0F
-					year = (ord(part[1]) & 0xF0)/16 + 2010
-					hours = ord(part[2])
-					minutes = ord(part[3])
-					seconds = ord(part[4])
-					datestamp = datetime(year, month, day, hours, minutes, seconds)
-					#self.response.out.write('datetime: %s\r\n' % datestamp)
-					#_log += 'Datestamp: %s\r\n' % datestamp
-
-
-					latitude = float(ord(pdata[6])) + (float(ord(pdata[7])) + float(ord(pdata[8]) + ord(pdata[9])*256)/10000.0)/60.0
-					longitude = float(ord(pdata[10])) + (float(ord(pdata[11])) + float(ord(pdata[12]) + ord(pdata[13])*256)/10000.0)/60.0
-					if ord(pdata[5]) & 1:
-						latitude = - latitude
-					if ord(pdata[5]) & 2:
-						longitude = - longitude
-
-
-
-					sats = ord(pdata[14])
-
-					fix = 1
-					speed = float(ord(pdata[15])) + float(ord(pdata[16])) / 100.0;
-					course = float(ord(pdata[17])) + float(ord(pdata[18])) / 100.0;
-					altitude = float(ord(pdata[20]) + 256*ord(pdata[21])) / 10.0;
-
-					#in1 = float(self.request.get('in1'))*100.0/65535 
-					#in2 = float(self.request.get('in2'))*100.0/65535 
-					in1 = 0.0
-					in2 = 0.0
-
-
-					_log += '\n Date: %s' % datestamp.strftime("%d/%m/%Y %H:%M:%S")
-					_log += '\n Latitude: %.5f' % latitude
-					_log += '\n Longitude: %.5f' % longitude
-					_log += '\n Satelits: %d' % sats
-					_log += '\n Speed: %.5f' % speed
-					_log += '\n Course: %.5f' % course
-					_log += '\n Altitude: %.5f' % altitude
-			#self.response.out.write('data: %s\r\n' % pdata)
-					#self.response.out.write('longitude: %.2f\r\n' % longitude)
-
-					gpspoint = DBGPSPoint()
-					gpspoint.user = result.user
-					gpspoint.date = datestamp
-					#gpspoint.latitude = latitude
-					#gpspoint.longitude = longitude
-					#gpspoint.sats = sats
-					#gpspoint.fix = fix
-					#gpspoint.speed = speed
-					#gpspoint.course = course
-					#gpspoint.altitude = altitude
-					#gpspoint.in1 = in1
-					#gpspoint.in2 = in2
-					#gpspoint.put()
-
+					points.append(SaveGPSPointFromBin(part, result))
 				else:
 					_log += '\npat%d is corrupted' % position
 				position = position+1
@@ -860,9 +964,45 @@ class ParseBinGeos(webapp.RequestHandler):
 			#	if code == 0x20:
 			#		_log += 'cathed at position %d' % position
 			#	position = position+1
+			_log += '\nPurge future (break) cut-part...'
+			futparts = DBGPSBinParts().all().filter('user =', result.user).filter('dataid >=', result.dataid).fetch(10)
+			for futpart in futparts:
+				_log += '*'
+				futpart.delete()
 
+			if odata_s:
+				_log += '\nFinding prevoiuse cut-part...'
+				prevpart = DBGPSBinParts().all().filter('user =', result.user).filter('dataid =', result.dataid-1).get()
+				if prevpart:
+					_log += 'ok. mergin...'
+					part = prevpart.data + odata_s
+					if len(part) == 23:
+						_log += 'ok.'
+						points.append(SaveGPSPointFromBin(part, result))
+					else:
+						_log += 'fail [%d]:' % len(part)
+						for data in part:
+							_log += ' %02X' % ord(data)
+					prevpart.delete()
+				else:
+					_log += 'fail.'
+			#geologs = DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(300)
+			#	part1 = DBGPSBinParts()
+			#	part1.user = result.user
+			#	part1.dataid = result.dataid
+			#	part1.data = odata_s
+			#	part1.start = False
+			#	part1.put()
+			if odata_f:
+				part2 = DBGPSBinParts()
+				part2.user = result.user
+				part2.dataid = result.dataid
+				part2.data = odata_f
+				_log += '\nSaving cutting part.'
+				part2.put()
 
-			#result.delete()
+			db.put(points)		# Сохраним GPS-точки
+			result.delete()
 			self.response.out.write('OK\r\n')
 			_log += '\nData deleted.'
 			
@@ -945,6 +1085,18 @@ __hide2comment = """
 			#gpspoint.put()
 """
 
+class GetBinGeos(webapp.RequestHandler):
+	def get(self):
+		result = db.get(db.Key(self.request.get('key')))
+		if result:
+			body = result.data
+			self.response.headers['Content-Type'] = 'application/octet-stream'
+			self.response.headers['Content-Length'] = "%d" % len(body)
+			self.response.out.write(body)
+		else:
+			self.response.headers['Content-Type'] = 'text/plain'
+			self.response.out.write('NODATA\r\n')
+
 class Map(webapp.RequestHandler):
 	def get(self):
 		template_values = {
@@ -958,6 +1110,120 @@ class RawData(webapp.RequestHandler):
 		print "RAW DATA"
 		logging.info("DO RAW DATA")
 
+
+class DBGPSPoint2(db.Model):
+	user = db.ReferenceProperty(DBUser, name='a')
+	cdate = db.DateTimeProperty(auto_now_add=True, name='b')
+	date = db.DateTimeProperty(name='c')
+	latitude = db.FloatProperty(name='d')
+	longitude = db.FloatProperty(name='e')
+	sats = db.IntegerProperty(name='f')
+	fix = db.IntegerProperty(name='g')
+	speed = db.FloatProperty(name='h')
+	course = db.FloatProperty(name='i')
+	altitude = db.FloatProperty(name='j')
+	in1 = db.FloatProperty(name='k')		# Значение на аналоговом входе 1
+	in2 = db.FloatProperty(name='l')		# Значение на агалоговом входе 2
+	#power = db.FloatProperty()		# Уровень заряда батареи (на
+
+class Profiler():
+	def __init__(self, logging):
+		"""
+		@param encoder: Encoder containing the stream.
+		@type encoder: L{amf3.Encoder<pyamf.amf3.Encoder>}
+		"""
+		self.start_time = datetime.now()
+		self.logging = logging
+		self.logging.info("Profile start (%s)\n" % self.start_time.strftime("%H:%M:%S"))
+
+	def tick(self):
+		dif_time = datetime.now() - self.start_time
+		self.logging.info("Profile (+%.4fsec)\n" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+
+	def time(self):
+		dif_time = datetime.now() - self.start_time
+		return dif_time.seconds + float(dif_time.microseconds)/1000000.0
+		
+class TestDB(webapp.RequestHandler):
+	def create(self):
+		trect = DBGPSPoint2()
+		trect.date = datetime.now()
+		trect.latitude = 1.0
+		trect.longitude = 1.0
+		trect.sats = 1
+		trect.fix = 1
+		trect.speed = 1.0
+		trect.course = 1.0
+		trect.altitude = 1.0
+		trect.in1 = 1.0
+		trect.in2 = 1.0
+		trect.put()
+
+	def prepare(self):
+		trect = DBGPSPoint2()
+		trect.date = datetime.now()
+		trect.latitude = 1.0
+		trect.longitude = 1.0
+		trect.sats = 1
+		trect.fix = 1
+		trect.speed = 1.0
+		trect.course = 1.0
+		trect.altitude = 1.0
+		trect.in1 = 1.0
+		trect.in2 = 1.0
+		return trect
+
+	def get(self):
+		profiler = Profiler(logging)
+
+		cmd = self.request.get('cmd')
+		cnt = self.request.get('cnt')
+		batch = self.request.get('batch')
+		values = {
+			'now': datetime.now(),
+		}
+
+		answer = ''
+
+		if not cmd:
+			values['answer'] = 'NONE'
+			#self.response.headers['Content-Type'] = 'text/plain'
+			#self.response.out.write('NODATA\r\n')
+		else:
+			if cmd[:6] == "create":
+				answer = 'создания'
+				if batch:
+					trects = []
+					for i in xrange(int(batch)):
+						trects.append(self.prepare())
+					db.put(trects)
+				elif cnt:
+					for i in xrange(int(cnt)):
+						self.create()
+				else:
+					self.create()
+			elif cmd[:6] == "delete":
+				answer = 'удаления'
+				#if not cnt:
+				#	cnt = '1'
+				if cnt:
+					results = DBGPSPoint2().all().fetch(int(cnt))
+					for result in results:
+						result.delete()
+				elif batch:
+					results = DBGPSPoint2().all().fetch(int(batch))
+					if results:
+						db.delete(results)
+				else:
+					results = DBGPSPoint2().all().fetch(1)
+					if results:
+						results[0].delete()
+
+		values['runtime'] = profiler.time() * 1000
+		values['answer'] = answer
+		path = os.path.join(os.path.dirname(__file__), 'testdb.html')
+		self.response.out.write(template.render(path, values))
+		#self.redirect('testdb.html')
 
 #class myWSGIApplication(webapp.WSGIApplication):
 #	def __call__(self, environ, start_response):
@@ -984,8 +1250,10 @@ application = webapp.WSGIApplication(
 	('/testbin.*', TestBin),
 	('/bingeos.*', BinGeos),
 	('/parsebingeos.*', ParseBinGeos),
+	('/getbin.*', GetBinGeos),
 	('/map.*', Map),
 	('/raw', RawData),
+	('/testdb.*', TestDB),
 	],
 	debug=True
 )

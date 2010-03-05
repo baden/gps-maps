@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application_name }}     {% endblock %}
+
+{% block head %}
+  <style type="text/css">{% include "css/config.css" %}</style>
+{% endblock %}
+
+{% block body %}
+	<a href="testdb">Главная.</a><br />
+	<a href="testdb?cmd=create">[ Создание записи. ]</a>
+	<br />
+	<a href="testdb?cmd=create&cnt=100">[ Создание 100 записей поштучно. ]</a>
+	<a href="testdb?cmd=create&cnt=200">[ Создание 200 записей поштучно. ]</a>
+	<a href="testdb?cmd=create&cnt=500">[ Создание 500 записей поштучно. ]</a>
+	<br />
+	<a href="testdb?cmd=create&batch=100">[ Создание 100 записей пакетом. ]</a>
+	<a href="testdb?cmd=create&batch=200">[ Создание 200 записей пакетом. ]</a>
+	<a href="testdb?cmd=create&batch=500">[ Создание 500 записей пакетом. ]</a>
+	<br />
+	<a href="testdb?cmd=delete&cnt=100">[ Удалить 100 записей. ]</a>
+	<a href="testdb?cmd=delete&cnt=500">[ Удалить 500 записей. ]</a>
+	<br />
+	<a href="testdb?cmd=delete&batch=100">[ Удалить 100 записей пакетом. ]</a>
+	<a href="testdb?cmd=delete&batch=500">[ Удалить 500 записей пакетом. ]</a>
+	<br />
+	<br/>
+	Операция {{ answer }} выполнена за {{ runtime }} миллисекунд
+{% endblock %}
+
+{% block final %}
+{% endblock %}
