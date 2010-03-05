@@ -120,7 +120,7 @@ $("#menu-main").hover(function () {
 		<a class="pushLink" href="regid?imei=123456789013&phone=%2B380679332333&pass=333">+</a>
 		<a class="pushLink" href="regid?imei=123456789013&phone=%2B380679332333&pass=343">+</a>
 		<a class="pushLink" href="users">Просмотреть список пользователей</a>
-		<br>
+		<br />
 
         <a class="pushLink" href="/addlog?imei=123456789013&text=Sample%20message">Добавление в лог методом GET</a>
         <a class="pushLink" href="/lastpos?imei=123456789013&datetime={{ now|date:"dmyGis" }}&latitude=48.4082&longitude=35.0492&sats=4&fix=2&speed=0.0&course=0.0&alt=150.0&in1=0&in2=234">Добавление координат методом GET</a>
@@ -141,10 +141,12 @@ $("#menu-main").hover(function () {
             <div><input type="submit" value="Sign Guestbook"></div>
         </form>
 
-        <a href="/addlog?id=1&text=Sample%20message">Протестировать добавление в лог методом POST</a><br>
+        <a href="/addlog?id=1&text=Sample%20message">Протестировать добавление в лог методом POST</a><br />
 		<a href="http://localhost/_ah/admin/datastore" target="_blank">Админка на локалхосте</a>
 		<a href="http://localhost:8080/_ah/admin/datastore" target="_blank">(порт 8080)</a>
 		<a href="https://appengine.google.com/dashboard?&app_id=gps-maps" target="_blank">Админка в онлайн</a>
+		<br />
+		<a href="testdb">Операции с базой данных</a>
 		
 
 	<h1>Меню пользователя</h1>
@@ -161,7 +163,7 @@ $("#menu-main").hover(function () {
         </div-->
 
 	<h1>Меню инициализации</h1>
-        <a class="pushLink" href="init.php">[ <span>Очистить базу данных/создать базу данных</span> ]</a><br>
+        <a class="pushLink" href="init.php">[ <span>Очистить базу данных/создать базу данных</span> ]</a><br />
 
 {% endblock %}
 

@@ -1,9 +1,33 @@
 {% extends "base.html" %}
-
+	
 {% block title %}{{ application_name }} Конфигурация системы {% endblock %}
 
 {% block head %}
-  <style type="text/css">{% include "css/config.css" %}</style>
+  <style type="text/css">{% include "css/config.css" %}
+
+input.digits {
+	text-align: right;
+}
+
+form table tr th{
+	font-size: 0.9em;
+}
+
+</style>
+
+<script type="text/javascript">
+userconfigs = {}
+function ChangeParam(me)
+{
+	userconfigs[me.id] = me.value;
+	userstr = ""
+	for (userconfig in userconfigs){
+		userstr += userconfig + "="+ userconfigs[userconfig] + ";";
+	}
+	$("#userconfig").html(userstr.replace(/_/g,"."));
+}
+</script>
+
 {% endblock %}
 
 {% block body %}
@@ -11,69 +35,36 @@
 	<form action="/config" enctype="multipart/form-data" method="post" style="border:solid;">
 		<table>
 			<tr>
-				<th>Задать</th>
-				<th>Параметр</th>
-				<th>Значение</th>
-				<th>Ед. измерения</th>
-				<th>Рекомендуемое значение</th>
-				<th>Диапазон</th>
-				<th>Примечание</th>
+				<th rowspan="2">Задать</th>
+				<th rowspan="2">Параметр</th>
+				<th colspan="4">Значение</th>
+				<th rowspan="2">Ед. измерения</th>
+				<th rowspan="2">Рекомендуемое значение</th>
+				<th rowspan="2">Диапазон</th>
+				<th rowspan="2">Прим.</th>
 			</tr>
 			<tr>
-				<td><input type="checkbox" id="distid"></td>
-				<td><label for="distid">Дистанция&nbsp;1</label></td>
-				<td><input type="text" value="500"></td>
-				<td>метры</td>
-				<td>100...10000</td>
-				<td>100...65000</td>
-				<td><a class="Help" href="help?topic=config&subtopic=param01" title="Изменения менее установленных не будут добавлены в лог.">?</a></td>
+				<th><div title="Профиль №1. Внешнее питание >10В.">P1</div></th>
+				<th><div title="Профиль №1. Внешнее питание 6..10В.">P2</div></th>
+				<th><div title="Внешнее питание отключено. Внутреннее питание >3.8В.">P3</div></th>
+				<th><div title="Внешнее питание отключено. Внутреннее питание <3.8В.">P4</div></th>
 			</tr>
+			{% for config in configs %}
 			<tr>
-				<td><input type="checkbox" id="distid"></td>
-				<td><label for="distid">Дистанция&nbsp;2</label></td>
-				<td><input type="text" value="5000"></td>
-				<td>метры</td>
-				<td>100...10000</td>
-				<td>100...65000</td>
-				<td><a class="Help" href="help?topic=config&subtopic=param01" title="Изменения менее установленных не будут добавлены в лог.">?</a></td>
+				<td><input type="checkbox" id="{{ config.name }}"></td>
+				<td style="text-align:left;"><label for="{{ config.name }}">{{ config.title }}</label></td>
+				<td><input id="{{ config.name }}_0" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.0 }}" onchange="ChangeParam(this)"></td>
+				<td><input id="{{ config.name }}_1" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.1 }}" onchange="ChangeParam(this)"></td>
+				<td><input id="{{ config.name }}_2" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.2 }}" onchange="ChangeParam(this)"></td>
+				<td><input id="{{ config.name }}_3" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.3 }}" onchange="ChangeParam(this)"></td>
+				<td><label for="{{ config.name }}">{{ config.units }}</label></td>
+				<td><label for="{{ config.name }}">{{ config.recomends }}</label></td>
+				<td><label for="{{ config.name }}">{{ config.range }}</label></td>
+				<td><a class="Help" href="help?topic=config&subtopic=param01" title="{{ config.help }}">?</a></td>
 			</tr>
-			<tr>
-				<td><input type="checkbox" id="distid"></td>
-				<td><label for="distid">Период&nbsp;1</label></td>
-				<td><input type="text" value="60"></td>
-				<td>секунды</td>
-				<td>60...3600</td>
-				<td>1...65000</td>
-				<td><a class="Help" href="help?topic=config&subtopic=param01" title="Изменения менее установленных не будут добавлены в лог.">?</a></td>
-			</tr>
-			<tr>
-				<td><input type="checkbox" id="distid"></td>
-				<td><label for="distid">Период&nbsp;2</label></td>
-				<td><input type="text" value="3600"></td>
-				<td>секунды</td>
-				<td>60...3600</td>
-				<td>1...65000</td>
-				<td><a class="Help" href="help?topic=config&subtopic=param01" title="Изменения менее установленных не будут добавлены в лог.">?</a></td>
-			</tr>
-			<tr>
-				<td><input type="checkbox" id="distid"></td>
-				<td><label for="distid">Угол&nbsp;1</label></td>
-				<td><input type="text" value="10"></td>
-				<td>градусы</td>
-				<td>5...30</td>
-				<td>1...180</td>
-				<td><a class="Help" href="help?topic=config&subtopic=param01" title="Если направление движение изменяется незначительно, то данные не будут добавлены в лог.">?</a></td>
-			</tr>
-			<tr>
-				<td><input type="checkbox" id="distid"></td>
-				<td><label for="distid">Часовой&nbsp;пояс</label></td>
-				<td><input type="text" value="2"></td>
-				<td>часовой пояс</td>
-				<td>-12...13</td>
-				<td>-12...13</td>
-				<td><a class="Help" href="help?topic=config&subtopic=param01" title="Можно задавать дробные значения, например 6.5 означает +06:30">?</a></td>
-			</tr>
+			{% endfor %}
 		</table>
+            <div id="userconfig">None;</div>
             <div><label>Дополнительные команды:</label></div>
             <div><textarea name="custom" rows="3" style="width:98%;" onfocus="this.form.submit.disabled=0"></textarea></div>
             <div><input type="submit" name="submit" value="Поставить в очередь." disabled></div>
