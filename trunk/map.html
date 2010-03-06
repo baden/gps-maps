@@ -6,7 +6,11 @@
 {% block head %}
   <!--meta http-equiv="refresh" content="10"-->
   <!--style type="text/css">{% include "css/geos.css" %}</style-->
-  <style type="text/css">{% include "css/map.css" %}</style>
+  <style type="text/css">{% include "css/map.css" %}
+.sm-button {
+	background-color: #C0C0FF;
+}
+  </style>
   <!--link type="text/css" rel="stylesheet" href="stylesheets/calendar.css" /-->
   <link type="text/css" rel="stylesheet" href="stylesheets/ui.all.css" />
 
@@ -140,26 +144,18 @@
 
 			//$("#progress").html("Загружено...");
 
+			$('#seeprev').click(function() {
+				loadPoints("geosjson?imei=123456789013&last=100&callback=?");
+			});
 		});
 
-		function loadPoints() {
+		function loadPoints(url) {
 			$("#progress").html("Ожидайте...");
-//			var url = "http://ajax.googleapis.com/ajax/services/search/web?q=google&v=1.0&callback=?";
-			var datefrom = document.getElementById('datepickerfrom').value.replace(/[\/]/g,"") +
-				document.getElementById('timefrom').value.replace(/[\:]/g,"");
-			
-			var dateto = document.getElementById('datepickerto').value.replace(/[\/]/g,"") +
-				document.getElementById('timeto').value.replace(/[\:]/g,"");
-			
-			var url = "geosjson?imei=123456789013&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
-//			var url = "http://google.com";
 
-// Clear markers & polylines
 			$("#progress").html("Удаляем старые...");
 			//google.maps.Map
 
 			$("#progress").html("Загружаем новые...");
-
 			var flightPlanCoordinates = [];
 
 			$.getJSON(url, function (data) {
@@ -178,6 +174,8 @@
 						map.addMarker(createMarker("+", pos));
 					}
 */
+					var datemax = results[0].day;
+					var datemin = results[results.length-1].day;
 					for (var i=0; i < results.length; i++) {
 //						$("#progress").html("Загружаем новые (" + i + ")");
 						// Display each result however you wish
@@ -222,10 +220,45 @@
 					flightPath.setMap(map);
 
 					document.getElementById('points').innerHTML = flightPlanCoordinates.length;
+					var now = new Date()
+					var from = new Date(datemin);
+
+					$("#progress").html("Завершено.<br/><div style='font-size: 0.8em;'>Показано " + flightPlanCoordinates.length + " точек с<br/>" + datemin + "<br/>по<br/>" + datemax + "</div>"
+					+ datemin.replace(/.* /,"") +
+					"<br>Now:" + now.getUTCDate() + '/' + now.getUTCMonth() + "/" + now.getUTCFullYear() +
+					" " + now.getUTCHours() + ":" + now.getUTCMinutes()
+					+"<br/>[a]" + from
+					+"<br/>[b]" + from.toUTCString()
+					);
+					//$("#datepickerfrom").datepicker('setDate', datemin.replace(/ .*/,""));
+
+
+					$("#datepickerfrom").datepicker('setDate', new Date(datemin));
+					document.getElementById('timefrom').value = datemin.replace(/.* /,"");
+
+					$("#datepickerto").datepicker('setDate', new Date(datemax));
+					document.getElementById('timeto').value = datemax.replace(/.* /,"");
 				} else {
 					$("#progress").html("Ошибка.");
 				}
 			});
+		}
+
+		function lastPoints() {
+			loadPoints("geosjson?imei=123456789013&last=100&callback=?");
+		}
+
+		function datePoints() {
+
+			var datefrom = document.getElementById('datepickerfrom').value.replace(/[\/]/g,"") +
+				document.getElementById('timefrom').value.replace(/[\:]/g,"");
+			
+			var dateto = document.getElementById('datepickerto').value.replace(/[\/]/g,"") +
+				document.getElementById('timeto').value.replace(/[\:]/g,"");
+			
+			loadPoints("geosjson?imei=123456789013&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
+			//var url = "geosjson?imei=123456789013&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
+
 		}
 	// Define a property to hold the Home state
 	HomeControl.prototype.home_ = null;
@@ -346,10 +379,13 @@
 
 	function Repair() {
 		repaircnt = repaircnt + 1;
-		$("#progress").html("Repair:" + repaircnt);
+		//$("#progress").html("Repair:" + repaircnt);
 	}
 
 	function initialize() {
+//		$('#seeprev').click(function() {
+//			alert('Clicked');
+//		});
 //		$(window).resize(function(){
 //			alert("Stop it!");
 //		});
@@ -393,7 +429,9 @@
 //		var path = poly.getPath();
 //		path.insertAt(pathCoordinates.length, new google.maps.LatLng(obj1x, obj1y));
 		google.maps.event.addListener(map, "idle", function(){Repair();});
-		setTimeout(loadPoints, 200);
+//		setTimeout(loadPoints, 200);
+		setTimeout(lastPoints, 200);
+		
 
 //		map.controls[google.maps.ControlPosition.TOP_RIGHT].push(homeControlDiv);
 	}
@@ -496,7 +534,7 @@
 		}
 		function dateshow(obj) {
 //			periodicalApp();
-			loadPoints();
+			datePoints();
 		}
 	</script>
 
@@ -573,6 +611,7 @@
 			</tr>
 		</table>
 		</form>
+		<div class="sm-button" id="seeprev">Предыдущие 100</div>
 	</div>
 	<div style="background: white;">Точек:<div id="points" style="float: right;">0</div></div>
 	<div id="progress" style="background: lime;">Загрузка, ждите...</div>

@@ -436,20 +436,25 @@ class GeosJSON(webapp.RequestHandler):
 			datefrom = datetime.strptime(datefrom_s, "%d%m%Y%H%M")
 		else:
 			datefrom = datetime.now()
+
 		dateto_s = self.request.get('dateto')
 		if dateto_s:
 			dateto = datetime.strptime(dateto_s, "%d%m%Y%H%M")
 		else:
 			dateto = datetime.now()
 
+		last = self.request.get('last')
+		if last:
+			geologs = DBGPSPoint.all().filter('user =', userdb).filter('date <=', dateto).order('-date').fetch(int(last))
+		else:
+			geologs = DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(300)
+
 		self.response.out.write("// User imei: %s\r// Date from: %s\r// Date to: %s\r" % (userdb.imei, datefrom, dateto))
 
 #.filter('date <=', datetime.strptime(datemark, "%Y%m%d%H%M%S%f"))
 		#geologs = DBGPSPoint.all().order('-date').filter('user =', userdb)
-		geologs = DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(300)
 		#geologs = DBGPSPoint.all().order('-date').fetch(500)
 		#geologs = DBGPSPoint.all().order('-date').fetch(MAXLOGS+1)
-
 
 		dif_time = datetime.now() - start_time
 		logging.info("GeosJSON db ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
@@ -458,7 +463,8 @@ class GeosJSON(webapp.RequestHandler):
 
 		for geolog in geologs:
 			result = {
-				"date": geolog.date.strftime("%d/%m/%Y %H:%M"),
+				"date": geolog.date.strftime("%d/%m/%Y %H:%M:%S"),
+				"day": geolog.date.strftime("%m/%d/%Y %H:%M"),
 				"lat": geolog.latitude,
 				"long": geolog.longitude,
 				"sats": geolog.sats,

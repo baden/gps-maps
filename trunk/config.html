@@ -9,6 +9,13 @@ input.digits {
 	text-align: right;
 }
 
+input.compl {
+	//color: green;
+	text-align: right;
+	font-weight: bold;
+	background: lime;
+}
+
 form table tr th{
 	font-size: 0.9em;
 }
@@ -25,6 +32,8 @@ function ChangeParam(me)
 		userstr += userconfig + "="+ userconfigs[userconfig] + ";";
 	}
 	$("#userconfig").html(userstr.replace(/_/g,"."));
+	//$(me).style("text-align: left;");
+	me.className = "compl";
 }
 </script>
 
@@ -35,10 +44,9 @@ function ChangeParam(me)
 	<form action="/config" enctype="multipart/form-data" method="post" style="border:solid;">
 		<table>
 			<tr>
-				<th rowspan="2">Задать</th>
 				<th rowspan="2">Параметр</th>
 				<th colspan="4">Значение</th>
-				<th rowspan="2">Ед. измерения</th>
+				<th rowspan="2">Ед. изм.</th>
 				<th rowspan="2">Рекомендуемое значение</th>
 				<th rowspan="2">Диапазон</th>
 				<th rowspan="2">Прим.</th>
@@ -51,15 +59,14 @@ function ChangeParam(me)
 			</tr>
 			{% for config in configs %}
 			<tr>
-				<td><input type="checkbox" id="{{ config.name }}"></td>
-				<td style="text-align:left;"><label for="{{ config.name }}">{{ config.title }}</label></td>
+				<td style="text-align:left;"><label>{{ config.title }}</label></td>
 				<td><input id="{{ config.name }}_0" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.0 }}" onchange="ChangeParam(this)"></td>
 				<td><input id="{{ config.name }}_1" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.1 }}" onchange="ChangeParam(this)"></td>
 				<td><input id="{{ config.name }}_2" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.2 }}" onchange="ChangeParam(this)"></td>
 				<td><input id="{{ config.name }}_3" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.3 }}" onchange="ChangeParam(this)"></td>
-				<td><label for="{{ config.name }}">{{ config.units }}</label></td>
-				<td><label for="{{ config.name }}">{{ config.recomends }}</label></td>
-				<td><label for="{{ config.name }}">{{ config.range }}</label></td>
+				<td><label>{{ config.units }}</label></td>
+				<td><label>{{ config.recomends }}</label></td>
+				<td><label>{{ config.range }}</label></td>
 				<td><a class="Help" href="help?topic=config&subtopic=param01" title="{{ config.help }}">?</a></td>
 			</tr>
 			{% endfor %}
