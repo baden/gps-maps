@@ -25,8 +25,10 @@ $("#menu-main").hover(function () {
 {% endblock %}
 
 {% block head %}
+  <link type="text/css" rel="stylesheet" href="stylesheets/ui.all.css" />
   <style type="text/css">{% include "css/index.css" %}</style>
 	<style type="text/css">
+
 </style>
 
 	<script type="text/javascript" language="JavaScript">
@@ -105,14 +107,76 @@ $("#menu-main").hover(function () {
 			MakeBinRequest('bingeos?imei=123456789012&enc=utf8&dataid=' + dataid.toString(16).toUpperCase(), data);
 			dataid++;
 		}
+	$(function() {
+		$("#dialog").dialog("destroy");
+		$("#dialog-modal").dialog({
+			height: 140,
+			modal: true,
+			autoOpen: false,
+			buttons: {
+				'Да, я уверен.': function() {
+					var imei = $("#imei").html();
+					$.getJSON("/system?cmd=del&imei=" + imei, function (data) {
+						window.location = "/";
+					});
+					$(this).dialog('close');
+				},
+				Cancel: function() {
+					$(this).dialog('close');
+				}
+			}
+		});
+	});
+
+		function dodel(imei) {
+		// a workaround for a flaw in the demo system (http://dev.jqueryui.com/ticket/4375), ignore!
+			$("#imei").html(imei);
+			$("#dialog-modal").dialog('open');
+	
+		}
 	</script>
 {% endblock %}
 
 {% block body %}
 	<h1>Главное меню</h1>
         <!--a class="pushLink" href="test.php">[ <span>Тест</span> ]</a><br-->
-        <a class="pushLink" href="login.php">[ <span>Войти под своим именем</span> ]</a>
+        <!--a class="pushLink" href="login.php">[ <span>Войти под своим именем</span> ]</a-->
+	<div style="position:absolute; right: 10px; top: 10px;">
+		Вы вошли как: <b>{{ username }}</b>
+	        <a class="smallButton" href="{{ login_url }}" title="Войти под другим именем">X</a>
+	</div>
+	<br />
         <!--a class="pushLink" href="register.php">[ <span>Зарегестрироваться в системе</span> ]</a><br-->
+
+	<h2>Наблюдаемые системы:</h2>
+	<table>
+		<tr>
+			<th>IMEI</th>
+			<th>Номер телефона</th>
+			<th>Описание</th>
+			<th title="Карта">M</th>
+			<th title="Конфигурация">C</th>
+			<th title="Удаление">X</th>
+		</tr>
+        {% for user in users %}
+		<tr>
+			<td>{{ user.imei }}</td>
+			<td>{{ user.phone }}</td>
+			<td>{{ user.desc }}</td>
+			<td><a href="map?imei={{ user.imei }}" title="Посмотреть положение системы">M</a></td>
+			<td><a href="config&imei={{ user.imei }}" title="Изменить параметры системы">С</a></td>
+			<td><a href="javascript:dodel({{ user.imei }});" title="Отказаться от слежения за этой системой">X</a></td>
+		</tr>
+	{% endfor %}
+
+	</table>
+
+	<div id="dialog-modal" title="Внимание!!!">
+		<p>Вы действительно хотите отказаться от слежения за системой?</p>
+		<div id="imei">111</div>
+	</div>
+
+	<a class="pushLink" href="system?cmd=add">Добавить систему</a>
 
 	<h1>Тестовые функции</h1>
 		<a class="pushLink" href="regid?imei=123456789012&phone=%2B380679332332&pass=333">Регистрация пользователя</a>

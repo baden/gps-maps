@@ -58,5 +58,13 @@ handlers:
 - url: /testqueue.*
   script: testqueue.py
 
+- url: /stats.*
+  script: $PYTHON_LIB/google/appengine/ext/appstats/ui.py
+
 - url: /.*
   script: gps-maps.py
+
+admin_console:
+  pages:
+  - name: Appstats
+    url: /stats

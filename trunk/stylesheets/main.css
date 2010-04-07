@@ -153,6 +153,21 @@ a:hover.pushLink {
 }
 
 
+a.smallButton {
+    padding: 0px 2px 0px 2px;
+    font-weight: bold;
+    text-decoration: none;
+    border: 1px solid black;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+}
+
+a:hover.smallButton {
+    background-color: #8080FF;
+    color: white;
+}
+
 a.Prev, a.Next {
     padding: 4px 10px 4px 10px;
 	background-color: white;

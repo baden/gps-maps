@@ -63,37 +63,28 @@ class DBGPSBinParts(db.Model):
 
 class MainPage(webapp.RequestHandler):
 	def get(self):
+		user = users.get_current_user()
 
-		greetings_query = Greeting.all().order('-date')
-		greetings = greetings_query.fetch(10, offset=0)
-
-		#now_date = date.today()
-		#now_time = datetime.now()
-		#datetimenow = datetime.now().strftime("%d%m%y%H%M%S.%f") 
-
-		if users.get_current_user():
-			url = users.create_logout_url(self.request.uri)
-			url_linktext = 'Logout'
+		if user:
+			#url = users.create_logout_url(self.request.uri)
+			login_url = users.create_login_url(self.request.uri)
+			username = user.nickname()
 		else:
-			url = users.create_login_url(self.request.uri)
-			url_linktext = 'Login'
+			self.response.out.write("<html><body>")
+			self.response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
+			self.response.out.write("Нажмите <a href=" + users.create_login_url(self.request.uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
+			self.response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
+			self.response.out.write("</body></html>")
+			#self.redirect(users.create_login_url(self.request.uri))
+			return
 
-		image_upload_form = """
-			<form action="/sign" enctype="multipart/form-data" method="post">
-			<div><label>Message:</label></div>
-			<div><textarea name="content" rows="3" cols="60"></textarea></div>
-			<div><label>Avatar:</label></div>
-			<div><input type="file" name="img"/><</div>
-			<div><input type="submit" value="Sign Guestbook"></div>
-			</form>
-			"""
+		allusers = DBUser.all().fetch(100)
 
 		template_values = {
-			'greetings': greetings,
-			'url': url,
-			'url_linktext': url_linktext,
+			'login_url': login_url,
+			'username': username,
 			'now': datetime.now(),
-			'image_upload_form': image_upload_form,
+			'users': allusers,
 		}
 
 		#logging.warning("Test warning logging.");
@@ -104,6 +95,20 @@ class MainPage(webapp.RequestHandler):
 
 		path = os.path.join(os.path.dirname(__file__), 'index.html')
 		self.response.out.write(template.render(path, template_values))
+
+class System(webapp.RequestHandler):
+	def get(self):
+		#self.response.headers['Content-Type'] = 'text/plain'	#minimizing data
+		self.response.headers['Content-Type']   = 'text/javascript; charset=utf-8'
+		callback = self.request.get('callback')
+		jsonresp = {
+			"responseData": {
+				"answer": "ok",
+			}
+		}
+
+		nejson = json.dumps(jsonresp)
+		self.response.out.write(callback + "(" + nejson + ")\r")
 
 class Guestbook(webapp.RequestHandler):
 	def post(self):
@@ -125,7 +130,8 @@ def getUser(request):
 		#self.response.out.write('Get by id (%d)\r\n' % userid)
 
 	if uimei:
-		userdbq = DBUser().all().filter('imei =', uimei).fetch(2)
+		userdbq = DBUser().all().filter('imei =', uimei).fetch(1)
+		#userdbq = DBUser().all().filter('imei =', uimei).get()
 		if userdbq:
 			userdb = userdbq[0] 
 			#self.response.out.write('Get by imei (%s)\r\n' % uimei)
@@ -433,18 +439,23 @@ class GeosJSON(webapp.RequestHandler):
 
 		datefrom_s = self.request.get('datefrom')
 		if datefrom_s:
-			datefrom = datetime.strptime(datefrom_s, "%d%m%Y%H%M")
+			datefrom = datetime.strptime(datefrom_s, "%d%m%Y%H%M%S")
 		else:
 			datefrom = datetime.now()
 
+		logging.info("GeosJSON datefrom: %s" % datefrom)
+
 		dateto_s = self.request.get('dateto')
 		if dateto_s:
-			dateto = datetime.strptime(dateto_s, "%d%m%Y%H%M")
+			dateto = datetime.strptime(dateto_s, "%d%m%Y%H%M%S")
 		else:
 			dateto = datetime.now()
 
+		logging.info("GeosJSON dateto: %s" % dateto)
+
 		last = self.request.get('last')
 		if last:
+			logging.info("GeosJSON last: %s" % last)
 			geologs = DBGPSPoint.all().filter('user =', userdb).filter('date <=', dateto).order('-date').fetch(int(last))
 		else:
 			geologs = DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(300)
@@ -489,7 +500,16 @@ class GeosJSON(webapp.RequestHandler):
 			#cdate = db.DateTimeProperty(auto_now_add=True)
 			#geolog.sdate = geolog.cdate.strftime("%d/%m/%Y %H:%M") 
 
-		jsonresp = {"responseData": {"results": results, "config": 0}}
+		jsonresp = {
+			"responseData": {
+				"results": results, 
+				"config": 0,
+				"dateminjs": geologs[-1].date.strftime("%m/%d/%Y %H:%M"),
+				"datemaxjs": geologs[0].date.strftime("%m/%d/%Y %H:%M"),
+				"datemin": geologs[-1].date.strftime("%d/%m/%Y %H:%M:%S"),
+				"datemax": geologs[0].date.strftime("%d/%m/%Y %H:%M:%S"),
+			}
+		}
 
 		dif_time = datetime.now() - start_time
 		logging.info("GeosJSON response ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
@@ -500,6 +520,9 @@ class GeosJSON(webapp.RequestHandler):
 
 		dif_time = datetime.now() - start_time
 		logging.info("GeosJSON json-out ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+
+		logging.info("GeosJSON data: %d values" % len(results))
+
 		return
 
 		self.response.out.write("// Old version:\r")
@@ -680,9 +703,11 @@ conf_parms = [
 
 class Config(webapp.RequestHandler):
 	def get(self):
+		allusers = DBUser.all().fetch(100)
 		template_values = {
 			'now': datetime.now(),
 			'configs': conf_parms,
+			'users': allusers,
 		}
 		path = os.path.join(os.path.dirname(__file__), 'config.html')
 		self.response.out.write(template.render(path, template_values))
@@ -1105,7 +1130,9 @@ class GetBinGeos(webapp.RequestHandler):
 
 class Map(webapp.RequestHandler):
 	def get(self):
+		allusers = DBUser.all().fetch(100)
 		template_values = {
+			'users': allusers,
 			'now': datetime.now(),
 		}
 		path = os.path.join(os.path.dirname(__file__), 'map.html')
@@ -1260,6 +1287,7 @@ application = webapp.WSGIApplication(
 	('/map.*', Map),
 	('/raw', RawData),
 	('/testdb.*', TestDB),
+	('/system.*', System),
 	],
 	debug=True
 )

@@ -9,7 +9,17 @@
   <style type="text/css">{% include "css/map.css" %}
 .sm-button {
 	background-color: #C0C0FF;
+//	border: 1px solid black;
+	padding-left: 3px;
+	padding-right: 3px;
+	float: left;
+	cursor: pointer;
 }
+.sm-button:hover {
+	background-color: #0000FF;
+	color: white;
+}
+
   </style>
   <!--link type="text/css" rel="stylesheet" href="stylesheets/calendar.css" /-->
   <link type="text/css" rel="stylesheet" href="stylesheets/ui.all.css" />
@@ -37,6 +47,8 @@
 		var infowindow;
 		var repaircnt = 0;
 		var flightPath;
+		var datemin;
+		var datemax;
 
 		var image = new google.maps.MarkerImage('stylesheets/marker1.png',
 			// This marker is 20 pixels wide by 32 pixels tall.
@@ -144,9 +156,24 @@
 
 			//$("#progress").html("Загружено...");
 
+
 			$('#seeprev').click(function() {
+				var dateto = datemin.replace(/[\/: ]/g,"");
+			
+				loadPoints("geosjson?imei=123456789013&last=100&dateto=" + dateto + "&callback=?");
+//				loadPoints("geosjson?imei=123456789013&last=100&callback=?");
+				//loadPoints("geosjson?imei=123456789013&last=100&callback=?");
+			});
+			$('#seenext').click(function() {
 				loadPoints("geosjson?imei=123456789013&last=100&callback=?");
 			});
+			$('#seelast').click(function() {
+				loadPoints("geosjson?imei=123456789013&last=100&callback=?");
+			});
+			$('#seefirst').click(function() {
+				loadPoints("geosjson?imei=123456789013&first=100&callback=?");
+			});
+			
 		});
 
 		function loadPoints(url) {
@@ -174,8 +201,12 @@
 						map.addMarker(createMarker("+", pos));
 					}
 */
-					var datemax = results[0].day;
-					var datemin = results[results.length-1].day;
+					//datemax = results[0].day;
+					//datemin = results[results.length-1].day;
+					datemin = data.responseData.datemin;
+					datemax = data.responseData.datemax;
+					var dateminjs = data.responseData.dateminjs;
+					var datemaxjs = data.responseData.datemaxjs;
 					for (var i=0; i < results.length; i++) {
 //						$("#progress").html("Загружаем новые (" + i + ")");
 						// Display each result however you wish
@@ -221,7 +252,7 @@
 
 					document.getElementById('points').innerHTML = flightPlanCoordinates.length;
 					var now = new Date()
-					var from = new Date(datemin);
+					var from = new Date(dateminjs);
 
 					$("#progress").html("Завершено.<br/><div style='font-size: 0.8em;'>Показано " + flightPlanCoordinates.length + " точек с<br/>" + datemin + "<br/>по<br/>" + datemax + "</div>"
 					+ datemin.replace(/.* /,"") +
@@ -233,11 +264,11 @@
 					//$("#datepickerfrom").datepicker('setDate', datemin.replace(/ .*/,""));
 
 
-					$("#datepickerfrom").datepicker('setDate', new Date(datemin));
-					document.getElementById('timefrom').value = datemin.replace(/.* /,"");
+					$("#datepickerfrom").datepicker('setDate', new Date(dateminjs));
+					document.getElementById('timefrom').value = dateminjs.replace(/.* /,"");
 
-					$("#datepickerto").datepicker('setDate', new Date(datemax));
-					document.getElementById('timeto').value = datemax.replace(/.* /,"");
+					$("#datepickerto").datepicker('setDate', new Date(datemaxjs));
+					document.getElementById('timeto').value = datemaxjs.replace(/.* /,"");
 				} else {
 					$("#progress").html("Ошибка.");
 				}
@@ -282,6 +313,8 @@
 		// from the edge of the map
 		controlDiv.style.padding = '5px';
 
+	        {% for user in users %}
+
 		// Set CSS for the control border
 		var controlUI = document.createElement('div');
 		controlUI.setAttribute('class', 'MapNav');
@@ -291,8 +324,10 @@
 		// Set CSS for the control interior
 		var controlText = document.createElement('div');
 		controlText.setAttribute('class', 'MapNavText');
-		controlText.innerHTML = 'Объект №1';
+		controlText.innerHTML = '{{ user.imei }}';
 		controlUI.appendChild(controlText);
+
+		{% endfor %}
 
 		var controlNav = document.createElement('div');
 		controlNav.setAttribute('class', 'MapNav');
@@ -611,7 +646,10 @@
 			</tr>
 		</table>
 		</form>
-		<div class="sm-button" id="seeprev">Предыдущие 100</div>
+		<div class="sm-button" id="seefirst" title="Самые старые">&lt;&lt;</div>
+		<div class="sm-button" id="seeprev" title="Предыдущие 100">&lt;</div>
+		<div class="sm-button" id="seenext" title="Следующие 100">&gt;</div>
+		<div class="sm-button" id="seelast" title="Последние известные координаты">&gt;&gt;</div>
 	</div>
 	<div style="background: white;">Точек:<div id="points" style="float: right;">0</div></div>
 	<div id="progress" style="background: lime;">Загрузка, ждите...</div>
