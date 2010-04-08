@@ -162,7 +162,7 @@ $("#menu-main").hover(function () {
 		<tr>
 			<td>{{ user.imei }}</td>
 			<td>{{ user.phone }}</td>
-			<td>{{ user.desc }}</td>
+			<td style="text-align: left;">{{ user.desc }}</td>
 			<td><a href="map?imei={{ user.imei }}" title="Посмотреть положение системы">M</a></td>
 			<td><a href="config&imei={{ user.imei }}" title="Изменить параметры системы">С</a></td>
 			<td><a href="javascript:dodel({{ user.imei }});" title="Отказаться от слежения за этой системой">X</a></td>

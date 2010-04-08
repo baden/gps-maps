@@ -19,6 +19,11 @@ indexes:
   properties:
   - name: user
   - name: date
+
+- kind: DBGPSPoint
+  properties:
+  - name: user
+  - name: date
     direction: desc
 
 - kind: GPSLogs

@@ -9,7 +9,8 @@
   <style type="text/css">{% include "css/map.css" %}
 .sm-button {
 	background-color: #C0C0FF;
-//	border: 1px solid black;
+	border: 1px solid black;
+	border-radius: 4px;
 	padding-left: 3px;
 	padding-right: 3px;
 	float: left;
@@ -156,22 +157,27 @@
 
 			//$("#progress").html("Загружено...");
 
+			$('#seefirst').click(function() {
+				loadPoints("geosjson?imei=353358016204856&first=300&callback=?");
+			});
+
 
 			$('#seeprev').click(function() {
 				var dateto = datemin.replace(/[\/: ]/g,"");
 			
-				loadPoints("geosjson?imei=123456789013&last=100&dateto=" + dateto + "&callback=?");
-//				loadPoints("geosjson?imei=123456789013&last=100&callback=?");
-				//loadPoints("geosjson?imei=123456789013&last=100&callback=?");
+				loadPoints("geosjson?imei=353358016204856&last=300&dateto=" + dateto + "&callback=?");
+//				loadPoints("geosjson?imei=123456789013&last=300&callback=?");
+				//loadPoints("geosjson?imei=123456789013&last=300&callback=?");
 			});
+
 			$('#seenext').click(function() {
-				loadPoints("geosjson?imei=123456789013&last=100&callback=?");
+				var datefrom = datemax.replace(/[\/: ]/g,"");
+
+				loadPoints("geosjson?imei=353358016204856&first=300&datefrom=" + datefrom + "&callback=?");
 			});
+
 			$('#seelast').click(function() {
-				loadPoints("geosjson?imei=123456789013&last=100&callback=?");
-			});
-			$('#seefirst').click(function() {
-				loadPoints("geosjson?imei=123456789013&first=100&callback=?");
+				loadPoints("geosjson?imei=353358016204856&last=300&callback=?");
 			});
 			
 		});
@@ -184,6 +190,9 @@
 
 			$("#progress").html("Загружаем новые...");
 			var flightPlanCoordinates = [];
+
+			var track = document.getElementById('track').value;
+			//alert(track);
 
 			$.getJSON(url, function (data) {
 				$("#progress").html("Обрабатываем...");
@@ -207,10 +216,20 @@
 					datemax = data.responseData.datemax;
 					var dateminjs = data.responseData.dateminjs;
 					var datemaxjs = data.responseData.datemaxjs;
+
+					var minx = results[0].lat;
+					var miny = results[0].long;
+					var maxx = results[0].lat;
+					var maxy = results[0].long;
+
 					for (var i=0; i < results.length; i++) {
 //						$("#progress").html("Загружаем новые (" + i + ")");
 						// Display each result however you wish
 						//content.innerHTML += results[i].lat + "," + results[i].long + "<br/>";
+						if(minx > results[i].lat) minx = results[i].lat;
+						if(maxx < results[i].lat) maxx = results[i].lat;
+						if(miny > results[i].long) miny = results[i].long;
+						if(maxy < results[i].long) maxy = results[i].long;
 
 						var pos = new google.maps.LatLng(results[i].lat, results[i].long);
 //						var pos = new google.maps.LatLng(results[i].lat + (Math.random()*0.005)-0.002, results[i].long+(Math.random()*0.005)-0.002);
@@ -220,16 +239,18 @@
 						flightPlanCoordinates.push(pos);
 //						points = points + 1;
 //						path.insertAt(points, pos);
-						map.addMarker(createMarker(
-							'Дата:' + results[i].date +
-							'\nСкорость: ' + results[i].speed +
-							'\nНаправление: ' + results[i].course +
-							'\nДолгота: ' + results[i].lat +
-							'\nШирота: ' + results[i].long +
-							'\nДатчик 1: ' + results[i].in1 +
-							'\nДатчик 2: ' + results[i].in2
-							,
-							pos));
+						if(!track){
+							map.addMarker(createMarker(
+								'Дата:' + results[i].date +
+								'\nСкорость: ' + results[i].speed +
+								'\nНаправление: ' + results[i].course +
+								'\nДолгота: ' + results[i].lat +
+								'\nШирота: ' + results[i].long +
+								'\nДатчик 1: ' + results[i].in1 +
+								'\nДатчик 2: ' + results[i].in2
+								,
+								pos));
+						}
 //
 //						var marker = new google.maps.Marker({
 //							position: pos,
@@ -242,24 +263,35 @@
 					}
 
 					if(flightPath) flightPath.setMap(null);
-					flightPath = new google.maps.Polyline({
-						path: flightPlanCoordinates,
-						strokeColor: '#F08000',
-						strokeOpacity: 0.8,
-						strokeWeight: 2
-					});
+
+					if(track){
+						flightPath = new google.maps.Polyline({
+							path: flightPlanCoordinates,
+							strokeColor: '#F08000',
+							strokeOpacity: 0.8,
+							strokeWeight: 3
+						});
+					}else{
+						flightPath = new google.maps.Polyline({
+							path: flightPlanCoordinates,
+							strokeColor: '#F08000',
+							strokeOpacity: 0.8,
+							strokeWeight: 2
+						});
+					}
 					flightPath.setMap(map);
+					map.setCenter(new google.maps.LatLng((minx+maxx)/2, (miny+maxy)/2), 11);
 
 					document.getElementById('points').innerHTML = flightPlanCoordinates.length;
 					var now = new Date()
 					var from = new Date(dateminjs);
 
 					$("#progress").html("Завершено.<br/><div style='font-size: 0.8em;'>Показано " + flightPlanCoordinates.length + " точек с<br/>" + datemin + "<br/>по<br/>" + datemax + "</div>"
-					+ datemin.replace(/.* /,"") +
+					/*+ datemin.replace(/.* /,"") +
 					"<br>Now:" + now.getUTCDate() + '/' + now.getUTCMonth() + "/" + now.getUTCFullYear() +
 					" " + now.getUTCHours() + ":" + now.getUTCMinutes()
 					+"<br/>[a]" + from
-					+"<br/>[b]" + from.toUTCString()
+					+"<br/>[b]" + from.toUTCString()*/
 					);
 					//$("#datepickerfrom").datepicker('setDate', datemin.replace(/ .*/,""));
 
@@ -276,18 +308,18 @@
 		}
 
 		function lastPoints() {
-			loadPoints("geosjson?imei=123456789013&last=100&callback=?");
+			loadPoints("geosjson?imei=353358016204856&last=300&callback=?");
 		}
 
 		function datePoints() {
 
 			var datefrom = document.getElementById('datepickerfrom').value.replace(/[\/]/g,"") +
-				document.getElementById('timefrom').value.replace(/[\:]/g,"");
+				document.getElementById('timefrom').value.replace(/[\:]/g,"") + "00";
 			
 			var dateto = document.getElementById('datepickerto').value.replace(/[\/]/g,"") +
-				document.getElementById('timeto').value.replace(/[\:]/g,"");
+				document.getElementById('timeto').value.replace(/[\:]/g,"") + "00";
 			
-			loadPoints("geosjson?imei=123456789013&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
+			loadPoints("geosjson?imei=353358016204856&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
 			//var url = "geosjson?imei=123456789013&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
 
 		}
@@ -324,7 +356,7 @@
 		// Set CSS for the control interior
 		var controlText = document.createElement('div');
 		controlText.setAttribute('class', 'MapNavText');
-		controlText.innerHTML = '{{ user.imei }}';
+		controlText.innerHTML = '{{ user.imei }}: {{ user.desc }}';
 		controlUI.appendChild(controlText);
 
 		{% endfor %}
@@ -647,11 +679,12 @@
 		</table>
 		</form>
 		<div class="sm-button" id="seefirst" title="Самые старые">&lt;&lt;</div>
-		<div class="sm-button" id="seeprev" title="Предыдущие 100">&lt;</div>
-		<div class="sm-button" id="seenext" title="Следующие 100">&gt;</div>
+		<div class="sm-button" id="seeprev" title="Предыдущие 300">&lt;</div>
+		<div class="sm-button" id="seenext" title="Следующие 300">&gt;</div>
 		<div class="sm-button" id="seelast" title="Последние известные координаты">&gt;&gt;</div>
 	</div>
 	<div style="background: white;">Точек:<div id="points" style="float: right;">0</div></div>
+	<input type="checkbox" title="Отображать только трек" id="track" onchange="datePoints();"/><label for="track" title="Отображать только трек">Трек</label>
 	<div id="progress" style="background: lime;">Загрузка, ждите...</div>
 {% endblock %}
 

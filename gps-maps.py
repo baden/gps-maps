@@ -23,6 +23,7 @@ class DBUser(db.Model):
 	phone = db.StringProperty(multiline=False)	# Phone number, for example: +380679332332
 	password = db.StringProperty(multiline=False)	# User password
 	date = db.DateTimeProperty(auto_now_add=True)	# Registration date
+	desc = db.StringProperty(multiline=False)	# Описание
 
 class GPSLogs(db.Model):
 	user = db.ReferenceProperty(DBUser)
@@ -453,14 +454,23 @@ class GeosJSON(webapp.RequestHandler):
 
 		logging.info("GeosJSON dateto: %s" % dateto)
 
-		last = self.request.get('last')
-		if last:
-			logging.info("GeosJSON last: %s" % last)
-			geologs = DBGPSPoint.all().filter('user =', userdb).filter('date <=', dateto).order('-date').fetch(int(last))
+		first = self.request.get('first')
+		if first:
+			logging.info("GeosJSON first: %s" % first)
+			if datefrom_s:
+				geologs = DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).order('date').fetch(int(first))
+			else:
+				geologs = DBGPSPoint.all().filter('user =', userdb).order('date').fetch(int(first))
+				pass
 		else:
-			geologs = DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(300)
+			last = self.request.get('last')
+			if last:
+				logging.info("GeosJSON last: %s" % last)
+				geologs = DBGPSPoint.all().filter('user =', userdb).filter('date <=', dateto).order('-date').fetch(int(last))
+			else:
+				geologs = DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(300)
 
-		self.response.out.write("// User imei: %s\r// Date from: %s\r// Date to: %s\r" % (userdb.imei, datefrom, dateto))
+		#self.response.out.write("// User imei: %s\r// Date from: %s\r// Date to: %s\r" % (userdb.imei, datefrom, dateto))
 
 #.filter('date <=', datetime.strptime(datemark, "%Y%m%d%H%M%S%f"))
 		#geologs = DBGPSPoint.all().order('-date').filter('user =', userdb)
@@ -500,16 +510,37 @@ class GeosJSON(webapp.RequestHandler):
 			#cdate = db.DateTimeProperty(auto_now_add=True)
 			#geolog.sdate = geolog.cdate.strftime("%d/%m/%Y %H:%M") 
 
-		jsonresp = {
-			"responseData": {
-				"results": results, 
-				"config": 0,
-				"dateminjs": geologs[-1].date.strftime("%m/%d/%Y %H:%M"),
-				"datemaxjs": geologs[0].date.strftime("%m/%d/%Y %H:%M"),
-				"datemin": geologs[-1].date.strftime("%d/%m/%Y %H:%M:%S"),
-				"datemax": geologs[0].date.strftime("%d/%m/%Y %H:%M:%S"),
+		if geologs:
+			if first:
+				jsonresp = {
+					"responseData": {
+						"results": results, 
+						"config": 0,
+						"dateminjs": geologs[0].date.strftime("%m/%d/%Y %H:%M"),
+						"datemaxjs": geologs[-1].date.strftime("%m/%d/%Y %H:%M"),
+						"datemin": geologs[0].date.strftime("%d/%m/%Y %H:%M:%S"),
+						"datemax": geologs[-1].date.strftime("%d/%m/%Y %H:%M:%S"),
+					}
+				}
+			else:
+				jsonresp = {
+					"responseData": {
+						"results": results, 
+						"config": 0,
+						"dateminjs": geologs[-1].date.strftime("%m/%d/%Y %H:%M"),
+						"datemaxjs": geologs[0].date.strftime("%m/%d/%Y %H:%M"),
+						"datemin": geologs[-1].date.strftime("%d/%m/%Y %H:%M:%S"),
+						"datemax": geologs[0].date.strftime("%d/%m/%Y %H:%M:%S"),
+					}
+				}
+		else:
+			jsonresp = {
+				"responseData": {
+					"results": results, 
+					"config": 0,
+				}
 			}
-		}
+
 
 		dif_time = datetime.now() - start_time
 		logging.info("GeosJSON response ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
@@ -786,7 +817,19 @@ class BinGeos(webapp.RequestHandler):
 			return
 
 		userdb = getUser(self.request)
-		#if userdb:
+
+		if not userdb:
+			uimei = self.request.get('imei')
+			#ukey = request.get('ukey')
+			#uid = request.get('uid')
+
+			userdb = DBUser()
+			userdb.imei = uimei
+			userdb.phone = ""
+			userdb.password = ""
+			userdb.desc = u"Новая система. Нет описания."
+			userdb.put()
+			#self.response.out.write('User added.\r\n')
 
 		pdata = self.request.body
 
