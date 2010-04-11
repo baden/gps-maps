@@ -16,7 +16,6 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
 
-
 class DBUser(db.Model):
 	userid = db.IntegerProperty()			# Unique
 	imei = db.StringProperty(multiline=False)	# IMEI
@@ -62,31 +61,48 @@ class DBGPSBinParts(db.Model):
 	dataid = db.IntegerProperty()
 	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
 
+class DBFirmware(db.Model):
+	cdate = db.DateTimeProperty(auto_now_add=True)	# Дата размещения прошивки
+	hwid = db.IntegerProperty()			# Версия аппаратуры
+	swid = db.IntegerProperty()			# Версия прошивки
+	data = db.BlobProperty()			# Образ прошивки
+	size = db.IntegerProperty()			# Размер прошивки (опция)
+	desc = db.StringProperty(multiline=True)	# Описание прошивки (опция)
+
+
+ADMIN_USERNAME = 'baden.i.ua'
+
+def ckechUser(uri):
+	user = users.get_current_user()
+
+	if user:
+		#url = users.create_logout_url(self.request.uri)
+		login_url = users.create_login_url(uri)
+		username = user.nickname()
+	else:
+		self.response.out.write("<html><body>")
+		self.response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
+		self.response.out.write("Нажмите <a href=" + users.create_login_url(uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
+		self.response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
+		self.response.out.write("</body></html>")
+		#self.redirect(users.create_login_url(self.request.uri))
+		return False
+	return {
+		'login_url': login_url,
+		'username': username,
+		'admin': username == ADMIN_USERNAME,
+	}
+
 class MainPage(webapp.RequestHandler):
 	def get(self):
-		user = users.get_current_user()
-
-		if user:
-			#url = users.create_logout_url(self.request.uri)
-			login_url = users.create_login_url(self.request.uri)
-			username = user.nickname()
-		else:
-			self.response.out.write("<html><body>")
-			self.response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
-			self.response.out.write("Нажмите <a href=" + users.create_login_url(self.request.uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
-			self.response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
-			self.response.out.write("</body></html>")
-			#self.redirect(users.create_login_url(self.request.uri))
+		template_values = ckechUser(self.request.uri)
+		if not template_values:
 			return
 
 		allusers = DBUser.all().fetch(100)
+		template_values['users'] = allusers
 
-		template_values = {
-			'login_url': login_url,
-			'username': username,
-			'now': datetime.now(),
-			'users': allusers,
-		}
+		template_values['now'] = datetime.now()
 
 		#logging.warning("Test warning logging.");
 		#logging.error("Test error logging.");
@@ -124,12 +140,12 @@ class Guestbook(webapp.RequestHandler):
 
 def getUser(request):
 	uimei = request.get('imei')
-	ukey = request.get('ukey')
-	uid = request.get('uid')
-	if uid:
-		userdb = DBUser().get_by_id(long(uid))
+	logging.debug(uimei)
+#	ukey = request.get('ukey')
+#	uid = request.get('uid')
+#	if uid:
+#		userdb = DBUser().get_by_id(long(uid))
 		#self.response.out.write('Get by id (%d)\r\n' % userid)
-
 	if uimei:
 		userdbq = DBUser().all().filter('imei =', uimei).fetch(1)
 		#userdbq = DBUser().all().filter('imei =', uimei).get()
@@ -139,6 +155,9 @@ def getUser(request):
 		else:
 			userdb = None
 			#self.response.out.write('User not found by imei (%s)\r\n' % uimei)
+	else:
+		userdb = None
+
 	return userdb
 
 class AddLog(webapp.RequestHandler):
@@ -205,13 +224,16 @@ class AddLog(webapp.RequestHandler):
 
 class UsersList(webapp.RequestHandler):
 	def get(self):
+		template_values = ckechUser(self.request.uri)
+		if not template_values:
+			return
+
 		dbusers_query = DBUser.all().order('-date')
 		dbusers = dbusers_query.fetch(50)
 		dbusers_count = dbusers_query.count()
-		template_values = {
-			'dbusers': dbusers,
-			'users_count': dbusers_count,
-		}
+		template_values['dbusers'] = dbusers
+		template_values['users_count'] = dbusers_count
+
 		path = os.path.join(os.path.dirname(__file__), 'users.html')
 		self.response.out.write(template.render(path, template_values))
 
@@ -219,6 +241,10 @@ MAXLOGS = 20
 
 class ViewLogs(webapp.RequestHandler):
 	def get(self):
+		template_values = ckechUser(self.request.uri)
+		if not template_values:
+			return
+
 		#gpslogs_query = GPSLogs.all().order('-date').fetch(MAXLOGS+1)
 		#gpslogs_query = db.GqlQuery("SELECT * FROM GPSLogs ORDER BY date DESC LIMIT 20")
 		#gpslogs_query = db.GqlQuery("SELECT * FROM GPSLogs ORDER BY date DESC")
@@ -276,11 +302,10 @@ class ViewLogs(webapp.RequestHandler):
 			#if not gpslog.user:
 			#    gpslog.user.imei = "deleted"
 
-		template_values = {
-			'gpslogs': gpslogs,
-			'urlnext': urlnext,
-			'urlprev': urlprev,
-		}
+		template_values['gpslogs'] = gpslogs
+		template_values['urlnext'] = urlnext
+		template_values['urlprev'] = urlprev
+
 		path = os.path.join(os.path.dirname(__file__), 'logs.html')
 		self.response.out.write(template.render(path, template_values))
 		#try:
@@ -406,6 +431,10 @@ class LastPos(webapp.RequestHandler):
 
 class Geos(webapp.RequestHandler):
 	def get(self):
+		template_values = ckechUser(self.request.uri)
+		if not template_values:
+			return
+
 		geologs = DBGPSPoint.all().order('-date').fetch(MAXLOGS+1)
 		#geologs = DBGPSPoint.all().order('-date').fetch(100)
 		for geolog in geologs:
@@ -415,9 +444,8 @@ class Geos(webapp.RequestHandler):
 			except:
 				geolog.imei = 'deleted' 
 			geolog.sdate = geolog.cdate.strftime("%d/%m/%Y %H:%M") 
-		template_values = {
-			'geologs': geologs,
-		}
+		template_values['geologs'] = geologs
+
 		path = os.path.join(os.path.dirname(__file__), 'geos.html')
 		self.response.out.write(template.render(path, template_values))
 
@@ -734,14 +762,27 @@ conf_parms = [
 
 class Config(webapp.RequestHandler):
 	def get(self):
-		allusers = DBUser.all().fetch(100)
-		template_values = {
-			'now': datetime.now(),
-			'configs': conf_parms,
-			'users': allusers,
-		}
-		path = os.path.join(os.path.dirname(__file__), 'config.html')
-		self.response.out.write(template.render(path, template_values))
+		template_values = ckechUser(self.request.uri)
+		if not template_values:
+			return
+
+		userdb = getUser(self.request)
+		#logging.debug(userdb.imei)
+
+		if userdb == None:
+
+			allusers = DBUser.all().fetch(100)
+			template_values['now'] = datetime.now()
+			template_values['users'] = allusers
+
+			path = os.path.join(os.path.dirname(__file__), 'config.html')
+			self.response.out.write(template.render(path, template_values))
+		else:
+			template_values['configs'] = conf_parms
+			template_values['user'] = userdb
+
+			path = os.path.join(os.path.dirname(__file__), 'params.html')
+			self.response.out.write(template.render(path, template_values))
 
 class Help(webapp.RequestHandler):
 	def get(self):
@@ -1173,11 +1214,15 @@ class GetBinGeos(webapp.RequestHandler):
 
 class Map(webapp.RequestHandler):
 	def get(self):
+		template_values = ckechUser(self.request.uri)
+		if not template_values:
+			return
+
 		allusers = DBUser.all().fetch(100)
-		template_values = {
-			'users': allusers,
-			'now': datetime.now(),
-		}
+		template_values['map'] = True
+		template_values['users'] = allusers
+		template_values['now'] = datetime.now()
+
 		path = os.path.join(os.path.dirname(__file__), 'map.html')
 		self.response.out.write(template.render(path, template_values))
 
@@ -1301,6 +1346,96 @@ class TestDB(webapp.RequestHandler):
 		self.response.out.write(template.render(path, values))
 		#self.redirect('testdb.html')
 
+# обновление программного обеспечения
+class Firmware(webapp.RequestHandler):
+
+	def get(self):
+		user = users.get_current_user()
+		username = ''
+		if user:
+			username = user.nickname()
+
+		cmd = self.request.get('cmd')
+		hwid = self.request.get('hwid')
+
+		login_url = users.create_login_url(self.request.uri)
+
+		if cmd:
+			if cmd == 'del':
+				if self.username == ADMIN_USERNAME:
+					fid = self.request.get('id')
+					if fid:
+						DBFirmware().get_by_key_name(fid).delete()
+				self.redirect("/firmware")
+
+			elif cmd == 'check':	# Запросить версию самой свежей прошивки
+				fw = DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
+				self.response.headers['Content-Type'] = 'text/plain'
+				if fw:
+					self.response.out.write("SWID: %X" % fw[0].swid)
+				else:
+					self.response.out.write("NOT FOUND")
+
+			elif cmd == 'get':
+				swid = self.request.get('swid')
+				if swid:
+					fw = DBFirmware().all().filter('hwid =', int(hwid, 16)).filter('swid =', int(swid, 16)).fetch(1)
+				else:
+					fw = DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
+				if fw:
+					self.response.headers['Content-Type'] = 'application/octet-stream'
+					self.response.out.write(fw[0].data)
+					#self.response.headers['Content-Type'] = 'text/plain'
+					#self.response.out.write('SWID:%X\r\n' % fw[0].swid)
+					#self.response.out.write('OK\r\n')
+				else:
+					self.response.headers['Content-Type'] = 'text/plain'
+					self.response.out.write('NOT FOUND\r\n')
+
+			else:
+				self.redirect("/firmware")
+		else:
+			template_values = ckechUser(self.request.uri)
+			if not template_values:
+				return
+
+			if hwid:
+				firmwares = DBFirmware().all().filter('hwid =', int(hwid, 16)).fetch(100)
+			else:
+				firmwares = DBFirmware().all().fetch(100)
+			nfw = []
+			for fw in firmwares:
+				#fw.ofwid = "%X" % fw.hwid
+				#fw.oswid = "%X" % fw.swid
+				nfw.append({
+					'key': fw.key().name(),
+					'hwid': "%X" % fw.hwid,
+					'swid': "%X" % fw.swid,
+					'cdate': fw.cdate,
+					'size': fw.size,
+					'desc': fw.desc,
+				})
+			template_values['firmwares'] = nfw
+			path = os.path.join(os.path.dirname(__file__), 'firmware.html')
+			self.response.out.write(template.render(path, template_values))
+
+	def post(self):
+		self.response.headers['Content-Type'] = 'text/plain'
+
+		pdata = self.request.body
+		hwid = int(self.request.get('hwid'), 16)
+		swid = int(self.request.get('swid'), 16)
+
+		newfw = DBFirmware(key_name = "FWGPS%X%X" % (hwid, swid))
+		newfw.hwid = hwid
+		newfw.swid = swid
+		newfw.data = pdata
+		newfw.size = len(pdata)
+		newfw.desc = u"Нет описания"
+		newfw.put()
+
+		self.response.out.write("ROM ADDED: %d\r\n" % len(pdata))
+
 #class myWSGIApplication(webapp.WSGIApplication):
 #	def __call__(self, environ, start_response):
 #		webapp.WSGIApplication.__call__(self, environ, my_start_response)
@@ -1331,6 +1466,7 @@ application = webapp.WSGIApplication(
 	('/raw', RawData),
 	('/testdb.*', TestDB),
 	('/system.*', System),
+	('/firmware.*', Firmware),
 	],
 	debug=True
 )

@@ -125,6 +125,12 @@
 			<div id="MenuFill">{% block menu %}{% endblock %}</div>
 		</div>
 		<div id="Widget">
+			{% if not map %}
+			<div style="position:absolute; right: 10px; top: 10px; z-index:1000;">
+				Вы вошли как: <b>{{ username }}</b>
+			        <a class="smallButton" href="{{ login_url }}" title="Войти под другим именем">X</a>
+			</div>
+			{% endif %}
 {% block body %}{% endblock %}
 		</div>
 {% block final %}{% endblock %}
