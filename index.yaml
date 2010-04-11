@@ -10,6 +10,12 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: DBFirmware
+  properties:
+  - name: hwid
+  - name: swid
+    direction: desc
+
 - kind: DBGPSBinParts
   properties:
   - name: user

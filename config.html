@@ -3,6 +3,7 @@
 {% block title %}{{ application_name }} Конфигурация системы {% endblock %}
 
 {% block head %}
+  <link type="text/css" rel="stylesheet" href="stylesheets/ui.all.css" />
   <style type="text/css">{% include "css/config.css" %}
 
 input.digits {
@@ -35,51 +36,71 @@ function ChangeParam(me)
 	//$(me).style("text-align: left;");
 	me.className = "compl";
 }
+
+	$(function() {
+		$("#dialog").dialog("destroy");
+		$("#dialog-modal").dialog({
+			height: 140,
+			modal: true,
+			autoOpen: false,
+			buttons: {
+				'Да, я уверен.': function() {
+					var imei = $("#imei").html();
+					$.getJSON("/system?cmd=del&imei=" + imei, function (data) {
+						window.location = "/";
+					});
+					$(this).dialog('close');
+				},
+				Cancel: function() {
+					$(this).dialog('close');
+				}
+			}
+		});
+	});
+
+		function dodel(imei) {
+		// a workaround for a flaw in the demo system (http://dev.jqueryui.com/ticket/4375), ignore!
+			$("#imei").html(imei);
+			$("#dialog-modal").dialog('open');
+	
+		}
+
 </script>
 
 {% endblock %}
 
 {% block body %}
-    <h1>Конфигурация системы:</h1>
-	<form action="/config" enctype="multipart/form-data" method="post" style="border:solid;">
-		<table>
-			<tr>
-				<th rowspan="2">Параметр</th>
-				<th colspan="4">Значение</th>
-				<th rowspan="2">Ед. изм.</th>
-				<th rowspan="2">Рекомендуемое значение</th>
-				<th rowspan="2">Диапазон</th>
-				<th rowspan="2">Прим.</th>
-			</tr>
-			<tr>
-				<th><div title="Профиль №1. Внешнее питание >10В.">P1</div></th>
-				<th><div title="Профиль №1. Внешнее питание 6..10В.">P2</div></th>
-				<th><div title="Внешнее питание отключено. Внутреннее питание >3.8В.">P3</div></th>
-				<th><div title="Внешнее питание отключено. Внутреннее питание <3.8В.">P4</div></th>
-			</tr>
-			{% for config in configs %}
-			<tr>
-				<td style="text-align:left;"><label>{{ config.title }}</label></td>
-				<td><input id="{{ config.name }}_0" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.0 }}" onchange="ChangeParam(this)"></td>
-				<td><input id="{{ config.name }}_1" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.1 }}" onchange="ChangeParam(this)"></td>
-				<td><input id="{{ config.name }}_2" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.2 }}" onchange="ChangeParam(this)"></td>
-				<td><input id="{{ config.name }}_3" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.3 }}" onchange="ChangeParam(this)"></td>
-				<td><label>{{ config.units }}</label></td>
-				<td><label>{{ config.recomends }}</label></td>
-				<td><label>{{ config.range }}</label></td>
-				<td><a class="Help" href="help?topic=config&subtopic=param01" title="{{ config.help }}">?</a></td>
-			</tr>
-			{% endfor %}
-		</table>
-            <div id="userconfig">None;</div>
-            <div><label>Дополнительные команды:</label></div>
-            <div><textarea name="custom" rows="3" style="width:98%;" onfocus="this.form.submit.disabled=0"></textarea></div>
-            <div><input type="submit" name="submit" value="Поставить в очередь." disabled></div>
-	</form>
-	<div style="background-color:#FFFFC0;">
-    <font color="red">Внимание!</font> Изменения вступят в силу при следующем сеансе связи системы с сервером.
-	Можно принудительно вызвать процедуру обновления отправив SMS на номер системы со словом <b>config</b>.
-	</div> 
+	<h2>Наблюдаемые системы:</h2>
+	<table>
+		<tr>
+			<th>IMEI</th>
+			<th>Номер телефона</th>
+			<th>Описание</th>
+			<th title="Карта">M</th>
+			<th title="Конфигурация">C</th>
+			<th title="Удаление">X</th>
+		</tr>
+        {% for user in users %}
+		<tr>
+			<td>{{ user.imei }}</td>
+			<td>{{ user.phone }}</td>
+			<td style="text-align: left;">{{ user.desc }}</td>
+			<td><a class="smallButton" href="map?imei={{ user.imei }}" title="Посмотреть положение системы">M</a></td>
+			<td><a class="smallButton" href="config?imei={{ user.imei }}" title="Изменить параметры системы">С</a></td>
+			<td><a class="smallButton" href="javascript:dodel({{ user.imei }});" title="Отказаться от слежения за этой системой">X</a></td>
+		</tr>
+	{% endfor %}
+
+	</table>
+
+	<div id="dialog-modal" title="Внимание!!!">
+		<p>Вы действительно хотите отказаться от слежения за системой?</p>
+		<div id="imei">111</div>
+	</div>
+
+	<div style="border: none; text-align:left; padding: 2px 2px 2px 2px;">
+	<a class="smallButton" href="firmware" title="Обновление внутреннего программного обеспечения системы.">U</a>
+	</div>
 {% endblock %}
 
 {% block final %}
