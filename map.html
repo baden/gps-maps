@@ -158,26 +158,26 @@
 			//$("#progress").html("Загружено...");
 
 			$('#seefirst').click(function() {
-				loadPoints("geosjson?imei=353358016204856&first=300&callback=?");
+				loadPoints("geosjson?imei=353358016204856&first=500&callback=?");
 			});
 
 
 			$('#seeprev').click(function() {
 				var dateto = datemin.replace(/[\/: ]/g,"");
 			
-				loadPoints("geosjson?imei=353358016204856&last=300&dateto=" + dateto + "&callback=?");
-//				loadPoints("geosjson?imei=123456789013&last=300&callback=?");
-				//loadPoints("geosjson?imei=123456789013&last=300&callback=?");
+				loadPoints("geosjson?imei=353358016204856&last=500&dateto=" + dateto + "&callback=?");
+//				loadPoints("geosjson?imei=123456789013&last=500&callback=?");
+				//loadPoints("geosjson?imei=123456789013&last=500&callback=?");
 			});
 
 			$('#seenext').click(function() {
 				var datefrom = datemax.replace(/[\/: ]/g,"");
 
-				loadPoints("geosjson?imei=353358016204856&first=300&datefrom=" + datefrom + "&callback=?");
+				loadPoints("geosjson?imei=353358016204856&first=500&datefrom=" + datefrom + "&callback=?");
 			});
 
 			$('#seelast').click(function() {
-				loadPoints("geosjson?imei=353358016204856&last=300&callback=?");
+				loadPoints("geosjson?imei=353358016204856&last=500&callback=?");
 			});
 			
 		});
@@ -192,7 +192,9 @@
 			var flightPlanCoordinates = [];
 
 			var track = document.getElementById('track').value;
+			var optim = document.getElementById('optim').value;
 			//alert(track);
+			if(optim) url+="&optim=yes";
 
 			$.getJSON(url, function (data) {
 				$("#progress").html("Обрабатываем...");
@@ -201,10 +203,10 @@
 					var results = data.responseData.results;
 					//var content = document.getElementById('progress');
 					//content.innerHTML = 'Получено ' + results.length + ":<br/>";
-					//for (var i=0; i < 300; i++) {
+					//for (var i=0; i < 500; i++) {
 					//	flightPlanCoordinates.push(new google.maps.LatLng(obj1x + (Math.random()*0.005)-0.002, obj1y+(Math.random()*0.005)-0.002));
 					//}
-/*					for (var i=0; i < 300; i++) {
+/*					for (var i=0; i < 500; i++) {
 						var pos = new google.maps.LatLng(obj1x + (Math.random()*0.005)-0.002, obj1y+(Math.random()*0.005)-0.002);
 						flightPlanCoordinates.push(pos);
 						map.addMarker(createMarker("+", pos));
@@ -246,6 +248,7 @@
 								'\nНаправление: ' + results[i].course +
 								'\nДолгота: ' + results[i].lat +
 								'\nШирота: ' + results[i].long +
+								'\nСпутники: ' + results[i].sats +
 								'\nДатчик 1: ' + results[i].in1 +
 								'\nДатчик 2: ' + results[i].in2
 								,
@@ -280,7 +283,8 @@
 						});
 					}
 					flightPath.setMap(map);
-					map.setCenter(new google.maps.LatLng((minx+maxx)/2, (miny+maxy)/2), 11);
+
+					//map.setCenter(new google.maps.LatLng((minx+maxx)/2, (miny+maxy)/2), 11);
 
 					document.getElementById('points').innerHTML = flightPlanCoordinates.length;
 					var now = new Date()
@@ -308,7 +312,7 @@
 		}
 
 		function lastPoints() {
-			loadPoints("geosjson?imei=353358016204856&last=300&callback=?");
+			loadPoints("geosjson?imei=353358016204856&last=500&callback=?");
 		}
 
 		function datePoints() {
@@ -317,7 +321,7 @@
 				document.getElementById('timefrom').value.replace(/[\:]/g,"") + "00";
 			
 			var dateto = document.getElementById('datepickerto').value.replace(/[\/]/g,"") +
-				document.getElementById('timeto').value.replace(/[\:]/g,"") + "00";
+				document.getElementById('timeto').value.replace(/[\:]/g,"") + "59";
 			
 			loadPoints("geosjson?imei=353358016204856&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
 			//var url = "geosjson?imei=123456789013&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
@@ -679,12 +683,14 @@
 		</table>
 		</form>
 		<div class="sm-button" id="seefirst" title="Самые старые">&lt;&lt;</div>
-		<div class="sm-button" id="seeprev" title="Предыдущие 300">&lt;</div>
-		<div class="sm-button" id="seenext" title="Следующие 300">&gt;</div>
+		<div class="sm-button" id="seeprev" title="Предыдущие 500">&lt;</div>
+		<div class="sm-button" id="seenext" title="Следующие 500">&gt;</div>
 		<div class="sm-button" id="seelast" title="Последние известные координаты">&gt;&gt;</div>
 	</div>
 	<div style="background: white;">Точек:<div id="points" style="float: right;">0</div></div>
+	<br />
 	<input type="checkbox" title="Отображать только трек" id="track" onchange="datePoints();"/><label for="track" title="Отображать только трек">Трек</label>
+	<input type="checkbox" title="Дополнительная оптимизация трека" id="optim" onchange="datePoints();"/><label for="optim" title="Дополнительная оптимизация трека">Оптим</label>
 	<div id="progress" style="background: lime;">Загрузка, ждите...</div>
 {% endblock %}
 

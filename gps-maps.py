@@ -3,6 +3,8 @@
 #from google.appengine.tools.dev_appserver import datastore
 import logging
 import os
+import zlib
+import math
 
 from datetime import date
 from datetime import datetime
@@ -15,6 +17,9 @@ from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
+#from google.appengine.tools import bulkloader
+
+#import models
 
 class DBUser(db.Model):
 	userid = db.IntegerProperty()			# Unique
@@ -23,6 +28,20 @@ class DBUser(db.Model):
 	password = db.StringProperty(multiline=False)	# User password
 	date = db.DateTimeProperty(auto_now_add=True)	# Registration date
 	desc = db.StringProperty(multiline=False)	# Описание
+
+
+#class UserLoader(bulkloader.Loader):
+#  def __init__(self):
+#    bulkloader.Loader.__init__(self, 'BDUser',
+#                               [('imei', str),
+#                                ('phone', str),
+#                                ('publication_date',
+#                                 lambda x: datetime.datetime.strptime(x, '%m/%d/%Y').date()),
+#                                ('userid', int)
+#                               ])
+#
+#loaders = [UserLoader]
+
 
 class GPSLogs(db.Model):
 	user = db.ReferenceProperty(DBUser)
@@ -69,10 +88,23 @@ class DBFirmware(db.Model):
 	size = db.IntegerProperty()			# Размер прошивки (опция)
 	desc = db.StringProperty(multiline=True)	# Описание прошивки (опция)
 
+# Конфигурация систем
+# Содержит динамически наполняемым контентом
+class DBConfig(db.Model):
+	cdate = db.DateTimeProperty(auto_now_add=True)	# Дата размещения конфигурации
+	user = db.ReferenceProperty(DBUser)
+	config = db.BlobProperty()
+	#strconfig = db.StringProperty()
+
+class DBNewConfig(db.Model):
+	cdate = db.DateTimeProperty(auto_now_add=True)	# Дата размещения конфигурации
+	user = db.ReferenceProperty(DBUser)
+	config = db.BlobProperty()
+	#strconfig = db.StringProperty()
 
 ADMIN_USERNAME = 'baden.i.ua'
 
-def ckechUser(uri):
+def ckechUser(uri, response):
 	user = users.get_current_user()
 
 	if user:
@@ -80,11 +112,11 @@ def ckechUser(uri):
 		login_url = users.create_login_url(uri)
 		username = user.nickname()
 	else:
-		self.response.out.write("<html><body>")
-		self.response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
-		self.response.out.write("Нажмите <a href=" + users.create_login_url(uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
-		self.response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
-		self.response.out.write("</body></html>")
+		response.out.write("<html><body>")
+		response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
+		response.out.write("Нажмите <a href=" + users.create_login_url(uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
+		response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
+		response.out.write("</body></html>")
 		#self.redirect(users.create_login_url(self.request.uri))
 		return False
 	return {
@@ -95,7 +127,7 @@ def ckechUser(uri):
 
 class MainPage(webapp.RequestHandler):
 	def get(self):
-		template_values = ckechUser(self.request.uri)
+		template_values = ckechUser(self.request.uri, self.response)
 		if not template_values:
 			return
 
@@ -224,7 +256,7 @@ class AddLog(webapp.RequestHandler):
 
 class UsersList(webapp.RequestHandler):
 	def get(self):
-		template_values = ckechUser(self.request.uri)
+		template_values = ckechUser(self.request.uri, self.response)
 		if not template_values:
 			return
 
@@ -241,7 +273,7 @@ MAXLOGS = 20
 
 class ViewLogs(webapp.RequestHandler):
 	def get(self):
-		template_values = ckechUser(self.request.uri)
+		template_values = ckechUser(self.request.uri, self.response)
 		if not template_values:
 			return
 
@@ -431,7 +463,7 @@ class LastPos(webapp.RequestHandler):
 
 class Geos(webapp.RequestHandler):
 	def get(self):
-		template_values = ckechUser(self.request.uri)
+		template_values = ckechUser(self.request.uri, self.response)
 		if not template_values:
 			return
 
@@ -448,6 +480,35 @@ class Geos(webapp.RequestHandler):
 
 		path = os.path.join(os.path.dirname(__file__), 'geos.html')
 		self.response.out.write(template.render(path, template_values))
+
+def dec2angle_real(x, y):
+	if x==0 and y==0:
+		return -1.0
+	if x==0:
+		if y>0.0: return 90
+		else: return 270
+	theta = math.atan(y/x)
+	theta = theta * 180 / math.pi
+	if x>0.0:
+		if y>0.0: return theta
+		else: return 360 + theta
+	else:
+		return 180+theta
+
+def dec2angle(x, y):
+	if x==0 and y==0:
+		return -1.0
+	if y==0:
+		if x>0.0: return 270
+		else: return 90
+	theta = math.atan(x/y)
+	theta = theta * 180 / math.pi
+	if y>0.0:
+		if x>0.0: return 360-theta
+		else: return -theta
+	else:
+		return 180-theta
+
 
 class GeosJSON(webapp.RequestHandler):
 	def get(self):
@@ -496,7 +557,7 @@ class GeosJSON(webapp.RequestHandler):
 				logging.info("GeosJSON last: %s" % last)
 				geologs = DBGPSPoint.all().filter('user =', userdb).filter('date <=', dateto).order('-date').fetch(int(last))
 			else:
-				geologs = DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(300)
+				geologs = DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(500)
 
 		#self.response.out.write("// User imei: %s\r// Date from: %s\r// Date to: %s\r" % (userdb.imei, datefrom, dateto))
 
@@ -505,12 +566,65 @@ class GeosJSON(webapp.RequestHandler):
 		#geologs = DBGPSPoint.all().order('-date').fetch(500)
 		#geologs = DBGPSPoint.all().order('-date').fetch(MAXLOGS+1)
 
+		optim = self.request.get('optim')
+
 		dif_time = datetime.now() - start_time
 		logging.info("GeosJSON db ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
 
 		results = []
+		if geologs:
+			if not first:
+				dif_time = datetime.now() - start_time
+				logging.info("Start reverse (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+				geologs.reverse()
+				logging.info("Stop reverse (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+
+		prev_lat = 0.0
+		prev_long = 0.0
+		prev_course = 0.0
+		#MIN_QDELTA = 0.00001
+		MIN_QDELTA = 0.01 * 0.01	# 1км?
+		ADELTA = 10.0
+		MIN_ADELTA = 5.0
+		TAN5 = 0.08748	# tan(5град)
 
 		for geolog in geologs:
+
+			#a1 = 0.0
+			if optim:
+				if geolog.speed < 0.1: continue
+
+				delta_lat = math.fabs(geolog.latitude - prev_lat)
+				delta_long = math.fabs(geolog.longitude - prev_long) * math.cos(geolog.latitude * math.pi / 180.0)
+
+				delta_course = math.fabs(geolog.course - prev_course)
+				if delta_course > 180.0:
+					delta_course = 360.0 - delta_course
+				if delta_course < ADELTA:
+					if ADELTA > MIN_ADELTA:
+						ADELTA = ADELTA - 1
+					if (delta_lat*delta_lat + delta_long*delta_long) < MIN_QDELTA:
+						continue
+
+				# Дополнительная попытка исправить небольшие зигзаги на длинных прямых
+				#if len(results) >= 2:
+				#	dx1 = geolog.latitude - results[-1]["lat"]
+				#	dy1 = geolog.longitude - results[-1]["long"]
+				#	a1 = dec2angle(dx1, dy1)
+				#
+				#	dx2 = results[-1]["lat"] - results[-2]["lat"]
+				#	dy2 = results[-1]["long"] - results[-2]["long"]
+				#	a2 = dec2angle(dx2, dy2)
+				#
+				#	deltaa = math.fabs(a2-a1)
+				#	if deltaa > 180.0: deltaa = 360.0 - deltaa
+				#	if deltaa < 1.0: continue
+
+				prev_course = geolog.course
+				prev_lat = geolog.latitude
+				prev_long = geolog.longitude
+				ADELTA = 10.0
+
 			result = {
 				"date": geolog.date.strftime("%d/%m/%Y %H:%M:%S"),
 				"day": geolog.date.strftime("%m/%d/%Y %H:%M"),
@@ -539,7 +653,7 @@ class GeosJSON(webapp.RequestHandler):
 			#geolog.sdate = geolog.cdate.strftime("%d/%m/%Y %H:%M") 
 
 		if geologs:
-			if first:
+			#if first:
 				jsonresp = {
 					"responseData": {
 						"results": results, 
@@ -550,17 +664,17 @@ class GeosJSON(webapp.RequestHandler):
 						"datemax": geologs[-1].date.strftime("%d/%m/%Y %H:%M:%S"),
 					}
 				}
-			else:
-				jsonresp = {
-					"responseData": {
-						"results": results, 
-						"config": 0,
-						"dateminjs": geologs[-1].date.strftime("%m/%d/%Y %H:%M"),
-						"datemaxjs": geologs[0].date.strftime("%m/%d/%Y %H:%M"),
-						"datemin": geologs[-1].date.strftime("%d/%m/%Y %H:%M:%S"),
-						"datemax": geologs[0].date.strftime("%d/%m/%Y %H:%M:%S"),
-					}
-				}
+			#else:
+			#	jsonresp = {
+			#		"responseData": {
+			#			"results": results, 
+			#			"config": 0,
+			#			"dateminjs": geologs[-1].date.strftime("%m/%d/%Y %H:%M"),
+			#			"datemaxjs": geologs[0].date.strftime("%m/%d/%Y %H:%M"),
+			#			"datemin": geologs[-1].date.strftime("%d/%m/%Y %H:%M:%S"),
+			#			"datemax": geologs[0].date.strftime("%d/%m/%Y %H:%M:%S"),
+			#		}
+			#	}
 		else:
 			jsonresp = {
 				"responseData": {
@@ -568,7 +682,6 @@ class GeosJSON(webapp.RequestHandler):
 					"config": 0,
 				}
 			}
-
 
 		dif_time = datetime.now() - start_time
 		logging.info("GeosJSON response ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
@@ -583,90 +696,6 @@ class GeosJSON(webapp.RequestHandler):
 		logging.info("GeosJSON data: %d values" % len(results))
 
 		return
-
-		self.response.out.write("// Old version:\r")
-		jsondata = callback + "("
-		jsondata += """
-		{
-				"responseData": {
-					"results":[
-					{
-						"GsearchResultClass":"GwebSearch",
-						"unescapedUrl":"http://www.google.com/",
-						"url":"http://www.google.com/",
-						"visibleUrl":"www.google.com",
-						"cacheUrl":"http://www.google.com/search?q\u003dcache:zhool8dxBV4J:www.google.com",
-						"title":"\u003cb\u003eGoogle\u003c/b\u003e",
-						"titleNoFormatting":"Google",
-						"content":"Enables users to search the Web, Usenet, and images. Features include PageRank,   caching and translation of results, and an option to find similar pages."
-					},{
-						"GsearchResultClass":"GwebSearch",
-						"unescapedUrl":"http://maps.google.com/",
-						"url":"http://maps.google.com/",
-						"visibleUrl":"maps.google.com",
-						"cacheUrl":"http://www.google.com/search?q\u003dcache:dkf5u2twBXIJ:maps.google.com",
-						"title":"\u003cb\u003eGoogle\u003c/b\u003e Maps",
-						"titleNoFormatting":"Google Maps",
-						"content":"Find local businesses, view maps and get driving directions in \u003cb\u003eGoogle\u003c/b\u003e Maps."
-					},{
-						"GsearchResultClass":"GwebSearch",
-						"unescapedUrl":"http://video.google.com/",
-						"url":"http://video.google.com/",
-						"visibleUrl":"video.google.com",
-						"cacheUrl":"http://www.google.com/search?q\u003dcache:yzZ7MosNOvsJ:video.google.com",
-						"title":"\u003cb\u003eGoogle\u003c/b\u003e Videos",
-						"titleNoFormatting":"Google Videos",
-						"content":"Search and watch millions of videos. Includes forum and personalized   recommendations."
-					},{
-						"GsearchResultClass":"GwebSearch",
-						"unescapedUrl":"http://www.google.org/",
-						"url":"http://www.google.org/",
-						"visibleUrl":"www.google.org",
-						"cacheUrl":"http://www.google.com/search?q\u003dcache:AkOXzKdBYp4J:www.google.org",
-						"title":"\u003cb\u003eGoogle\u003c/b\u003e.org",
-						"titleNoFormatting":"Google.org",
-						"content":"The philanthropic arm of the company. Lists its activities."
-					}],
-					"cursor":{
-						"pages":[
-							{
-								"start":"0",
-								"label":1
-							},{
-								"start":"4",
-								"label":2
-							},{
-								"start":"8",
-								"label":3
-							},{
-								"start":"12",
-								"label":4
-							},{
-								"start":"16",
-								"label":5
-							},{
-								"start":"20",
-								"label":6
-							},{
-								"start":"24",
-								"label":7
-							},{
-								"start":"28",
-								"label":8
-							}
-						],
-						"estimatedResultCount":"166000000",
-						"currentPageIndex":0,
-						"moreResultsUrl":"http://www.google.com/search?oe\u003dutf8\u0026ie\u003dutf8\u0026source\u003duds\u0026start\u003d0\u0026hl\u003dru\u0026q\u003dgoogle"
-					}
-				},
-				"responseDetails": null,
-				"responseStatus": 200
-			}
-		"""
-		jsondata += ")"
-		self.response.out.write(jsondata)
-		pass
 
 class DelGeos(webapp.RequestHandler):
 	def get(self):
@@ -762,7 +791,10 @@ conf_parms = [
 
 class Config(webapp.RequestHandler):
 	def get(self):
-		template_values = ckechUser(self.request.uri)
+		cmd = self.request.get('cmd')
+		uimei = self.request.get('imei')
+
+		template_values = ckechUser(self.request.uri, self.response)
 		if not template_values:
 			return
 
@@ -770,19 +802,209 @@ class Config(webapp.RequestHandler):
 		#logging.debug(userdb.imei)
 
 		if userdb == None:
-
 			allusers = DBUser.all().fetch(100)
 			template_values['now'] = datetime.now()
 			template_values['users'] = allusers
 
 			path = os.path.join(os.path.dirname(__file__), 'config.html')
 			self.response.out.write(template.render(path, template_values))
-		else:
-			template_values['configs'] = conf_parms
-			template_values['user'] = userdb
 
-			path = os.path.join(os.path.dirname(__file__), 'params.html')
-			self.response.out.write(template.render(path, template_values))
+		else:
+			if cmd == 'last':
+				#self.response.out.write('<html><head><link type="text/css" rel="stylesheet" href="stylesheets/main.css" /></head><body>CONFIG:<br><table>')
+				#self.response.out.write(u"<tr><th>Имя</th><th>Тип</th><th>Значение</th><th>Заводская установка</th></tr>" )
+
+				newconfig = DBConfig().all().filter('user = ', userdb).fetch(1)
+				#for dbconfig in newconfig:
+				if newconfig:
+					#self.response.out.write("<tr><th>date: %s</th></tr>" % dbconfig.cdate)
+					configs = eval(zlib.decompress(newconfig[0].config))
+					#configs = eval(dbconfig.strconfig)
+
+					#try:
+					#	for config, value in configs.items():
+					#		self.response.out.write("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" % (config, value[0], value[1], value[2]))
+					#except:
+					#	self.response.out.write("<tr><td>orig:%s</td></tr>" % repr(configs))
+
+					waitconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(1)
+					if waitconfigs:
+						waitconfig = eval(zlib.decompress(waitconfigs[0].config))
+					else:
+						waitconfig = {}
+
+
+					for config, value in configs.items():
+						if config in waitconfig:
+							configs[config] = (configs[config][0], configs[config][1], configs[config][2], waitconfig[config])
+#						else:
+#							configs[config] = (configs[config][0], configs[config][1], configs[config][2], configs[config][1])
+
+					template_values['configs'] = configs
+					template_values['user'] = userdb
+					template_values['imei'] = uimei
+
+					path = os.path.join(os.path.dirname(__file__), 'config-last.html')
+					self.response.out.write(template.render(path, template_values))
+				else:
+					self.response.out.write(u"<html><body>Нет записей</body></html>")
+					#self.response.out.write("</table></body></html>")
+
+			else:
+				template_values['configs'] = conf_parms
+				template_values['user'] = userdb
+				template_values['imei'] = uimei
+
+				path = os.path.join(os.path.dirname(__file__), 'params.html')
+				self.response.out.write(template.render(path, template_values))
+
+		#DBNewConfig
+
+	def post(self):
+		userdb = getUser(self.request)
+		if not userdb:
+			self.response.out.write("NO USER")
+			return
+
+		cmd = self.request.get('cmd')
+		if cmd == 'save':
+			newconfigs = DBConfig().all().filter('user = ', userdb).fetch(1)
+			if newconfigs:
+				newconfig = newconfigs[0]
+				config = eval(zlib.decompress(newconfig.config))
+				#config = eval(newconfig.strconfig)
+			else:
+				newconfig = DBConfig()
+				newconfig.user = userdb
+				config = {}
+
+			#logging.info(self.request.body)
+			for conf in self.request.body.split("\n"):
+				params = conf.strip().split()
+				#logging.info(params)
+				if len(params) == 4:
+					config[params[0]] = (params[1], params[2], params[3])
+				#self.response.out.write("<tr><td>parts:%s</td></tr>" % repr(conf.strip()))
+
+			#newconfig = DBConfig()
+			#newconfig.user = userdb
+			newconfig.config = zlib.compress(repr(config), 9)
+			#newconfig.strconfig = repr(config)
+			newconfig.put()
+
+			self.response.out.write("OK\r\n")
+
+			pass
+		else:
+
+			self.response.out.write("<html><body>\r\n")
+
+			config = self.request.get('userconfig') + ";" + self.request.get('custom')
+			params = config.split(';')
+
+			self.response.out.write("Config: %s<br/>" % config)
+
+			newconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(1)
+			if newconfigs:
+				newconfig = newconfigs[0]
+				config = eval(zlib.decompress(newconfig.config))
+				#config = eval(newconfig.strconfig)
+			else:
+				newconfig = DBNewConfig()
+				newconfig.user = userdb
+				config = {}
+
+			for param in params:
+				item = param.split('=')
+				if len(item) == 2:
+					config[item[0]] = item[1]
+
+			newconfig.config = zlib.compress(repr(config), 9)
+			#newconfig.strconfig = repr(config)
+			newconfig.put()
+		
+
+			if len(config) != 0:
+				self.response.out.write("Params: %d" % len(config))
+
+			self.response.out.write("</body></html>")
+		pass
+
+class Params(webapp.RequestHandler):
+	def get(self):
+		cmd = self.request.get('cmd')
+		uimei = self.request.get('imei')
+		userdb = getUser(self.request)
+		if userdb == None:
+			self.response.out.write("NOUSER")
+			return
+
+		if cmd == 'params':
+			self.response.headers['Content-Type']   = 'text/css'
+			#self.response.out.write("<html><body>CONFIG:<br><table>")
+			newconfig = DBNewConfig().all().filter('user = ', userdb).fetch(1)
+			#for dbconfig in newconfig:
+			if newconfig:
+				#self.response.out.write("<tr><th>date: %s</th></tr>" % dbconfig.cdate)
+				configs = eval(zlib.decompress(newconfig[0].config))
+				#configs = eval(dbconfig.strconfig)
+				for config, value in configs.items():
+					#self.response.out.write("<tr><td>%s:%s</td></tr>" % (config, value))
+					self.response.out.write("PARAM %s %s\r\n" % (config, value))
+			else:
+				self.response.out.write("NODATA")
+			#self.response.out.write("</table></body></html>")
+			pass
+
+		elif cmd == 'cancel':
+			self.response.headers['Content-Type']   = 'text/css'
+			newconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(1)
+			if newconfigs:
+				newconfigs[0].delete()
+				self.response.out.write("DELETED")
+			else:
+				self.response.out.write("NODATA")
+			
+
+		elif cmd == 'changeone':
+			logging.info(" === Change one parameter")
+			callback = self.request.get('callback')
+			name = self.request.get('name')
+			value = self.request.get('value')
+
+			newconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(1)
+			if newconfigs:
+				newconfig = newconfigs[0]
+				config = eval(zlib.decompress(newconfig.config))
+				#config = eval(newconfig.strconfig)
+			else:
+				newconfig = DBNewConfig()
+				newconfig.user = userdb
+				config = {}
+
+
+			savedconfigs = DBConfig().all().filter('user = ', userdb).fetch(1)
+			config[name] = value
+			if savedconfigs:
+				savedconfig = eval(zlib.decompress(savedconfigs[0].config))
+				if name in savedconfig:
+					if savedconfig[name][1] == value:
+						del config[name]
+
+			newconfig.config = zlib.compress(repr(config), 9)
+			#newconfig.strconfig = repr(config)
+			newconfig.put()
+
+			self.response.headers['Content-Type']   = 'text/javascript; charset=utf-8'
+			jsonresp = {
+				"responseData": {
+					"confirm": 1,
+					"name": name,
+					"value": value,
+				}
+			}
+			nejson = json.dumps(jsonresp)
+			self.response.out.write(callback + "(" + nejson + ")\r")
 
 class Help(webapp.RequestHandler):
 	def get(self):
@@ -949,11 +1171,32 @@ def SaveGPSPointFromBin(pdata, result):
 	if ord(pdata[13]) & 2:
 		longitude = - longitude
 
+	error = False
+
+	if latitude > 90.0: error = True
+	if latitude < -90.0: error = True
+	if longitude > 180.0: error = True
+	if longitude < -180.0: error = True
+
+	if error:
+		logging.error("Corrupt latitude or longitude %f, %f" % (latitude, longitude))
+		sstr = "  pdata: "
+		for p in pdata:
+			sstr += " %02X" % ord(p)
+		logging.error( sstr )
+		return
+
 	sats = ord(pdata[14])
+	if sats < 3: return
 
 	fix = 1
 	speed = float(ord(pdata[15])) + float(ord(pdata[16])) / 100.0;
-	course = float(ord(pdata[17])) + float(ord(pdata[18])) / 100.0;
+
+	if ord(pdata[13]) & 4:
+		course = float(ord(pdata[17])*2 + 1) + float(ord(pdata[18])) / 100.0;
+	else:
+		course = float(ord(pdata[17])*2) + float(ord(pdata[18])) / 100.0;
+
 	altitude = 100.0 * float(ord(pdata[19]) + ord(pdata[20])) / 10.0;
 
 	if(ord(pdata[21])) != 255:	#CRC
@@ -1214,7 +1457,7 @@ class GetBinGeos(webapp.RequestHandler):
 
 class Map(webapp.RequestHandler):
 	def get(self):
-		template_values = ckechUser(self.request.uri)
+		template_values = ckechUser(self.request.uri, self.response)
 		if not template_values:
 			return
 
@@ -1395,7 +1638,7 @@ class Firmware(webapp.RequestHandler):
 			else:
 				self.redirect("/firmware")
 		else:
-			template_values = ckechUser(self.request.uri)
+			template_values = ckechUser(self.request.uri, self.response)
 			if not template_values:
 				return
 
@@ -1457,6 +1700,7 @@ application = webapp.WSGIApplication(
 	('/geos.*', Geos),
 	('/stylesheets.*', CSSfiles),
 	('/config.*', Config),
+	('/params.*', Params),
 	('/help.*', Help),
 	('/testbin.*', TestBin),
 	('/bingeos.*', BinGeos),
