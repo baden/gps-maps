@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+	
+{% block title %}{{ application_name }} Конфигурация системы {% endblock %}
+
+{% block head %}
+  <link type="text/css" rel="stylesheet" href="stylesheets/ui.all.css" />
+  <style type="text/css">{% include "css/config.css" %}
+
+input.digits {
+	text-align: right;
+}
+
+input.compl {
+	//color: green;
+	text-align: right;
+	font-weight: bold;
+	background: lime;
+}
+
+form table tr th{
+	font-size: 0.9em;
+}
+
+</style>
+
+<script type="text/javascript">
+
+function ResetParam(name, nvalue, dvalue)
+{
+//	if(value == nvalue) return;
+//	alert('Значение для ' + name + ' будет сброшено в ' + value);
+
+	$.getJSON("params?imei={{ imei }}&cmd=changeone&name=" + name + "&value=" + nvalue + "&callback=?", function (data) {
+		if (data.responseData && (data.responseData.confirm == 1)) {
+			var item = document.getElementById(name)
+			if(nvalue != dvalue) {
+				item.innerHTML = nvalue + '<a class="smallButton" href="javascript:void(0)" title="Значение еще не обновлено (' + dvalue + ')">*</a><a class="smallButton" href="javascript:ChangeParam(\'' + name + '\', ' + nvalue + ', ' + dvalue + ')" title="Изменить значение">...</a>';
+			} else {
+				item.innerHTML = nvalue + '<a class="smallButton" href="javascript:ChangeParam(\'' + name + '\', ' + nvalue + ', ' + dvalue + ')" title="Изменить значение">...</a>';
+			}
+		} else {
+			alert('Извините, но произошла ошибка. Попробуйте обновить страницу и снова изменить значение.');
+		}
+	});
+
+}
+
+function ChangeParam(name, value, dvalue)
+{
+	var nvalue = prompt("Введите новое значение для '" + name + "'", value);
+	if (nvalue == null) return;
+	if (nvalue == value) return;
+
+	ResetParam(name, nvalue, dvalue);
+
+	//alert('Вы ввели ' + nvalue);
+}
+
+
+
+</script>
+
+{% endblock %}
+
+{% block body %}
+    <h1>Конфигурация системы {{ user.desc }}</h1>
+	<table>
+		<tr>
+			<th>№п.п.</th>
+			<th>Параметр</th>
+			<th>Тип</th>
+			<th>Значение</th>
+			<th>Заводская установка</th>
+			<th>Описание</th>
+		</tr>
+		{% for config in configs.items %}
+		<tr>
+			<td>{{ forloop.counter }}</td>
+			<td>{{ config.0 }}</td>
+			<td>{{ config.1.0 }}</td>
+			<td>
+				<div id="{{ config.0 }}">
+					{% if config.1.3 %}
+						{{ config.1.3 }}<a class="smallButton" href="javascript:void(0)" title="Значение еще не обновлено ({{ config.1.1 }})">*</a>
+					{% else %}
+						{{ config.1.1 }}
+					{% endif %}
+					<a class="smallButton" href="javascript:ChangeParam('{{ config.0 }}', {% if config.1.3 %} {{ config.1.3 }} {% else %} {{ config.1.1 }} {% endif %}, {{ config.1.1 }})" title="Изменить значение">...</a>
+				</div>
+			</td>
+			<td>{{ config.1.2 }}<a class="smallButton" href="javascript:ResetParam('{{ config.0 }}', {{ config.1.2 }}, {{ config.1.1 }})" title="Сбросить значение на заводскую установку">&times;</a></td>
+			<td>Нет описания</td>
+		</tr>
+		{% endfor %}
+	</table>
+	<div style="border: none; text-align:left; padding: 2px 2px 2px 2px;">
+	<a class="smallButton" href="firmware" title="Обновление внутреннего программного обеспечения системы.">U</a>
+	<a class="smallButton" href="params?cmd=params&imei={{ imei }}" title="Посмотреть очередь команд конфигурации.">N</a>
+	<a class="smallButton" href="params?cmd=cancel&imei={{ imei }}" title="Отменить очередь команд конфигурации.">NX</a>
+	</div>
+{% endblock %}
+
+{% block final %}
+{% endblock %}
