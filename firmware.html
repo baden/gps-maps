@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+	
+{% block title %}{{ application_name }} Обновление внутреннего программного обеспечения систем {% endblock %}
+
+{% block head %}
+  <style type="text/css">{% include "css/config.css" %}
+
+input.digits {
+	text-align: right;
+}
+
+input.compl {
+	//color: green;
+	text-align: right;
+	font-weight: bold;
+	background: lime;
+}
+
+form table tr th{
+	font-size: 0.9em;
+}
+
+</style>
+
+<script type="text/javascript">
+</script>
+
+{% endblock %}
+
+{% block body %}
+    <h1>Обновление firmware</h1>
+	<h2>Доступные обновления</h2>
+	<table>
+		<tr>
+			<th>Имя образа</th>
+			<th>Версия HW</th>
+			<th>Версия SW</th>
+			<th>Дата добавления</th>
+			<th>Размер</th>
+			<th>Описание</th>
+			<th title="Загрузить бинарный образ">G</th>
+			{% if admin %}
+				<th title="Удалить">X</th>
+			{% endif %}
+		</tr>
+	{% for fw in firmwares %}
+		<tr>
+			<td>{{ fw.key }}</td>
+			<td>
+				{{ fw.hwid }}
+				<a class="smallButton" href="firmware?cmd=get&hwid={{ fw.hwid }}" title="Загрузить самый свежий бинарный образ для этого HW">G</a>
+				<a class="smallButton" href="firmware?cmd=check&hwid={{ fw.hwid }}" title="Запросить версию самого свежего образа для этого HW">?</a>
+				<a class="smallButton" href="firmware?hwid={{ fw.hwid }}" title="Показывать только образы для этого HW">F</a>
+			</td>
+			<td>{{ fw.swid }}</td>
+			<td>{{ fw.cdate|date:"d/m/y G:i" }}</td>
+			<td>{{ fw.size }}</td>
+			<td>{{ fw.desc }}</td>
+			<td><a class="smallButton" href="firmware?cmd=get&hwid={{ fw.hwid }}&swid={{ fw.swid }}" title="Загрузить бинарный образ">G</a></td>
+			{% if admin %}
+				<td><a class="smallButton" href="firmware?cmd=del&id={{ fw.key }}" title="Удалить">X</a></td>
+			{% endif %}
+		</tr>
+	{% endfor %}
+	</table>
+	<form>
+	</form>
+{% endblock %}
+
+{% block final %}
+{% endblock %}

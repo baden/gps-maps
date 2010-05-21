@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+	
+{% block title %}{{ application_name }} Конфигурация системы {% endblock %}
+
+{% block head %}
+  <link type="text/css" rel="stylesheet" href="stylesheets/ui.all.css" />
+  <style type="text/css">{% include "css/config.css" %}
+
+input.digits {
+	text-align: right;
+}
+
+input.compl {
+	//color: green;
+	text-align: right;
+	font-weight: bold;
+	background: lime;
+}
+
+form table tr th{
+	font-size: 0.9em;
+}
+
+</style>
+
+<script type="text/javascript">
+userconfigs = {}
+function ChangeParam(me)
+{
+	userconfigs[me.id] = me.value;
+	userstr = ""
+	for (userconfig in userconfigs){
+		userstr += userconfig + "="+ userconfigs[userconfig] + ";";
+	}
+	//$("#userconfig").html(userstr.replace(/_/g,"."));
+
+
+	document.getElementById('userconfig').value = userstr.replace(/_/g,".");
+	me.form.submit.disabled = 0;
+
+	//$(me).style("text-align: left;");
+	me.className = "compl";
+}
+
+</script>
+
+{% endblock %}
+
+{% block body %}
+    <h1>Конфигурация системы {{ user.desc }}</h1>
+	<form action="config" method="get" name="myform" id="myform" style="border:none;">
+		<select name="imei" size=1 onChange="myform.submit();">
+			<option value="" SELECTED>Выбрать другую:
+        		{% for user in users %}
+			<option value="{{ user.imei }}">{{ user.imei }}: {{ user.desc }}
+			{% endfor %}
+		</select>
+	</form>
+	<form action="/config?imei={{ imei }}" enctype="multipart/form-data" method="post" style="border:solid;">
+		<table>
+			<tr>
+				<th rowspan="2">Параметр</th>
+				<th colspan="4">Значение</th>
+				<th rowspan="2">Ед. изм.</th>
+				<th rowspan="2">Рекомендуемое значение</th>
+				<th rowspan="2">Диапазон</th>
+				<th rowspan="2">Прим.</th>
+			</tr>
+			<tr>
+				<th><div title="Профиль №1. Внешнее питание >10В.">P1</div></th>
+				<th><div title="Профиль №1. Внешнее питание 6..10В.">P2</div></th>
+				<th><div title="Внешнее питание отключено. Внутреннее питание >3.8В.">P3</div></th>
+				<th><div title="Внешнее питание отключено. Внутреннее питание <3.8В.">P4</div></th>
+			</tr>
+			{% for config in configs %}
+			<tr>
+				<td style="text-align:left;"><label>{{ config.title }}</label></td>
+				<td><input id="{{ config.name }}_0" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.0 }}" onchange="ChangeParam(this)"></td>
+				<td><input id="{{ config.name }}_1" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.1 }}" onchange="ChangeParam(this)"></td>
+				<td><input id="{{ config.name }}_2" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.2 }}" onchange="ChangeParam(this)"></td>
+				<td><input id="{{ config.name }}_3" class="digits" type="text" size="4" maxlength="6" align="right" value="{{ config.values.3 }}" onchange="ChangeParam(this)"></td>
+				<td><label>{{ config.units }}</label></td>
+				<td><label>{{ config.recomends }}</label></td>
+				<td><label>{{ config.range }}</label></td>
+				<td><a class="Help" href="help?topic=config&subtopic=param01" title="{{ config.help }}">?</a></td>
+			</tr>
+			{% endfor %}
+		</table>
+            <!--div id="userconfig">None;</div-->
+            <input type="text" name="userconfig" id="userconfig" readonly style="width:100%;"/>
+            <div><label>Дополнительные команды:</label></div>
+            <div><textarea name="custom" rows="3" style="width:98%;" onfocus="this.form.submit.disabled=0"></textarea></div>
+            <div><input type="submit" name="submit" value="Поставить в очередь." disabled></div>
+           	</form>
+	<div style="background-color:#FFFFC0;">
+    <font color="red">Внимание!</font> Изменения вступят в силу при следующем сеансе связи системы с сервером.
+	Можно принудительно вызвать процедуру обновления отправив SMS на номер системы со словом <b>config</b>.
+	</div>
+	<div style="border: none; text-align:left; padding: 2px 2px 2px 2px;">
+	<a class="smallButton" href="firmware" title="Обновление внутреннего программного обеспечения системы.">U</a>
+	<a class="smallButton" href="config?cmd=last&imei={{ imei }}" title="Посмотреть текущую конфигурацию.">C</a>
+	<a class="smallButton" href="params?cmd=params&imei={{ imei }}" title="Посмотреть очередь команд конфигурации.">N</a>
+	<a class="smallButton" href="params?cmd=cancel&imei={{ imei }}" title="Отменить очередь команд конфигурации.">NX</a>
+	</div>
+{% endblock %}
+
+{% block final %}
+{% endblock %}
