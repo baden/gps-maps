@@ -38,7 +38,8 @@ form table tr th{
 			<th>Дата добавления</th>
 			<th>Размер</th>
 			<th>Описание</th>
-			<th title="Загрузить бинарный образ">G</th>
+			<th title="Загрузить бинарный образ">Бин</th>
+			<th title="Загрузить текстовый образ">Текст</th>
 			{% if admin %}
 				<th title="Удалить">X</th>
 			{% endif %}
@@ -48,7 +49,8 @@ form table tr th{
 			<td>{{ fw.key }}</td>
 			<td>
 				{{ fw.hwid }}
-				<a class="smallButton" href="firmware?cmd=get&hwid={{ fw.hwid }}" title="Загрузить самый свежий бинарный образ для этого HW">G</a>
+				<a class="smallButton" href="firmware?cmd=getbin&hwid={{ fw.hwid }}" title="Загрузить самый свежий бинарный образ для этого HW">B</a>
+				<a class="smallButton" href="firmware?cmd=get&hwid={{ fw.hwid }}" title="Загрузить самый свежий текстовый образ для этого HW">T</a>
 				<a class="smallButton" href="firmware?cmd=check&hwid={{ fw.hwid }}" title="Запросить версию самого свежего образа для этого HW">?</a>
 				<a class="smallButton" href="firmware?hwid={{ fw.hwid }}" title="Показывать только образы для этого HW">F</a>
 			</td>
@@ -56,7 +58,8 @@ form table tr th{
 			<td>{{ fw.cdate|date:"d/m/y G:i" }}</td>
 			<td>{{ fw.size }}</td>
 			<td>{{ fw.desc }}</td>
-			<td><a class="smallButton" href="firmware?cmd=get&hwid={{ fw.hwid }}&swid={{ fw.swid }}" title="Загрузить бинарный образ">G</a></td>
+			<td><a class="smallButton" href="firmware?cmd=getbin&hwid={{ fw.hwid }}&swid={{ fw.swid }}" title="Загрузить бинарный образ">B</a></td>
+			<td><a class="smallButton" href="firmware?cmd=get&hwid={{ fw.hwid }}&swid={{ fw.swid }}" title="Загрузить текстовый образ">T</a></td>
 			{% if admin %}
 				<td><a class="smallButton" href="firmware?cmd=del&id={{ fw.key }}" title="Удалить">X</a></td>
 			{% endif %}

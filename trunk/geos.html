@@ -13,12 +13,12 @@
     <table>
         <thead>
         	<tr>
-        		<th>ID</th>
+        		<!--th>ID</th-->
         		<th>IMEI пользователя</th>
 				<th>Дата и время</th>
 				<th>Долгота<br><i>Град</i></th>
 				<th>Широта<br><i>Град</i></th>
-				<th>Спутники<br>(Fix)</th>
+				<th>Спут.<br>(Fix)</th>
 				<th>Скорость<br><i>км/ч</i></th>
 				<th>Направление<br><i>Град</i></th>
 				<th>Высота<br><i>м</i></th>
@@ -28,7 +28,7 @@
 		</thead>
         {% for geolog in geologs %}
             <tr>
-            	<td>{{ geolog.key.id }}</td>
+            	<!--td>{{ geolog.key.id }}</td-->
             	<td>{{ geolog.imei }}<a href="geos?imei={{ geolog.imei }}" title="filter">[x]</a></td>
 				<td>{{ geolog.date|date:"d/m/y G:i:s" }}</td>
 				<td>{{ geolog.latitude|floatformat:4 }}</td>

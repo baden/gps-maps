@@ -102,6 +102,15 @@ class DBNewConfig(db.Model):
 	config = db.BlobProperty()
 	#strconfig = db.StringProperty()
 
+
+class DBDescription(db.Model):
+	name = db.StringProperty(multiline=False)	# имя параметра
+	value = db.StringProperty(multiline=False)	# Текстовое описание
+	unit = db.StringProperty(multiline=False)	# Единица измерения
+	coef = db.FloatProperty(default=1.0)		# Коэффициент преобразования для человеческого представления
+	mini = db.IntegerProperty(default=0)		# Минимальное значение для типа INT
+	maxi = db.IntegerProperty(default=32767)	# Максимальное значение для типа INT
+
 ADMIN_USERNAME = 'baden.i.ua'
 
 def ckechUser(uri, response):
@@ -789,6 +798,13 @@ conf_parms = [
 	},
 ]
 
+def sortDict(adict):
+	keys = sorted(adict.keys())
+	#keys.sort()
+	logging.info(repr(keys))
+	return [(key, adict[key]) for key in keys]
+	#return map(adict.get, keys)
+
 class Config(webapp.RequestHandler):
 	def get(self):
 		cmd = self.request.get('cmd')
@@ -814,11 +830,19 @@ class Config(webapp.RequestHandler):
 				#self.response.out.write('<html><head><link type="text/css" rel="stylesheet" href="stylesheets/main.css" /></head><body>CONFIG:<br><table>')
 				#self.response.out.write(u"<tr><th>Имя</th><th>Тип</th><th>Значение</th><th>Заводская установка</th></tr>" )
 
+				descriptions = DBDescription().all() #.fetch(500)
+				descs={}
+				for description in descriptions:
+					descs[description.name] = description.value
+					pass
+
 				newconfig = DBConfig().all().filter('user = ', userdb).fetch(1)
 				#for dbconfig in newconfig:
 				if newconfig:
 					#self.response.out.write("<tr><th>date: %s</th></tr>" % dbconfig.cdate)
 					configs = eval(zlib.decompress(newconfig[0].config))
+					#configs = sortDict(eval(zlib.decompress(newconfig[0].config)))
+
 					#configs = eval(dbconfig.strconfig)
 
 					#try:
@@ -835,12 +859,21 @@ class Config(webapp.RequestHandler):
 
 
 					for config, value in configs.items():
-						if config in waitconfig:
-							configs[config] = (configs[config][0], configs[config][1], configs[config][2], waitconfig[config])
-#						else:
-#							configs[config] = (configs[config][0], configs[config][1], configs[config][2], configs[config][1])
+						desc = u"Нет описания"
+						if config in descs:
+							desc = descs[config]
 
-					template_values['configs'] = configs
+						if config in waitconfig:
+							configs[config] = (configs[config][0], configs[config][1], configs[config][2], waitconfig[config], desc)
+						else:
+							configs[config] = (configs[config][0], configs[config][1], configs[config][2], None, desc)
+							#configs[config] = (configs[config][0], configs[config][1], configs[config][2], configs[config][1])
+
+					# Для удобства отсортируем словарь в список
+					#sconfigs = sortDict(configs)
+					sconfigs = [(key, configs[key]) for key in sorted(configs.keys())]
+
+					template_values['configs'] = sconfigs
 					template_values['user'] = userdb
 					template_values['imei'] = uimei
 
@@ -868,6 +901,7 @@ class Config(webapp.RequestHandler):
 
 		cmd = self.request.get('cmd')
 		if cmd == 'save':
+			self.response.headers['Content-Type'] = 'text/plain'	#minimizing data
 			newconfigs = DBConfig().all().filter('user = ', userdb).fetch(1)
 			if newconfigs:
 				newconfig = newconfigs[0]
@@ -892,7 +926,7 @@ class Config(webapp.RequestHandler):
 			#newconfig.strconfig = repr(config)
 			newconfig.put()
 
-			self.response.out.write("OK\r\n")
+			self.response.out.write("CONFIG: OK\r\n")
 
 			pass
 		else:
@@ -932,6 +966,7 @@ class Config(webapp.RequestHandler):
 
 class Params(webapp.RequestHandler):
 	def get(self):
+		self.response.headers['Content-Type'] = 'text/plain'	#minimizing data
 		cmd = self.request.get('cmd')
 		uimei = self.request.get('imei')
 		userdb = getUser(self.request)
@@ -940,7 +975,6 @@ class Params(webapp.RequestHandler):
 			return
 
 		if cmd == 'params':
-			self.response.headers['Content-Type']   = 'text/css'
 			#self.response.out.write("<html><body>CONFIG:<br><table>")
 			newconfig = DBNewConfig().all().filter('user = ', userdb).fetch(1)
 			#for dbconfig in newconfig:
@@ -951,20 +985,49 @@ class Params(webapp.RequestHandler):
 				for config, value in configs.items():
 					#self.response.out.write("<tr><td>%s:%s</td></tr>" % (config, value))
 					self.response.out.write("PARAM %s %s\r\n" % (config, value))
+				self.response.out.write("FINISH\r\n")
 			else:
-				self.response.out.write("NODATA")
+				self.response.out.write("NODATA\r\n")
 			#self.response.out.write("</table></body></html>")
 			pass
 
 		elif cmd == 'cancel':
-			self.response.headers['Content-Type']   = 'text/css'
-			newconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(1)
-			if newconfigs:
-				newconfigs[0].delete()
-				self.response.out.write("DELETED")
+			newconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(100)
+			for newconfig in newconfigs:
+				newconfig.delete()
+			self.response.out.write("DELETED")
+
+		elif cmd == 'confirm':
+			newconfig = DBNewConfig().all().filter('user = ', userdb).fetch(100)
+
+			if newconfig:
+				newconfigs = eval(zlib.decompress(newconfig[0].config))
+
+
+				saveconfigs = DBConfig().all().filter('user = ', userdb).fetch(1)
+				if saveconfigs:
+					saveconfig = saveconfigs[0]
+					config = eval(zlib.decompress(saveconfig.config))
+				else:
+					saveconfig = DBConfig()
+					saveconfig.user = userdb
+					config = {}
+
+				#configs = eval(dbconfig.strconfig)
+				for pconfig, pvalue in newconfigs.items():
+					if pconfig in config:
+						config[pconfig] = (config[pconfig][0], pvalue, config[pconfig][2])
+
+				saveconfig.config = zlib.compress(repr(config), 9)
+				saveconfig.put()
+
+				for nc in newconfig:
+					nc.delete()
+
+				self.response.out.write("CONFIRM")
+
 			else:
 				self.response.out.write("NODATA")
-			
 
 		elif cmd == 'changeone':
 			logging.info(" === Change one parameter")
@@ -1005,6 +1068,15 @@ class Params(webapp.RequestHandler):
 			}
 			nejson = json.dumps(jsonresp)
 			self.response.out.write(callback + "(" + nejson + ")\r")
+		elif cmd == 'check':
+			newconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(1)
+			if newconfigs:
+				self.response.out.write('CONFIGUP\r\n')
+			else:
+				self.response.out.write('NODATA\r\n')
+		else:
+			self.response.out.write('CMD_ERROR\r\n')
+
 
 class Help(webapp.RequestHandler):
 	def get(self):
@@ -1141,6 +1213,11 @@ class BinGeos(webapp.RequestHandler):
 			#taskqueue.add(url = url % self.key().id(), method="GET", countdown=countdown)
 			countdown=0
 			taskqueue.add(url = url, method="GET", countdown=countdown)
+
+			newconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(1)
+			if newconfigs:
+				self.response.out.write('CONFIGUP\r\n')
+
 
 			self.response.out.write('ANSWER: OK\r\n')
 		else:
@@ -1589,6 +1666,66 @@ class TestDB(webapp.RequestHandler):
 		self.response.out.write(template.render(path, values))
 		#self.redirect('testdb.html')
 
+# 16-bit CRCs should detect 65535/65536 or 99.998% of all errors in
+# data blocks up to 4096 bytes
+MASK_CCITT = 0x1021 # CRC-CCITT mask (ISO 3309, used in X25, HDLC)
+MASK_CRC16 = 0xA001 # CRC16 mask (used in ARC files)
+
+#----------------------------------------------------------------------------
+# Calculate and return an incremental CRC value based on the current value
+# and the data bytes passed in as a string.
+#
+def updcrc1(crc, data, mask=MASK_CCITT):
+
+	# data_length = len(data)
+	# unpackFormat = '%db' % data_length
+	# unpackedData = struct.unpack(unpackFormat, data)
+
+	c = data
+	c = c << 8
+
+	for j in xrange(8):
+		if (crc ^ c) & 0x8000:
+			crc = (crc << 1) ^ mask
+		else:
+			crc = crc << 1
+		c = c << 1
+
+	return crc & 0xffff
+
+""" CRC16-CCITT hash, part of Battlefield 2142 Auth token maker
+This is the python module package for computing CRC16-CCITT hash.
+"""
+
+CRC16_CCITT_table = (
+        0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7, 0x8108, 0x9129, 0xa14a, 0xb16b,
+        0xc18c, 0xd1ad, 0xe1ce, 0xf1ef, 0x1231, 0x0210, 0x3273, 0x2252, 0x52b5, 0x4294, 0x72f7, 0x62d6,
+        0x9339, 0x8318, 0xb37b, 0xa35a, 0xd3bd, 0xc39c, 0xf3ff, 0xe3de, 0x2462, 0x3443, 0x0420, 0x1401,
+        0x64e6, 0x74c7, 0x44a4, 0x5485, 0xa56a, 0xb54b, 0x8528, 0x9509, 0xe5ee, 0xf5cf, 0xc5ac, 0xd58d,
+        0x3653, 0x2672, 0x1611, 0x0630, 0x76d7, 0x66f6, 0x5695, 0x46b4, 0xb75b, 0xa77a, 0x9719, 0x8738,
+        0xf7df, 0xe7fe, 0xd79d, 0xc7bc, 0x48c4, 0x58e5, 0x6886, 0x78a7, 0x0840, 0x1861, 0x2802, 0x3823,
+        0xc9cc, 0xd9ed, 0xe98e, 0xf9af, 0x8948, 0x9969, 0xa90a, 0xb92b, 0x5af5, 0x4ad4, 0x7ab7, 0x6a96,
+        0x1a71, 0x0a50, 0x3a33, 0x2a12, 0xdbfd, 0xcbdc, 0xfbbf, 0xeb9e, 0x9b79, 0x8b58, 0xbb3b, 0xab1a,
+        0x6ca6, 0x7c87, 0x4ce4, 0x5cc5, 0x2c22, 0x3c03, 0x0c60, 0x1c41, 0xedae, 0xfd8f, 0xcdec, 0xddcd,
+        0xad2a, 0xbd0b, 0x8d68, 0x9d49, 0x7e97, 0x6eb6, 0x5ed5, 0x4ef4, 0x3e13, 0x2e32, 0x1e51, 0x0e70,
+        0xff9f, 0xefbe, 0xdfdd, 0xcffc, 0xbf1b, 0xaf3a, 0x9f59, 0x8f78, 0x9188, 0x81a9, 0xb1ca, 0xa1eb,
+        0xd10c, 0xc12d, 0xf14e, 0xe16f, 0x1080, 0x00a1, 0x30c2, 0x20e3, 0x5004, 0x4025, 0x7046, 0x6067,
+        0x83b9, 0x9398, 0xa3fb, 0xb3da, 0xc33d, 0xd31c, 0xe37f, 0xf35e, 0x02b1, 0x1290, 0x22f3, 0x32d2,
+        0x4235, 0x5214, 0x6277, 0x7256, 0xb5ea, 0xa5cb, 0x95a8, 0x8589, 0xf56e, 0xe54f, 0xd52c, 0xc50d,
+        0x34e2, 0x24c3, 0x14a0, 0x0481, 0x7466, 0x6447, 0x5424, 0x4405, 0xa7db, 0xb7fa, 0x8799, 0x97b8,
+        0xe75f, 0xf77e, 0xc71d, 0xd73c, 0x26d3, 0x36f2, 0x0691, 0x16b0, 0x6657, 0x7676, 0x4615, 0x5634,
+        0xd94c, 0xc96d, 0xf90e, 0xe92f, 0x99c8, 0x89e9, 0xb98a, 0xa9ab, 0x5844, 0x4865, 0x7806, 0x6827,
+        0x18c0, 0x08e1, 0x3882, 0x28a3, 0xcb7d, 0xdb5c, 0xeb3f, 0xfb1e, 0x8bf9, 0x9bd8, 0xabbb, 0xbb9a,
+        0x4a75, 0x5a54, 0x6a37, 0x7a16, 0x0af1, 0x1ad0, 0x2ab3, 0x3a92, 0xfd2e, 0xed0f, 0xdd6c, 0xcd4d,
+        0xbdaa, 0xad8b, 0x9de8, 0x8dc9, 0x7c26, 0x6c07, 0x5c64, 0x4c45, 0x3ca2, 0x2c83, 0x1ce0, 0x0cc1,
+        0xef1f, 0xff3e, 0xcf5d, 0xdf7c, 0xaf9b, 0xbfba, 0x8fd9, 0x9ff8, 0x6e17, 0x7e36, 0x4e55, 0x5e74,
+        0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
+        )
+
+def updcrc2(crc, data):
+    """ Compute correct enough :grin: CRC16 CCITT for using in BF2142 auth token """
+    return (((crc << 8) & 0xff00) ^ CRC16_CCITT_table[((crc >> 8) ^ (0xff & data))])
+
 # обновление программного обеспечения
 class Firmware(webapp.RequestHandler):
 
@@ -1613,13 +1750,22 @@ class Firmware(webapp.RequestHandler):
 
 			elif cmd == 'check':	# Запросить версию самой свежей прошивки
 				fw = DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
-				self.response.headers['Content-Type'] = 'text/plain'
+				resp = ""	# Боремся с Transfer-Encoding: chunked
+				#self.response.headers['Content-Type'] = 'text/plain'
+				self.response.headers['Content-Type'] = 'application/octet-stream'	# Это единственный (пока) способ побороть Transfer-Encoding: chunked
+				#self.response.headers['Content-Length'] = len(resp)
+				#self.response.headers['Transfer-Encoding'] = 'gzip'
+				#self.response.headers['Transfer-Encoding'] = 'identity'
 				if fw:
-					self.response.out.write("SWID: %X" % fw[0].swid)
+					#self.response.out.write("a\r\nSWID: %04X" % fw[0].swid)
+					resp = "SWID: %04X\r\n" % fw[0].swid
 				else:
-					self.response.out.write("NOT FOUND")
+					#self.response.out.write("NOT FOUND")
+					resp = "NOT FOUND\r\n"
+				self.response.out.write(resp)
 
-			elif cmd == 'get':
+
+			elif cmd == 'getbin':
 				swid = self.request.get('swid')
 				if swid:
 					fw = DBFirmware().all().filter('hwid =', int(hwid, 16)).filter('swid =', int(swid, 16)).fetch(1)
@@ -1628,11 +1774,47 @@ class Firmware(webapp.RequestHandler):
 				if fw:
 					self.response.headers['Content-Type'] = 'application/octet-stream'
 					self.response.out.write(fw[0].data)
-					#self.response.headers['Content-Type'] = 'text/plain'
-					#self.response.out.write('SWID:%X\r\n' % fw[0].swid)
-					#self.response.out.write('OK\r\n')
 				else:
-					self.response.headers['Content-Type'] = 'text/plain'
+					#self.response.headers['Content-Type'] = 'text/plain'
+					self.response.headers['Content-Type'] = 'application/octet-stream'	# Это единственный (пока) способ побороть Transfer-Encoding: chunked
+					self.response.out.write('NOT FOUND\r\n')
+
+			elif cmd == 'get':
+				swid = self.request.get('swid')
+				if swid:
+					fw = DBFirmware().all().filter('hwid =', int(hwid, 16)).filter('swid =', int(swid, 16)).fetch(1)
+				else:
+					fw = DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
+				#self.response.headers['Content-Type'] = 'text/plain'
+				self.response.headers['Content-Type'] = 'application/octet-stream'	# Это единственный (пока) способ побороть Transfer-Encoding: chunked
+				if fw:
+					#self.response.headers['Content-Type'] = 'application/octet-stream'
+					#self.response.out.write(fw[0].data)
+					by = 0
+					line = 0
+					#crc1 = 0
+					crc2 = 0
+					self.response.out.write("SWID:%04X" % fw[0].swid)
+					self.response.out.write("\r\nLENGTH:%04X" % len(fw[0].data))
+					#cuting = 0
+					for byte in fw[0].data:
+						if by == 0:
+							self.response.out.write("\r\nLINE%04X:" % line)
+							line = line + 1
+							by = 32
+							#cuting = cuting + 1
+							#if cuting == 230: break
+						self.response.out.write("%02X" % ord(byte))
+						#crc = crc^ord(byte)
+						#crc1 = updcrc1(crc1, ord(byte))
+						crc2 = updcrc2(crc2, ord(byte))
+						by = by - 1
+					#self.response.out.write("\r\nCRC%04X\r\nENDDATA\r\n" % updcrc(0, fw[0].data))
+					self.response.out.write("\r\n")
+					#self.response.out.write("CRC:%04X\r\n" % crc1)
+					self.response.out.write("CRC:%04X\r\n" % crc2)
+					self.response.out.write("ENDDATA\r\n")
+				else:
 					self.response.out.write('NOT FOUND\r\n')
 
 			else:
@@ -1652,8 +1834,8 @@ class Firmware(webapp.RequestHandler):
 				#fw.oswid = "%X" % fw.swid
 				nfw.append({
 					'key': fw.key().name(),
-					'hwid': "%X" % fw.hwid,
-					'swid': "%X" % fw.swid,
+					'hwid': "%04X" % fw.hwid,
+					'swid': "%04X" % fw.swid,
 					'cdate': fw.cdate,
 					'size': fw.size,
 					'desc': fw.desc,
@@ -1669,7 +1851,7 @@ class Firmware(webapp.RequestHandler):
 		hwid = int(self.request.get('hwid'), 16)
 		swid = int(self.request.get('swid'), 16)
 
-		newfw = DBFirmware(key_name = "FWGPS%X%X" % (hwid, swid))
+		newfw = DBFirmware(key_name = "FWGPS%04X%04X" % (hwid, swid))
 		newfw.hwid = hwid
 		newfw.swid = swid
 		newfw.data = pdata
@@ -1685,6 +1867,28 @@ class Firmware(webapp.RequestHandler):
 #		return ['']
 
 #application = myWSGIApplication(
+
+class SetDescription(webapp.RequestHandler):
+	def get(self):
+		callback = self.request.get('callback')
+		name = self.request.get('name')
+		value = self.request.get('value')
+
+
+		newdescr = DBDescription(key_name = "DESC%s" % name)
+		newdescr.name = name
+		newdescr.value = value
+		newdescr.put()
+
+		self.response.headers['Content-Type']   = 'text/javascript; charset=utf-8'
+		jsonresp = {
+			"responseData": {
+				"confirm": 1,
+			}
+		}
+		nejson = json.dumps(jsonresp)
+		self.response.out.write(callback + "(" + nejson + ")\r")
+
 application = webapp.WSGIApplication(
 	[('/', MainPage),
 	('/regid', RegId),
@@ -1711,6 +1915,7 @@ application = webapp.WSGIApplication(
 	('/testdb.*', TestDB),
 	('/system.*', System),
 	('/firmware.*', Firmware),
+	('/setdescr.*', SetDescription),
 	],
 	debug=True
 )
