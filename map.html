@@ -50,6 +50,7 @@
 		var flightPath;
 		var datemin;
 		var datemax;
+		var userimei;
 
 		var image = new google.maps.MarkerImage('stylesheets/marker1.png',
 			// This marker is 20 pixels wide by 32 pixels tall.
@@ -109,6 +110,12 @@
 					this.markers[i].setMap(null);
 				}
 			};
+
+			{% if imei %}
+			userimei = {{ imei }}
+			{% else %}
+			userimei = {{ users.0.imei }}
+			{% endif %}
 		})();
 
 		function createMarker(name, pos) {
@@ -158,26 +165,26 @@
 			//$("#progress").html("Загружено...");
 
 			$('#seefirst').click(function() {
-				loadPoints("geosjson?imei=353358016204856&first=500&callback=?");
+				loadPoints("geosjson?imei=" + userimei + "&first=500&callback=?");
 			});
 
 
 			$('#seeprev').click(function() {
 				var dateto = datemin.replace(/[\/: ]/g,"");
 			
-				loadPoints("geosjson?imei=353358016204856&last=500&dateto=" + dateto + "&callback=?");
-//				loadPoints("geosjson?imei=123456789013&last=500&callback=?");
-				//loadPoints("geosjson?imei=123456789013&last=500&callback=?");
+				loadPoints("geosjson?imei=" + userimei + "&last=500&dateto=" + dateto + "&callback=?");
+//				loadPoints("geosjson?imei=" + userimei + "&last=500&callback=?");
+				//loadPoints("geosjson?imei=" + userimei + "&last=500&callback=?");
 			});
 
 			$('#seenext').click(function() {
 				var datefrom = datemax.replace(/[\/: ]/g,"");
 
-				loadPoints("geosjson?imei=353358016204856&first=500&datefrom=" + datefrom + "&callback=?");
+				loadPoints("geosjson?imei=" + userimei + "&first=500&datefrom=" + datefrom + "&callback=?");
 			});
 
 			$('#seelast').click(function() {
-				loadPoints("geosjson?imei=353358016204856&last=500&callback=?");
+				loadPoints("geosjson?imei=" + userimei + "&last=500&callback=?");
 			});
 			
 		});
@@ -312,7 +319,7 @@
 		}
 
 		function lastPoints() {
-			loadPoints("geosjson?imei=353358016204856&last=500&callback=?");
+			loadPoints("geosjson?imei=" + userimei + "&last=500&callback=?");
 		}
 
 		function datePoints() {
@@ -323,8 +330,8 @@
 			var dateto = document.getElementById('datepickerto').value.replace(/[\/]/g,"") +
 				document.getElementById('timeto').value.replace(/[\:]/g,"") + "59";
 			
-			loadPoints("geosjson?imei=353358016204856&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
-			//var url = "geosjson?imei=123456789013&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
+			loadPoints("geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
+			//var url = "geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
 
 		}
 	// Define a property to hold the Home state
@@ -354,7 +361,7 @@
 		// Set CSS for the control border
 		var controlUI = document.createElement('div');
 		controlUI.setAttribute('class', 'MapNav');
-		controlUI.title = 'Нажмите чтобы центровать на "объект №1"';
+		controlUI.title = 'Нажмите чтобы центровать на "объект №{{ forloop.counter }}"';
 		controlDiv.appendChild(controlUI);
 
 		// Set CSS for the control interior
