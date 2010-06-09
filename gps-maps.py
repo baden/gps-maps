@@ -15,124 +15,19 @@ from google.appengine.api import urlfetch
 from google.appengine.api.labs import taskqueue
 from google.appengine.ext import db
 from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
 #from google.appengine.tools import bulkloader
 
+# Must set this env var *before* importing any part of Django.
+os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+
+from google.appengine.ext.webapp import template
+
 #import models
-
-class DBUser(db.Model):
-	userid = db.IntegerProperty()			# Unique
-	imei = db.StringProperty(multiline=False)	# IMEI
-	phone = db.StringProperty(multiline=False)	# Phone number, for example: +380679332332
-	password = db.StringProperty(multiline=False)	# User password
-	date = db.DateTimeProperty(auto_now_add=True)	# Registration date
-	desc = db.StringProperty(multiline=False)	# Описание
-
-
-#class UserLoader(bulkloader.Loader):
-#  def __init__(self):
-#    bulkloader.Loader.__init__(self, 'BDUser',
-#                               [('imei', str),
-#                                ('phone', str),
-#                                ('publication_date',
-#                                 lambda x: datetime.datetime.strptime(x, '%m/%d/%Y').date()),
-#                                ('userid', int)
-#                               ])
-#
-#loaders = [UserLoader]
-
-
-class GPSLogs(db.Model):
-	user = db.ReferenceProperty(DBUser)
-	text = db.StringProperty(multiline=True)
-	date = db.DateTimeProperty(auto_now_add=True)
-
-class Greeting(db.Model):
-	author = db.UserProperty()
-	content = db.StringProperty(multiline=True)
-	date = db.DateTimeProperty(auto_now_add=True)
-
-class DBGPSPoint(db.Model):
-	user = db.ReferenceProperty(DBUser)
-	cdate = db.DateTimeProperty(auto_now_add=True)
-	date = db.DateTimeProperty()
-	latitude = db.FloatProperty()
-	longitude = db.FloatProperty()
-	sats = db.IntegerProperty()
-	fix = db.IntegerProperty()
-	speed = db.FloatProperty()
-	course = db.FloatProperty()
-	altitude = db.FloatProperty()
-	in1 = db.FloatProperty()		# Значение на аналоговом входе 1
-	in2 = db.FloatProperty()		# Значение на агалоговом входе 2
-	#power = db.FloatProperty()		# Уровень заряда батареи (на
-
-class DBGPSBin(db.Model):
-	user = db.ReferenceProperty(DBUser)
-	cdate = db.DateTimeProperty(auto_now_add=True)
-	dataid = db.IntegerProperty()
-	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
-
-class DBGPSBinParts(db.Model):
-	user = db.ReferenceProperty(DBUser)
-	cdate = db.DateTimeProperty(auto_now_add=True)
-	dataid = db.IntegerProperty()
-	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
-
-class DBFirmware(db.Model):
-	cdate = db.DateTimeProperty(auto_now_add=True)	# Дата размещения прошивки
-	hwid = db.IntegerProperty()			# Версия аппаратуры
-	swid = db.IntegerProperty()			# Версия прошивки
-	data = db.BlobProperty()			# Образ прошивки
-	size = db.IntegerProperty()			# Размер прошивки (опция)
-	desc = db.StringProperty(multiline=True)	# Описание прошивки (опция)
-
-# Конфигурация систем
-# Содержит динамически наполняемым контентом
-class DBConfig(db.Model):
-	cdate = db.DateTimeProperty(auto_now_add=True)	# Дата размещения конфигурации
-	user = db.ReferenceProperty(DBUser)
-	config = db.BlobProperty()
-	#strconfig = db.StringProperty()
-
-class DBNewConfig(db.Model):
-	cdate = db.DateTimeProperty(auto_now_add=True)	# Дата размещения конфигурации
-	user = db.ReferenceProperty(DBUser)
-	config = db.BlobProperty()
-	#strconfig = db.StringProperty()
-
-
-class DBDescription(db.Model):
-	name = db.StringProperty(multiline=False)	# имя параметра
-	value = db.StringProperty(multiline=False)	# Текстовое описание
-	unit = db.StringProperty(multiline=False)	# Единица измерения
-	coef = db.FloatProperty(default=1.0)		# Коэффициент преобразования для человеческого представления
-	mini = db.IntegerProperty(default=0)		# Минимальное значение для типа INT
-	maxi = db.IntegerProperty(default=32767)	# Максимальное значение для типа INT
+import datamodel
 
 ADMIN_USERNAME = 'baden.i.ua'
 
-def ckechUser(uri, response):
-	user = users.get_current_user()
-
-	if user:
-		#url = users.create_logout_url(self.request.uri)
-		login_url = users.create_login_url(uri)
-		username = user.nickname()
-	else:
-		response.out.write("<html><body>")
-		response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
-		response.out.write("Нажмите <a href=" + users.create_login_url(uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
-		response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
-		response.out.write("</body></html>")
-		#self.redirect(users.create_login_url(self.request.uri))
-		return False
-	return {
-		'login_url': login_url,
-		'username': username,
-		'admin': username == ADMIN_USERNAME,
-	}
 
 # 16-bit CRCs should detect 65535/65536 or 99.998% of all errors in
 # data blocks up to 4096 bytes
@@ -195,15 +90,53 @@ def updcrc2(crc, data):
     """ Compute correct enough :grin: CRC16 CCITT for using in BF2142 auth token """
     return (((crc << 8) & 0xff00) ^ CRC16_CCITT_table[((crc >> 8) ^ (0xff & data))])
 
-class MainPage(webapp.RequestHandler):
+def checkUser(uri, response):
+	user = users.get_current_user()
+
+	if user:
+		#url = users.create_logout_url(self.request.uri)
+		login_url = users.create_login_url(uri)
+		username = user.nickname()
+	else:
+		response.out.write("<html><body>")
+		response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
+		response.out.write("Нажмите <a href=" + users.create_login_url(uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
+		response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
+		response.out.write("</body></html>")
+		#self.redirect(users.create_login_url(self.request.uri))
+		return False
+	return {
+		'login_url': login_url,
+		'username': username,
+		'admin': username == ADMIN_USERNAME,
+	}
+
+class TemplatedPage(webapp.RequestHandler):
+	def write_template(self, values):
+
+		user = users.get_current_user()
+
+		if user:
+			#url = users.create_logout_url(self.request.uri)
+			login_url = users.create_login_url(self.request.uri)
+			username = user.nickname()
+			values['login_url'] = login_url
+			values['username'] = username
+			values['admin'] = (username == ADMIN_USERNAME)
+
+			path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
+			self.response.out.write(template.render(path, values))
+		else:
+			self.response.out.write("<html><body>")
+			self.response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
+			self.response.out.write("Нажмите <a href=" + users.create_login_url(self.request.uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
+			self.response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
+			self.response.out.write("</body></html>")
+			#self.redirect(users.create_login_url(self.request.uri))
+
+class MainPage(TemplatedPage):
 	def get(self):
-		template_values = ckechUser(self.request.uri, self.response)
-		if not template_values:
-			return
-
-		allusers = DBUser.all().fetch(100)
-		template_values['users'] = allusers
-
+		template_values = {}
 		template_values['now'] = datetime.now()
 
 		crc = 0
@@ -219,8 +152,9 @@ class MainPage(webapp.RequestHandler):
 		#logging.info("Test info logging.");
 		#logging.critical("Test critical logging.");
 
-		path = os.path.join(os.path.dirname(__file__), 'index.html')
-		self.response.out.write(template.render(path, template_values))
+		#path = os.path.join(os.path.dirname(__file__), 'index.html')
+		#self.response.out.write(template.render(path, template_values))
+		self.write_template(template_values)
 
 class System(webapp.RequestHandler):
 	def get(self):
@@ -238,7 +172,7 @@ class System(webapp.RequestHandler):
 
 class Guestbook(webapp.RequestHandler):
 	def post(self):
-		greeting = Greeting()
+		greeting = datamodel.Greeting()
 
 		if users.get_current_user():
 			greeting.author = users.get_current_user()
@@ -256,8 +190,8 @@ def getUser(request):
 #		userdb = DBUser().get_by_id(long(uid))
 		#self.response.out.write('Get by id (%d)\r\n' % userid)
 	if uimei:
-		userdbq = DBUser().all().filter('imei =', uimei).fetch(1)
-		#userdbq = DBUser().all().filter('imei =', uimei).get()
+		userdbq = datamodel.DBUser().all().filter('imei =', uimei).fetch(1)
+		#userdbq = datamodel.DBUser().all().filter('imei =', uimei).get()
 		if userdbq:
 			userdb = userdbq[0] 
 			#self.response.out.write('Get by imei (%s)\r\n' % uimei)
@@ -280,11 +214,11 @@ class AddLog(webapp.RequestHandler):
 		text = self.request.get('text')
 
 		#if uid:
-		#    userdb = DBUser().get_by_id(long(uid))
+		#    userdb = datamodel.DBUser().get_by_id(long(uid))
 		#    self.response.out.write('Get by id (%d)\r\n' % userid)
 
 		#if uimei:
-		#	userdbq = DBUser().all().filter('imei =', uimei).fetch(2)
+		#	userdbq = datamodel.DBUser().all().filter('imei =', uimei).fetch(2)
 		#	if userdbq:
 		#		userdb = userdbq[0] 
 		#		self.response.out.write('Get by imei (%s)\r\n' % uimei)
@@ -293,17 +227,17 @@ class AddLog(webapp.RequestHandler):
 		#		self.response.out.write('User not found by imei (%s)\r\n' % uimei)
 
 		if userdb:
-			gpslog = GPSLogs()
+			gpslog = datamodel.GPSLogs()
 			gpslog.user = userdb
 			gpslog.text = text
 			gpslog.put()
 			self.response.out.write('Add log for user (phone:%s IMEI:%s).\r\n' % (userdb.phone, userdb.imei))
 
-		#userdb = DBUser().get('imei', user_imei)
-		#userdb = DBUser().get_by_id(ids, parent)
+		#userdb = datamodel.DBUser().get('imei', user_imei)
+		#userdb = datamodel.DBUser().get_by_id(ids, parent)
 		#self.response.out.write('OK.\r\n')
 		#for ii in range(10):
-		#    gpslog = GPSLogs()
+		#    gpslog = datamodel.GPSLogs()
 		#    gpslog.userid = user_id
 		#    gpslog.text = text
 		#    gpslog.put()
@@ -331,30 +265,25 @@ class AddLog(webapp.RequestHandler):
 		file = self.request.get('file')
 		self.response.out.write('File: %s' % file)
 
-class UsersList(webapp.RequestHandler):
+class UsersList(TemplatedPage):
 	def get(self):
-		template_values = ckechUser(self.request.uri, self.response)
-		if not template_values:
-			return
+		template_values = {}
 
-		dbusers_query = DBUser.all().order('-date')
+		dbusers_query = datamodel.DBUser.all().order('-date')
 		dbusers = dbusers_query.fetch(50)
 		dbusers_count = dbusers_query.count()
 		template_values['dbusers'] = dbusers
 		template_values['users_count'] = dbusers_count
 
-		path = os.path.join(os.path.dirname(__file__), 'users.html')
-		self.response.out.write(template.render(path, template_values))
+		#path = os.path.join(os.path.dirname(__file__), 'users.html')
+		#self.response.out.write(template.render(path, template_values))
+		self.write_template(template_values)
 
 MAXLOGS = 20
 
-class ViewLogs(webapp.RequestHandler):
+class ViewLogs(TemplatedPage):
 	def get(self):
-		template_values = ckechUser(self.request.uri, self.response)
-		if not template_values:
-			return
-
-		#gpslogs_query = GPSLogs.all().order('-date').fetch(MAXLOGS+1)
+		#gpslogs_query = datamodel.GPSLogs.all().order('-date').fetch(MAXLOGS+1)
 		#gpslogs_query = db.GqlQuery("SELECT * FROM GPSLogs ORDER BY date DESC LIMIT 20")
 		#gpslogs_query = db.GqlQuery("SELECT * FROM GPSLogs ORDER BY date DESC")
 		#gpslogs_query = db.GqlQuery("SELECT * FROM GPSLogs ORDER BY date DESC OFFSET 1")
@@ -379,10 +308,10 @@ class ViewLogs(webapp.RequestHandler):
 			urlprev = ''
 
 		if datemark:
-			gpslogs = GPSLogs.all().filter('date <=', datetime.strptime(datemark, "%Y%m%d%H%M%S%f")).order('-date').fetch(MAXLOGS+1)
+			gpslogs = datamodel.GPSLogs.all().filter('date <=', datetime.strptime(datemark, "%Y%m%d%H%M%S%f")).order('-date').fetch(MAXLOGS+1)
 			#urlprev = '<a href="logs?date=%s">Prev</a> %s ' % (gpslogs[0].date.strftime("%d-%m-%y %H:%M:%S.%f"), datemark)  
 		else:
-			gpslogs = GPSLogs.all().order('-date').fetch(MAXLOGS+1)
+			gpslogs = datamodel.GPSLogs.all().order('-date').fetch(MAXLOGS+1)
 		gpslogs_count = len(gpslogs)
 		if gpslogs_count == MAXLOGS+1:
 			if datemark:
@@ -411,23 +340,26 @@ class ViewLogs(webapp.RequestHandler):
 			#if not gpslog.user:
 			#    gpslog.user.imei = "deleted"
 
+		template_values = {}
 		template_values['gpslogs'] = gpslogs
 		template_values['urlnext'] = urlnext
 		template_values['urlprev'] = urlprev
 
-		path = os.path.join(os.path.dirname(__file__), 'logs.html')
-		self.response.out.write(template.render(path, template_values))
+		#path = os.path.join(os.path.dirname(__file__), 'logs.html')
+		#self.response.out.write(template.render(path, template_values))
+		self.write_template(template_values)
+
 		#try:
 		#	self.response.out.write(template.render(path, template_values))
 		#except:
-		#	self.response.out.write("<html><body>Database error</body></html>")            
+		#	self.response.out.write("<html><body>Database error</body></html>")
 		#self.response.out.write(template.generate(path, template_values))
 		#self.generate()
 
 
 class DelLogs(webapp.RequestHandler):
 	def get(self):
-		logs = GPSLogs.all().order('date').fetch(100)
+		logs = datamodel.GPSLogs.all().order('date').fetch(100)
 		for log in logs:
 			log.delete()
 		self.redirect("/logs")
@@ -441,7 +373,7 @@ class RegId(webapp.RequestHandler):
 		self.response.out.write('imei=%s\r\nphone=%s\r\npass=%s\r\n' % (imei, phone, passw))
 
 		#users = db.Query(DBUser).filter('phone', phone).fetch(2)
-		users = db.Query(DBUser).filter('imei', imei).fetch(2)
+		users = db.Query(datamodel.DBUser).filter('imei', imei).fetch(2)
 
 		if users:
 			newuser = users[0]
@@ -454,7 +386,7 @@ class RegId(webapp.RequestHandler):
 			else:
 				self.response.out.write(' Ignoring.\r\n')
 		else:
-			newuser = DBUser()
+			newuser = datamodel.DBUser()
 			newuser.imei = imei
 			newuser.phone = phone
 			newuser.password = passw
@@ -470,12 +402,12 @@ class DelUser(webapp.RequestHandler):
 	def get(self):
 		ukey = self.request.get('key')
 		uid = self.request.get('id')
-		#duser = DBUser().get_by_key_name(cls, key_names, parent)
+		#duser = datamodel.DBUser().get_by_key_name(cls, key_names, parent)
 		if ukey:
 			datastore.Delete(datastore.Key(ukey))
 
 		if uid:
-			userdb = DBUser().get_by_id(long(uid))
+			userdb = datamodel.DBUser().get_by_id(long(uid))
 			userdb.delete()
 
 		self.redirect("/users")
@@ -522,7 +454,7 @@ class LastPos(webapp.RequestHandler):
 			#self.response.out.write('in1: %.2f%%\r\n' % in1)
 			#self.response.out.write('in2: %.2f%%\r\n' % in2)
 
-			gpspoint = DBGPSPoint()
+			gpspoint = datamodel.DBGPSPoint()
 			gpspoint.user = userdb
 			gpspoint.date = datestamp
 			gpspoint.latitude = latitude
@@ -538,14 +470,11 @@ class LastPos(webapp.RequestHandler):
 		else:
 			self.response.out.write('User not found\r\n')
 
-class Geos(webapp.RequestHandler):
+class Geos(TemplatedPage):
 	def get(self):
-		template_values = ckechUser(self.request.uri, self.response)
-		if not template_values:
-			return
 
-		geologs = DBGPSPoint.all().order('-date').fetch(MAXLOGS+1)
-		#geologs = DBGPSPoint.all().order('-date').fetch(100)
+		geologs = datamodel.DBGPSPoint.all().order('-date').fetch(MAXLOGS+1)
+		#geologs = datamodel.DBGPSPoint.all().order('-date').fetch(100)
 		for geolog in geologs:
 			try:
 				uuser = geolog.user
@@ -553,10 +482,10 @@ class Geos(webapp.RequestHandler):
 			except:
 				geolog.imei = 'deleted' 
 			geolog.sdate = geolog.cdate.strftime("%d/%m/%Y %H:%M") 
-		template_values['geologs'] = geologs
 
-		path = os.path.join(os.path.dirname(__file__), 'geos.html')
-		self.response.out.write(template.render(path, template_values))
+		#path = os.path.join(os.path.dirname(__file__), 'geos.html')
+		#self.response.out.write(template.render(path, template_values))
+		self.write_template({'geologs': geologs})
 
 def dec2angle_real(x, y):
 	if x==0 and y==0:
@@ -625,17 +554,17 @@ class GeosJSON(webapp.RequestHandler):
 		if first:
 			logging.info("GeosJSON first: %s" % first)
 			if datefrom_s:
-				geologs = DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).order('date').fetch(int(first))
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).order('date').fetch(int(first))
 			else:
-				geologs = DBGPSPoint.all().filter('user =', userdb).order('date').fetch(int(first))
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('date').fetch(int(first))
 				pass
 		else:
 			last = self.request.get('last')
 			if last:
 				logging.info("GeosJSON last: %s" % last)
-				geologs = DBGPSPoint.all().filter('user =', userdb).filter('date <=', dateto).order('-date').fetch(int(last))
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date <=', dateto).order('-date').fetch(int(last))
 			else:
-				geologs = DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(500)
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(500)
 
 		#self.response.out.write("// User imei: %s\r// Date from: %s\r// Date to: %s\r" % (userdb.imei, datefrom, dateto))
 
@@ -777,7 +706,7 @@ class GeosJSON(webapp.RequestHandler):
 
 class DelGeos(webapp.RequestHandler):
 	def get(self):
-		geologs = DBGPSPoint.all().order('-date').fetch(500)
+		geologs = datamodel.DBGPSPoint.all().order('-date').fetch(500)
 		if geologs:
 			db.delete(geologs)
 		#for geolog in geologs:
@@ -874,24 +803,21 @@ def sortDict(adict):
 	return [(key, adict[key]) for key in keys]
 	#return map(adict.get, keys)
 
-class Config(webapp.RequestHandler):
+class Config(TemplatedPage):
 	def get(self):
 		cmd = self.request.get('cmd')
 		uimei = self.request.get('imei')
-
-		template_values = ckechUser(self.request.uri, self.response)
-		if not template_values:
-			return
 
 		userdb = getUser(self.request)
 		#logging.debug(userdb.imei)
 
 		if userdb == None:
-			allusers = DBUser.all().fetch(100)
-			template_values['now'] = datetime.now()
-			template_values['users'] = allusers
+			allusers = datamodel.DBUser.all().fetch(100)
+			template_values = {'now': datetime.now(),
+			    'users':allusers
+			}
 
-			path = os.path.join(os.path.dirname(__file__), 'config.html')
+			path = os.path.join(os.path.dirname(__file__), 'templates/config.html')
 			self.response.out.write(template.render(path, template_values))
 
 		else:
@@ -899,13 +825,13 @@ class Config(webapp.RequestHandler):
 				#self.response.out.write('<html><head><link type="text/css" rel="stylesheet" href="stylesheets/main.css" /></head><body>CONFIG:<br><table>')
 				#self.response.out.write(u"<tr><th>Имя</th><th>Тип</th><th>Значение</th><th>Заводская установка</th></tr>" )
 
-				descriptions = DBDescription().all() #.fetch(500)
+				descriptions = datamodel.DBDescription().all() #.fetch(500)
 				descs={}
 				for description in descriptions:
 					descs[description.name] = description.value
 					pass
 
-				newconfig = DBConfig().all().filter('user = ', userdb).fetch(1)
+				newconfig = datamodel.DBConfig().all().filter('user = ', userdb).fetch(1)
 				#for dbconfig in newconfig:
 				if newconfig:
 					#self.response.out.write("<tr><th>date: %s</th></tr>" % dbconfig.cdate)
@@ -920,7 +846,7 @@ class Config(webapp.RequestHandler):
 					#except:
 					#	self.response.out.write("<tr><td>orig:%s</td></tr>" % repr(configs))
 
-					waitconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(1)
+					waitconfigs = datamodel.DBNewConfig().all().filter('user = ', userdb).fetch(1)
 					if waitconfigs:
 						waitconfig = eval(zlib.decompress(waitconfigs[0].config))
 					else:
@@ -942,22 +868,26 @@ class Config(webapp.RequestHandler):
 					#sconfigs = sortDict(configs)
 					sconfigs = [(key, configs[key]) for key in sorted(configs.keys())]
 
-					template_values['configs'] = sconfigs
-					template_values['user'] = userdb
-					template_values['imei'] = uimei
+					template_values = {
+					    'configs': sconfigs,
+					    'user': userdb,
+					    'imei': uimei
+					}
 
-					path = os.path.join(os.path.dirname(__file__), 'config-last.html')
+					path = os.path.join(os.path.dirname(__file__), 'templates/config-last.html')
 					self.response.out.write(template.render(path, template_values))
 				else:
 					self.response.out.write(u"<html><body>Нет записей</body></html>")
 					#self.response.out.write("</table></body></html>")
 
 			else:
-				template_values['configs'] = conf_parms
-				template_values['user'] = userdb
-				template_values['imei'] = uimei
+				template_values = {
+				    'configs': conf_parms,
+				    'user': userdb,
+				    'imei': uimei
+				}
 
-				path = os.path.join(os.path.dirname(__file__), 'params.html')
+				path = os.path.join(os.path.dirname(__file__), 'templates/params.html')
 				self.response.out.write(template.render(path, template_values))
 
 		#DBNewConfig
@@ -971,13 +901,13 @@ class Config(webapp.RequestHandler):
 		cmd = self.request.get('cmd')
 		if cmd == 'save':
 			self.response.headers['Content-Type'] = 'text/plain'	#minimizing data
-			newconfigs = DBConfig().all().filter('user = ', userdb).fetch(1)
+			newconfigs = datamodel.DBConfig().all().filter('user = ', userdb).fetch(1)
 			if newconfigs:
 				newconfig = newconfigs[0]
 				config = eval(zlib.decompress(newconfig.config))
 				#config = eval(newconfig.strconfig)
 			else:
-				newconfig = DBConfig()
+				newconfig = datamodel.DBConfig()
 				newconfig.user = userdb
 				config = {}
 
@@ -1007,13 +937,13 @@ class Config(webapp.RequestHandler):
 
 			self.response.out.write("Config: %s<br/>" % config)
 
-			newconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(1)
+			newconfigs = datamodel.DBNewConfig().all().filter('user = ', userdb).fetch(1)
 			if newconfigs:
 				newconfig = newconfigs[0]
 				config = eval(zlib.decompress(newconfig.config))
 				#config = eval(newconfig.strconfig)
 			else:
-				newconfig = DBNewConfig()
+				newconfig = datamodel.DBNewConfig()
 				newconfig.user = userdb
 				config = {}
 
@@ -1025,7 +955,6 @@ class Config(webapp.RequestHandler):
 			newconfig.config = zlib.compress(repr(config), 9)
 			#newconfig.strconfig = repr(config)
 			newconfig.put()
-		
 
 			if len(config) != 0:
 				self.response.out.write("Params: %d" % len(config))
@@ -1045,7 +974,7 @@ class Params(webapp.RequestHandler):
 
 		if cmd == 'params':
 			#self.response.out.write("<html><body>CONFIG:<br><table>")
-			newconfig = DBNewConfig().all().filter('user = ', userdb).fetch(1)
+			newconfig = datamodel.DBNewConfig().all().filter('user = ', userdb).fetch(1)
 			#for dbconfig in newconfig:
 			if newconfig:
 				#self.response.out.write("<tr><th>date: %s</th></tr>" % dbconfig.cdate)
@@ -1061,24 +990,24 @@ class Params(webapp.RequestHandler):
 			pass
 
 		elif cmd == 'cancel':
-			newconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(100)
+			newconfigs = datamodel.DBNewConfig().all().filter('user = ', userdb).fetch(100)
 			for newconfig in newconfigs:
 				newconfig.delete()
 			self.response.out.write("DELETED")
 
 		elif cmd == 'confirm':
-			newconfig = DBNewConfig().all().filter('user = ', userdb).fetch(100)
+			newconfig = datamodel.DBNewConfig().all().filter('user = ', userdb).fetch(100)
 
 			if newconfig:
 				newconfigs = eval(zlib.decompress(newconfig[0].config))
 
 
-				saveconfigs = DBConfig().all().filter('user = ', userdb).fetch(1)
+				saveconfigs = datamodel.DBConfig().all().filter('user = ', userdb).fetch(1)
 				if saveconfigs:
 					saveconfig = saveconfigs[0]
 					config = eval(zlib.decompress(saveconfig.config))
 				else:
-					saveconfig = DBConfig()
+					saveconfig = datamodel.DBConfig()
 					saveconfig.user = userdb
 					config = {}
 
@@ -1104,18 +1033,18 @@ class Params(webapp.RequestHandler):
 			name = self.request.get('name')
 			value = self.request.get('value')
 
-			newconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(1)
+			newconfigs = datamodel.DBNewConfig().all().filter('user = ', userdb).fetch(1)
 			if newconfigs:
 				newconfig = newconfigs[0]
 				config = eval(zlib.decompress(newconfig.config))
 				#config = eval(newconfig.strconfig)
 			else:
-				newconfig = DBNewConfig()
+				newconfig = datamodel.DBNewConfig()
 				newconfig.user = userdb
 				config = {}
 
 
-			savedconfigs = DBConfig().all().filter('user = ', userdb).fetch(1)
+			savedconfigs = datamodel.DBConfig().all().filter('user = ', userdb).fetch(1)
 			config[name] = value
 			if savedconfigs:
 				savedconfig = eval(zlib.decompress(savedconfigs[0].config))
@@ -1138,7 +1067,7 @@ class Params(webapp.RequestHandler):
 			nejson = json.dumps(jsonresp)
 			self.response.out.write(callback + "(" + nejson + ")\r")
 		elif cmd == 'check':
-			newconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(1)
+			newconfigs = datamodel.DBNewConfig().all().filter('user = ', userdb).fetch(1)
 			if newconfigs:
 				self.response.out.write('CONFIGUP\r\n')
 			else:
@@ -1227,7 +1156,7 @@ class BinGeos(webapp.RequestHandler):
 			#ukey = request.get('ukey')
 			#uid = request.get('uid')
 
-			userdb = DBUser()
+			userdb = datamodel.DBUser()
 			userdb.imei = uimei
 			userdb.phone = ""
 			userdb.password = ""
@@ -1251,9 +1180,7 @@ class BinGeos(webapp.RequestHandler):
 				logging.info(type(self.request.body))
 				#pdata = pdata.decode('utf8').encode('koi-8')
 				#pdata = str(pdata)
-				
-				pass
-		
+
 		_log += '\nData size: %d' % len(pdata)
 		#_log += '\nData (HEX):'
 		#for data in pdata:
@@ -1270,7 +1197,7 @@ class BinGeos(webapp.RequestHandler):
 			#	dataid = db.IntegerProperty()
 			#	#data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
 			#	data = db.TextProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
-			newbin = DBGPSBin()
+			newbin = datamodel.DBGPSBin()
 			newbin.user = userdb
 			newbin.dataid = dataid
 			newbin.data = pdata #db.Text(pdata)
@@ -1283,7 +1210,7 @@ class BinGeos(webapp.RequestHandler):
 			countdown=0
 			taskqueue.add(url = url, method="GET", countdown=countdown)
 
-			newconfigs = DBNewConfig().all().filter('user = ', userdb).fetch(1)
+			newconfigs = datamodel.DBNewConfig().all().filter('user = ', userdb).fetch(1)
 			if newconfigs:
 				self.response.out.write('CONFIGUP\r\n')
 
@@ -1367,7 +1294,7 @@ def SaveGPSPointFromBin(pdata, result):
 	#_log += '\n Altitude: %.5f' % altitude
 	#logging.info('[%s]' % datestamp.strftime("%d/%m/%Y %H:%M:%S"))
 
-	gpspoint = DBGPSPoint()
+	gpspoint = datamodel.DBGPSPoint()
 	gpspoint.user = result.user
 	gpspoint.date = datestamp
 	gpspoint.latitude = latitude
@@ -1404,7 +1331,7 @@ class ParseBinGeos(webapp.RequestHandler):
 			if len(pdata) > (24*450):	# было 24*60 (1 минута на самой высокой скорости)
 				_log += '\nSPLIT BINDATA BY 10800 bytes (450 points):'
 				while len(pdata) > 0:
-					newbin = DBGPSBin()
+					newbin = datamodel.DBGPSBin()
 					newbin.user = result.user
 					newbin.dataid = result.dataid
 					newbin.data = pdata[:(24*450)]
@@ -1469,14 +1396,14 @@ class ParseBinGeos(webapp.RequestHandler):
 			#		_log += 'cathed at position %d' % position
 			#	position = position+1
 			_log += '\nPurge future (break) cut-part...'
-			futparts = DBGPSBinParts().all().filter('user =', result.user).filter('dataid >=', result.dataid).fetch(10)
+			futparts = datamodel.DBGPSBinParts().all().filter('user =', result.user).filter('dataid >=', result.dataid).fetch(10)
 			for futpart in futparts:
 				_log += '*'
 				futpart.delete()
 
 			if odata_s:
 				_log += '\nFinding prevoiuse cut-part...'
-				prevpart = DBGPSBinParts().all().filter('user =', result.user).filter('dataid =', result.dataid-1).get()
+				prevpart = datamodel.DBGPSBinParts().all().filter('user =', result.user).filter('dataid =', result.dataid-1).get()
 				if prevpart:
 					_log += 'ok. mergin...'
 					part = prevpart.data + odata_s
@@ -1498,7 +1425,7 @@ class ParseBinGeos(webapp.RequestHandler):
 			#	part1.start = False
 			#	part1.put()
 			if odata_f:
-				part2 = DBGPSBinParts()
+				part2 = datamodel.DBGPSBinParts()
 				part2.user = result.user
 				part2.dataid = result.dataid
 				part2.data = odata_f
@@ -1601,29 +1528,27 @@ class GetBinGeos(webapp.RequestHandler):
 			self.response.headers['Content-Type'] = 'text/plain'
 			self.response.out.write('NODATA\r\n')
 
-class Map(webapp.RequestHandler):
+class Map(TemplatedPage):
 	def get(self):
-		template_values = ckechUser(self.request.uri, self.response)
-		if not template_values:
-			return
-
 		uimei = self.request.get('imei')
 
-		allusers = DBUser.all().fetch(100)
+		allusers = datamodel.DBUser.all().fetch(100)
+		template_values = {}
 		template_values['map'] = True
 		template_values['users'] = allusers
 		template_values['imei'] = uimei
 		template_values['now'] = datetime.now()
 
-		path = os.path.join(os.path.dirname(__file__), 'map.html')
-		self.response.out.write(template.render(path, template_values))
+		#path = os.path.join(os.path.dirname(__file__), 'map.html')
+		#self.response.out.write(template.render(path, template_values))
+		self.write_template(template_values)
 
 class RawData(webapp.RequestHandler):
 	def get(self):
 		print "RAW DATA"
 		logging.info("DO RAW DATA")
 
-
+"""
 class DBGPSPoint2(db.Model):
 	user = db.ReferenceProperty(DBUser, name='a')
 	cdate = db.DateTimeProperty(auto_now_add=True, name='b')
@@ -1638,6 +1563,7 @@ class DBGPSPoint2(db.Model):
 	in1 = db.FloatProperty(name='k')		# Значение на аналоговом входе 1
 	in2 = db.FloatProperty(name='l')		# Значение на агалоговом входе 2
 	#power = db.FloatProperty()		# Уровень заряда батареи (на
+"""
 
 class Profiler():
 	def __init__(self, logging):
@@ -1659,7 +1585,7 @@ class Profiler():
 		
 class TestDB(webapp.RequestHandler):
 	def create(self):
-		trect = DBGPSPoint2()
+		trect = datamodel.DBGPSPoint2()
 		trect.date = datetime.now()
 		trect.latitude = 1.0
 		trect.longitude = 1.0
@@ -1673,7 +1599,7 @@ class TestDB(webapp.RequestHandler):
 		trect.put()
 
 	def prepare(self):
-		trect = DBGPSPoint2()
+		trect = datamodel.DBGPSPoint2()
 		trect.date = datetime.now()
 		trect.latitude = 1.0
 		trect.longitude = 1.0
@@ -1720,15 +1646,15 @@ class TestDB(webapp.RequestHandler):
 				#if not cnt:
 				#	cnt = '1'
 				if cnt:
-					results = DBGPSPoint2().all().fetch(int(cnt))
+					results = datamodel.DBGPSPoint2().all().fetch(int(cnt))
 					for result in results:
 						result.delete()
 				elif batch:
-					results = DBGPSPoint2().all().fetch(int(batch))
+					results = datamodel.DBGPSPoint2().all().fetch(int(batch))
 					if results:
 						db.delete(results)
 				else:
-					results = DBGPSPoint2().all().fetch(1)
+					results = datamodel.DBGPSPoint2().all().fetch(1)
 					if results:
 						results[0].delete()
 
@@ -1758,11 +1684,11 @@ class Firmware(webapp.RequestHandler):
 				if self.username == ADMIN_USERNAME:
 					fid = self.request.get('id')
 					if fid:
-						DBFirmware().get_by_key_name(fid).delete()
+						datamodel.DBFirmware().get_by_key_name(fid).delete()
 				self.redirect("/firmware")
 
 			elif cmd == 'check':	# Запросить версию самой свежей прошивки
-				fw = DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
+				fw = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
 				resp = ""	# Боремся с Transfer-Encoding: chunked
 				#self.response.headers['Content-Type'] = 'text/plain'
 				self.response.headers['Content-Type'] = 'application/octet-stream'	# Это единственный (пока) способ побороть Transfer-Encoding: chunked
@@ -1781,9 +1707,9 @@ class Firmware(webapp.RequestHandler):
 			elif cmd == 'getbin':
 				swid = self.request.get('swid')
 				if swid:
-					fw = DBFirmware().all().filter('hwid =', int(hwid, 16)).filter('swid =', int(swid, 16)).fetch(1)
+					fw = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).filter('swid =', int(swid, 16)).fetch(1)
 				else:
-					fw = DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
+					fw = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
 				if fw:
 					self.response.headers['Content-Type'] = 'application/octet-stream'
 					self.response.out.write(fw[0].data)
@@ -1795,9 +1721,9 @@ class Firmware(webapp.RequestHandler):
 			elif cmd == 'get':
 				swid = self.request.get('swid')
 				if swid:
-					fw = DBFirmware().all().filter('hwid =', int(hwid, 16)).filter('swid =', int(swid, 16)).fetch(1)
+					fw = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).filter('swid =', int(swid, 16)).fetch(1)
 				else:
-					fw = DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
+					fw = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
 				#self.response.headers['Content-Type'] = 'text/plain'
 				self.response.headers['Content-Type'] = 'application/octet-stream'	# Это единственный (пока) способ побороть Transfer-Encoding: chunked
 				if fw:
@@ -1838,9 +1764,9 @@ class Firmware(webapp.RequestHandler):
 				return
 
 			if hwid:
-				firmwares = DBFirmware().all().filter('hwid =', int(hwid, 16)).fetch(100)
+				firmwares = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).fetch(100)
 			else:
-				firmwares = DBFirmware().all().fetch(100)
+				firmwares = datamodel.DBFirmware().all().fetch(100)
 			nfw = []
 			for fw in firmwares:
 				#fw.ofwid = "%X" % fw.hwid
@@ -1864,7 +1790,7 @@ class Firmware(webapp.RequestHandler):
 		hwid = int(self.request.get('hwid'), 16)
 		swid = int(self.request.get('swid'), 16)
 
-		newfw = DBFirmware(key_name = "FWGPS%04X%04X" % (hwid, swid))
+		newfw = datamodel.DBFirmware(key_name = "FWGPS%04X%04X" % (hwid, swid))
 		newfw.hwid = hwid
 		newfw.swid = swid
 		newfw.data = pdata
@@ -1888,7 +1814,7 @@ class SetDescription(webapp.RequestHandler):
 		value = self.request.get('value')
 
 
-		newdescr = DBDescription(key_name = "DESC%s" % name)
+		newdescr = datamodel.DBDescription(key_name = "DESC%s" % name)
 		newdescr.name = name
 		newdescr.value = value
 		newdescr.put()

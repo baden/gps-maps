@@ -10,8 +10,8 @@ def senddata(id):
 	headers = {"Content-type": "application/octet-stream",
 		"Content-Length": "%d" % len(body)}
 
-	conn = httplib.HTTPConnection("127.0.0.1:80")
-	#conn = httplib.HTTPConnection("127.0.0.1:8080")
+	#conn = httplib.HTTPConnection("127.0.0.1:80")
+	conn = httplib.HTTPConnection("127.0.0.1:8080")
 	#conn = httplib.HTTPConnection("gps-maps.appspot.com:80")
 	#conn.set_debuglevel(1)
 	conn.request("POST", "/bingeos?imei=353358016204857&dataid=%d" % id, body, headers)

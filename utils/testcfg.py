@@ -66,11 +66,11 @@ gps.T4.3	INT	120	120
 
 #	headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
-	conn = httplib.HTTPConnection("127.0.0.1:80")
-	#conn = httplib.HTTPConnection("127.0.0.1:8080")
+	#conn = httplib.HTTPConnection("127.0.0.1:80")
+	conn = httplib.HTTPConnection("127.0.0.1:8080")
 	#conn = httplib.HTTPConnection("gps-maps.appspot.com:80")
 	#conn.set_debuglevel(1)
-	conn.request("POST", "/config?cmd=save&imei=353358016204856", body, headers)
+	conn.request("POST", "/config?cmd=save&imei=353358016204857", body, headers)
 	response = conn.getresponse()
 	print response.status, response.reason
 	data = response.read()
