@@ -72,3 +72,5 @@ admin_console:
   pages:
   - name: Appstats
     url: /stats
+
+
