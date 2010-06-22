@@ -58,12 +58,26 @@ function ChangeParam(me)
 		});
 	});
 
-		function dodel(imei) {
-		// a workaround for a flaw in the demo system (http://dev.jqueryui.com/ticket/4375), ignore!
-			$("#imei").html(imei);
-			$("#dialog-modal").dialog('open');
-	
-		}
+	function dodel(imei) {
+	// a workaround for a flaw in the demo system (http://dev.jqueryui.com/ticket/4375), ignore!
+		$("#imei").html(imei);
+		$("#dialog-modal").dialog('open');
+
+	}
+
+	function SetDescription(imei)
+	{
+		var item = document.getElementById('desc_' + imei)
+
+		var nvalue = prompt("Введите описание для IMEI:'" + imei + "'", item.innerHTML);
+		if (nvalue == null) return;
+		if (nvalue == item.innerHTML) return;
+
+		$.getJSON("setuserdescr?&imei=" + imei + "&value=" + nvalue + "&callback=?", function (data) {
+			var item = document.getElementById('desc_' + imei)
+			item.innerHTML = nvalue;
+		});
+	}
 
 </script>
 
@@ -84,9 +98,14 @@ function ChangeParam(me)
 		<tr>
 			<td>{{ user.imei }}</td>
 			<td>{{ user.phone }}</td>
-			<td style="text-align: left;">{{ user.desc }}</td>
+			<td style="text-align: left;">
+				<div style="display: inline-block;" id="desc_{{ user.imei }}">{{ user.desc }}</div>
+				<a class="smallButton" href="javascript:SetDescription('{{ user.imei }}')" title="Изменить описание">...</a>
+			</td>
+
 			<td><a class="smallButton" href="map?imei={{ user.imei }}" title="Посмотреть положение системы">M</a></td>
-			<td><a class="smallButton" href="config?imei={{ user.imei }}" title="Изменить параметры системы">С</a></td>
+			<!--td><a class="smallButton" href="config?imei={{ user.imei }}" title="Изменить параметры системы">С</a></td-->
+			<td><a class="smallButton" href="config?cmd=last&imei={{ user.imei }}" title="Посмотреть текущую конфигурацию.">C</a></td>
 			<td><a class="smallButton" href="javascript:dodel({{ user.imei }});" title="Отказаться от слежения за этой системой">X</a></td>
 		</tr>
 	{% endfor %}

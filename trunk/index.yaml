@@ -12,6 +12,13 @@ indexes:
 
 - kind: DBFirmware
   properties:
+  - name: boot
+  - name: hwid
+  - name: swid
+    direction: desc
+
+- kind: DBFirmware
+  properties:
   - name: hwid
   - name: swid
     direction: desc

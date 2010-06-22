@@ -6,8 +6,10 @@ import os
 import zlib
 import math
 
-from datetime import date
-from datetime import datetime
+#from datetime import date
+#from datetime import datetime
+from datetime import date, timedelta, datetime
+
 from django.utils import simplejson as json
 from google.appengine.api import users
 from google.appengine.api import datastore
@@ -19,7 +21,8 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 #from google.appengine.tools import bulkloader
 
 # Must set this env var *before* importing any part of Django.
-os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+#os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+#TIME_ZONE = 'America/Los_Angeles'  # i.e., Mountain View
 
 from google.appengine.ext.webapp import template
 
@@ -28,6 +31,48 @@ import datamodel
 
 ADMIN_USERNAME = 'baden.i.ua'
 
+#ZERO = timedelta(0)
+TIMEZONE = timedelta(hours =+ 2)
+HOUR = timedelta(hours = 1)
+SAVEDAYLIGHT = True
+
+def _FirstSunday(dt):
+	"""First Sunday on or after dt."""
+	return dt + timedelta(days=(6-dt.weekday()))
+
+def fromUTC(utctime):
+	if SAVEDAYLIGHT:
+		# 2 am on the second Sunday in March
+		dst_start = _FirstSunday(datetime(utctime.year, 3, 8, 2))
+		# 1 am on the first Sunday in November
+		dst_end = _FirstSunday(datetime(utctime.year, 11, 1, 1))
+
+		if dst_start <= utctime < dst_end:
+			return utctime + TIMEZONE + HOUR
+		else:
+	        	return utctime + TIMEZONE
+	        
+	else:
+	        return utctime + TIMEZONE
+
+def toUTC(localtime):
+	if SAVEDAYLIGHT:
+		# 2 am on the second Sunday in March
+		dst_start = _FirstSunday(datetime(localtime.year, 3, 8, 2))
+		# 1 am on the first Sunday in November
+		dst_end = _FirstSunday(datetime(localtime.year, 11, 1, 1))
+
+		if dst_start <= localtime < dst_end:
+			return localtime - TIMEZONE - HOUR
+		else:
+	        	return localtime - TIMEZONE
+	        
+	else:
+	        return localtime - TIMEZONE
+
+#utc = UTC()
+
+#import pytz
 
 # 16-bit CRCs should detect 65535/65536 or 99.998% of all errors in
 # data blocks up to 4096 bytes
@@ -139,12 +184,11 @@ class MainPage(TemplatedPage):
 		template_values = {}
 		template_values['now'] = datetime.now()
 
-		crc = 0
-		crc = updcrc2(crc, ord('0'))
-		crc = updcrc2(crc, ord('0'))
-		crc = updcrc2(crc, ord('0'))
-
-		template_values['crc1'] = "0x%04X" % crc
+		#crc = 0
+		#crc = updcrc2(crc, ord('0'))
+		#crc = updcrc2(crc, ord('0'))
+		#crc = updcrc2(crc, ord('0'))
+		#template_values['crc1'] = "0x%04X" % crc
 
 		#logging.warning("Test warning logging.");
 		#logging.error("Test error logging.");
@@ -181,9 +225,9 @@ class Guestbook(webapp.RequestHandler):
 		greeting.put()
 		self.redirect('/')
 
-def getUser(request):
+def getUser(request, create=False):
 	uimei = request.get('imei')
-	logging.debug(uimei)
+#	logging.debug(uimei)
 #	ukey = request.get('ukey')
 #	uid = request.get('uid')
 #	if uid:
@@ -194,19 +238,44 @@ def getUser(request):
 		#userdbq = datamodel.DBUser().all().filter('imei =', uimei).get()
 		if userdbq:
 			userdb = userdbq[0] 
+
+			uphone = request.get('phone')
+			if uphone:
+				if userdb.phone != uphone:
+					userdb.phone = uphone
+					userdb.put()
+
 			#self.response.out.write('Get by imei (%s)\r\n' % uimei)
 		else:
-			userdb = None
+			if create:
+				uphone = request.get('phone')
+				udesc = request.get('desc')
+
+				userdb = datamodel.DBUser()
+				userdb.imei = uimei
+				if uphone:
+					userdb.phone = uphone
+				else:
+					userdb.phone = 'unknown'
+				if udesc:
+					userdb.desc = udesc
+				else:
+					userdb.desc = u'Нет описания'
+
+				userdb.put()
+			else:
+				userdb = None
 			#self.response.out.write('User not found by imei (%s)\r\n' % uimei)
 	else:
 		userdb = None
 
 	return userdb
 
+
 class AddLog(webapp.RequestHandler):
 	def get(self):
 		self.response.headers['Content-Type'] = 'text/plain'	#minimizing data
-		userdb = getUser(self.request)
+		userdb = getUser(self.request, create=True)
 
 		#uimei = self.request.get('imei')
 		#ukey = self.request.get('ukey')
@@ -470,22 +539,60 @@ class LastPos(webapp.RequestHandler):
 		else:
 			self.response.out.write('User not found\r\n')
 
+
+'''
+class Pacific_tzinfo(tzinfo):
+ """Implementation of the Pacific timezone."""
+ def utcoffset(self, dt):
+   return datetime_module.timedelta(hours=-8) + self.dst(dt)
+
+ def _FirstSunday(self, dt):
+   """First Sunday on or after dt."""
+   return dt + datetime_module.timedelta(days=(6-dt.weekday()))
+
+ def dst(self, dt):
+   # 2 am on the second Sunday in March
+   dst_start = self._FirstSunday(datetime_module.datetime(dt.year, 3, 8, 2))
+   # 1 am on the first Sunday in November
+   dst_end = self._FirstSunday(datetime_module.datetime(dt.year, 11, 1, 1))
+
+   if dst_start <= dt.replace(tzinfo=None) < dst_end:
+     return datetime_module.timedelta(hours=1)
+   else:
+     return datetime_module.timedelta(hours=0)
+
+ def tzname(self, dt):
+   if self.dst(dt) == datetime_module.timedelta(hours=0):
+     return "PST"
+   else:
+     return "PDT"
+
+#pacific_time = utc_time.astimezone(Pacific_tzinfo())
+'''
+
+
 class Geos(TemplatedPage):
 	def get(self):
+		uimei = self.request.get('imei')
+		userdb = getUser(self.request)
 
-		geologs = datamodel.DBGPSPoint.all().order('-date').fetch(MAXLOGS+1)
+		if userdb == None:
+			geologs = datamodel.DBGPSPoint.all().order('-date').fetch(MAXLOGS+1)
+		else:
+			geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
 		#geologs = datamodel.DBGPSPoint.all().order('-date').fetch(100)
 		for geolog in geologs:
 			try:
 				uuser = geolog.user
-				geolog.imei = uuser.imei 
+				geolog.imei = uuser.imei
 			except:
-				geolog.imei = 'deleted' 
-			geolog.sdate = geolog.cdate.strftime("%d/%m/%Y %H:%M") 
+				geolog.imei = 'deleted'
+			geolog.sdate = geolog.cdate.strftime("%d/%m/%Y %H:%M")
+			geolog.date = fromUTC(geolog.date) #.astimezone(utc)
 
 		#path = os.path.join(os.path.dirname(__file__), 'geos.html')
 		#self.response.out.write(template.render(path, template_values))
-		self.write_template({'geologs': geologs})
+		self.write_template({'geologs': geologs, 'imei': uimei})
 
 def dec2angle_real(x, y):
 	if x==0 and y==0:
@@ -518,8 +625,8 @@ def dec2angle(x, y):
 
 class GeosJSON(webapp.RequestHandler):
 	def get(self):
-		start_time = datetime.now()
-		logging.info("GeosJSON start (%s)" % start_time.strftime("%H:%M:%S"))
+		#start_time = datetime.now()
+		#logging.info("GeosJSON start (%s)" % start_time.strftime("%H:%M:%S"))
 
 		userdb = getUser(self.request)
 
@@ -527,8 +634,8 @@ class GeosJSON(webapp.RequestHandler):
 			logging.info("User not found.")
 			pass
 
-		dif_time = datetime.now() - start_time
-		logging.info("GeosJSON user ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+		#dif_time = datetime.now() - start_time
+		#logging.info("GeosJSON user ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
 
 		self.response.headers['Content-Type']   = 'text/javascript; charset=utf-8'
 
@@ -536,23 +643,23 @@ class GeosJSON(webapp.RequestHandler):
 
 		datefrom_s = self.request.get('datefrom')
 		if datefrom_s:
-			datefrom = datetime.strptime(datefrom_s, "%d%m%Y%H%M%S")
+			datefrom = toUTC(datetime.strptime(datefrom_s, "%d%m%Y%H%M%S"))
 		else:
 			datefrom = datetime.now()
 
-		logging.info("GeosJSON datefrom: %s" % datefrom)
+		#logging.info("GeosJSON datefrom: %s" % datefrom)
 
 		dateto_s = self.request.get('dateto')
 		if dateto_s:
-			dateto = datetime.strptime(dateto_s, "%d%m%Y%H%M%S")
+			dateto = toUTC(datetime.strptime(dateto_s, "%d%m%Y%H%M%S"))
 		else:
 			dateto = datetime.now()
 
-		logging.info("GeosJSON dateto: %s" % dateto)
+		#logging.info("GeosJSON dateto: %s" % dateto)
 
 		first = self.request.get('first')
 		if first:
-			logging.info("GeosJSON first: %s" % first)
+			#logging.info("GeosJSON first: %s" % first)
 			if datefrom_s:
 				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).order('date').fetch(int(first))
 			else:
@@ -561,7 +668,7 @@ class GeosJSON(webapp.RequestHandler):
 		else:
 			last = self.request.get('last')
 			if last:
-				logging.info("GeosJSON last: %s" % last)
+				#logging.info("GeosJSON last: %s" % last)
 				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date <=', dateto).order('-date').fetch(int(last))
 			else:
 				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(500)
@@ -575,16 +682,16 @@ class GeosJSON(webapp.RequestHandler):
 
 		optim = self.request.get('optim')
 
-		dif_time = datetime.now() - start_time
-		logging.info("GeosJSON db ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+		#dif_time = datetime.now() - start_time
+		#logging.info("GeosJSON db ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
 
 		results = []
 		if geologs:
 			if not first:
-				dif_time = datetime.now() - start_time
-				logging.info("Start reverse (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+				#dif_time = datetime.now() - start_time
+				#logging.info("Start reverse (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
 				geologs.reverse()
-				logging.info("Stop reverse (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+				#logging.info("Stop reverse (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
 
 		prev_lat = 0.0
 		prev_long = 0.0
@@ -633,8 +740,11 @@ class GeosJSON(webapp.RequestHandler):
 				ADELTA = 10.0
 
 			result = {
-				"date": geolog.date.strftime("%d/%m/%Y %H:%M:%S"),
-				"day": geolog.date.strftime("%m/%d/%Y %H:%M"),
+				#"date": geolog.date.strftime("%d/%m/%Y %H:%M:%S"),
+				#"localdate": fromUTC(geolog.date).strftime("%d/%m/%Y %H:%M:%S"),
+				"date": fromUTC(geolog.date).strftime("%d/%m/%Y %H:%M:%S"),
+				#"localdate": geolog.date.strftime("%d/%m/%Y %H:%M:%S"),
+				#"day": geolog.date.strftime("%m/%d/%Y %H:%M"),
 				"lat": geolog.latitude,
 				"long": geolog.longitude,
 				"sats": geolog.sats,
@@ -665,10 +775,10 @@ class GeosJSON(webapp.RequestHandler):
 					"responseData": {
 						"results": results, 
 						"config": 0,
-						"dateminjs": geologs[0].date.strftime("%m/%d/%Y %H:%M"),
-						"datemaxjs": geologs[-1].date.strftime("%m/%d/%Y %H:%M"),
-						"datemin": geologs[0].date.strftime("%d/%m/%Y %H:%M:%S"),
-						"datemax": geologs[-1].date.strftime("%d/%m/%Y %H:%M:%S"),
+						"dateminjs": fromUTC(geologs[0].date).strftime("%m/%d/%Y %H:%M"),
+						"datemaxjs": fromUTC(geologs[-1].date).strftime("%m/%d/%Y %H:%M"),
+						"datemin": fromUTC(geologs[0].date).strftime("%d/%m/%Y %H:%M:%S"),
+						"datemax": fromUTC(geologs[-1].date).strftime("%d/%m/%Y %H:%M:%S"),
 					}
 				}
 			#else:
@@ -689,18 +799,17 @@ class GeosJSON(webapp.RequestHandler):
 					"config": 0,
 				}
 			}
-
-		dif_time = datetime.now() - start_time
-		logging.info("GeosJSON response ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
-
+		
+		#dif_time = datetime.now() - start_time
+		#logging.info("GeosJSON response ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
 
 		nejson = json.dumps(jsonresp)
 		self.response.out.write(callback + "(" + nejson + ")\r")
 
-		dif_time = datetime.now() - start_time
-		logging.info("GeosJSON json-out ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+		#dif_time = datetime.now() - start_time
+		#logging.info("GeosJSON json-out ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
 
-		logging.info("GeosJSON data: %d values" % len(results))
+		#logging.info("GeosJSON data: %d values" % len(results))
 
 		return
 
@@ -893,7 +1002,7 @@ class Config(TemplatedPage):
 		#DBNewConfig
 
 	def post(self):
-		userdb = getUser(self.request)
+		userdb = getUser(self.request, create=True)
 		if not userdb:
 			self.response.out.write("NO USER")
 			return
@@ -904,8 +1013,10 @@ class Config(TemplatedPage):
 			newconfigs = datamodel.DBConfig().all().filter('user = ', userdb).fetch(1)
 			if newconfigs:
 				newconfig = newconfigs[0]
-				config = eval(zlib.decompress(newconfig.config))
-				#config = eval(newconfig.strconfig)
+				#Подавим объединение конфигураций
+				config = {}
+				#config = eval(zlib.decompress(newconfig.config))
+				##config = eval(newconfig.strconfig)
 			else:
 				newconfig = datamodel.DBConfig()
 				newconfig.user = userdb
@@ -961,6 +1072,7 @@ class Config(TemplatedPage):
 
 			self.response.out.write("</body></html>")
 		pass
+
 
 class Params(webapp.RequestHandler):
 	def get(self):
@@ -1140,7 +1252,8 @@ class BinGeos(webapp.RequestHandler):
 
 		#logging.info("$=$ TEST_BIN_POST")
 
-		self.response.headers['Content-Type'] = 'text/plain'
+		#self.response.headers['Content-Type'] = 'text/plain'
+		self.response.headers['Content-Type'] = 'application/octet-stream'
 
 		sdataid = self.request.get('dataid')
 		if sdataid:
@@ -1244,6 +1357,18 @@ def SaveGPSPointFromBin(pdata, result):
 	if ord(pdata[13]) & 2:
 		longitude = - longitude
 
+	sats = ord(pdata[14])
+
+	fix = 1
+	speed = float(ord(pdata[15])) + float(ord(pdata[16])) / 100.0;
+
+	if ord(pdata[13]) & 4:
+		course = float(ord(pdata[17])*2 + 1) + float(ord(pdata[18])) / 100.0;
+	else:
+		course = float(ord(pdata[17])*2) + float(ord(pdata[18])) / 100.0;
+
+	altitude = 100.0 * float(ord(pdata[19]) + ord(pdata[20])) / 10.0;
+
 	error = False
 
 	if latitude > 90.0: error = True
@@ -1256,21 +1381,11 @@ def SaveGPSPointFromBin(pdata, result):
 		sstr = "  pdata: "
 		for p in pdata:
 			sstr += " %02X" % ord(p)
+		sstr += "\nEncode partial data:\n\tdate:%s\n\tLatitude:%f\n\tLongitude:%f\n\tSatelites:%d\n\tSpeed:%f\n\tCource:%f\n\tAltitude:%f" % (datestamp, latitude, longitude, sats, speed, course, altitude)
 		logging.error( sstr )
 		return
 
-	sats = ord(pdata[14])
 	if sats < 3: return
-
-	fix = 1
-	speed = float(ord(pdata[15])) + float(ord(pdata[16])) / 100.0;
-
-	if ord(pdata[13]) & 4:
-		course = float(ord(pdata[17])*2 + 1) + float(ord(pdata[18])) / 100.0;
-	else:
-		course = float(ord(pdata[17])*2) + float(ord(pdata[18])) / 100.0;
-
-	altitude = 100.0 * float(ord(pdata[19]) + ord(pdata[20])) / 10.0;
 
 	if(ord(pdata[21])) != 255:	#CRC
 		#_log += '{CRC_ERROR}skiped'
@@ -1384,7 +1499,9 @@ class ParseBinGeos(webapp.RequestHandler):
 			for part in parts:
 				if len(part) == 23:
 					_log += '*'
-					points.append(SaveGPSPointFromBin(part, result))
+					point = SaveGPSPointFromBin(part, result)
+					if point:
+						points.append(point)
 				else:
 					_log += '\npat%d is corrupted' % position
 				position = position+1
@@ -1409,7 +1526,9 @@ class ParseBinGeos(webapp.RequestHandler):
 					part = prevpart.data + odata_s
 					if len(part) == 23:
 						_log += 'ok.'
-						points.append(SaveGPSPointFromBin(part, result))
+						point = SaveGPSPointFromBin(part, result)
+						if point:
+							points.append(point)
 					else:
 						_log += 'fail [%d]:' % len(part)
 						for data in part:
@@ -1432,7 +1551,11 @@ class ParseBinGeos(webapp.RequestHandler):
 				_log += '\nSaving cutting part.'
 				part2.put()
 
-			db.put(points)		# Сохраним GPS-точки
+			if len(points) > 0:
+				db.put(points)		# Сохраним GPS-точки
+			else:
+				logging.error("points has no data")
+
 			result.delete()
 			self.response.out.write('OK\r\n')
 			_log += '\nData deleted.'
@@ -1666,64 +1789,84 @@ class TestDB(webapp.RequestHandler):
 
 
 # обновление программного обеспечения
-class Firmware(webapp.RequestHandler):
-
+class Firmware(TemplatedPage):
 	def get(self):
 		user = users.get_current_user()
 		username = ''
 		if user:
 			username = user.nickname()
-
+		#
 		cmd = self.request.get('cmd')
+		fid = self.request.get('id')
+		swid = self.request.get('swid')
 		hwid = self.request.get('hwid')
+		boot = self.request.get('boot')
+		if boot:
+			if boot == 'yes':
+				boot = True
+			else:
+				boot = False
+		else:
+			boot = False
 
-		login_url = users.create_login_url(self.request.uri)
+		#
+		#login_url = users.create_login_url(self.request.uri)
 
 		if cmd:
 			if cmd == 'del':
-				if self.username == ADMIN_USERNAME:
-					fid = self.request.get('id')
+				if username == ADMIN_USERNAME:
 					if fid:
 						datamodel.DBFirmware().get_by_key_name(fid).delete()
 				self.redirect("/firmware")
 
 			elif cmd == 'check':	# Запросить версию самой свежей прошивки
-				fw = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
-				resp = ""	# Боремся с Transfer-Encoding: chunked
-				#self.response.headers['Content-Type'] = 'text/plain'
 				self.response.headers['Content-Type'] = 'application/octet-stream'	# Это единственный (пока) способ побороть Transfer-Encoding: chunked
-				#self.response.headers['Content-Length'] = len(resp)
-				#self.response.headers['Transfer-Encoding'] = 'gzip'
-				#self.response.headers['Transfer-Encoding'] = 'identity'
-				if fw:
-					#self.response.out.write("a\r\nSWID: %04X" % fw[0].swid)
-					resp = "SWID: %04X\r\n" % fw[0].swid
-				else:
-					#self.response.out.write("NOT FOUND")
-					resp = "NOT FOUND\r\n"
-				self.response.out.write(resp)
 
+				#fws = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(10)
+				#for fw in fws:
+				#	if fw.boot==False:
+				#		self.response.out.write("SWID: %04X\r\n" % fw.swid)
+				#		return
+				#
+				#self.response.out.write("NOT FOUND\r\n")
+				#return
+						
+				fw = datamodel.DBFirmware().all().filter('boot =', boot).filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
+				if fw:
+					self.response.out.write("SWID: %04X\r\n" % fw[0].swid)
+				else:
+					self.response.out.write("NOT FOUND\r\n")
+				
 
 			elif cmd == 'getbin':
-				swid = self.request.get('swid')
-				if swid:
-					fw = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).filter('swid =', int(swid, 16)).fetch(1)
+				self.response.headers['Content-Type'] = 'application/octet-stream'
+				if fid:
+					fw = datamodel.DBFirmware().get_by_key_name(fid)
+					fw = [fw]
+				elif swid:
+					fw = datamodel.DBFirmware().all().filter('boot =', boot).filter('hwid =', int(hwid, 16)).filter('swid =', int(swid, 16)).fetch(1)
 				else:
-					fw = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
+					fw = datamodel.DBFirmware().all().filter('boot =', boot).filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
 				if fw:
-					self.response.headers['Content-Type'] = 'application/octet-stream'
 					self.response.out.write(fw[0].data)
 				else:
 					#self.response.headers['Content-Type'] = 'text/plain'
-					self.response.headers['Content-Type'] = 'application/octet-stream'	# Это единственный (пока) способ побороть Transfer-Encoding: chunked
 					self.response.out.write('NOT FOUND\r\n')
 
 			elif cmd == 'get':
-				swid = self.request.get('swid')
-				if swid:
-					fw = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).filter('swid =', int(swid, 16)).fetch(1)
+				if fid:
+					fw = datamodel.DBFirmware().get_by_key_name(fid)
+					fw = [fw]
+				elif swid:
+					fw = datamodel.DBFirmware().all().filter('boot =', boot).filter('hwid =', int(hwid, 16)).filter('swid =', int(swid, 16)).fetch(1)
 				else:
-					fw = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
+					fw = datamodel.DBFirmware().all().filter('boot =', boot).filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
+					#fws = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).order('-swid').fetch(10)
+					#fw = None
+					#for sfw in fws:
+					#	if sfw.boot==False:
+					#		fw = [sfw]
+					#		break
 				#self.response.headers['Content-Type'] = 'text/plain'
 				self.response.headers['Content-Type'] = 'application/octet-stream'	# Это единственный (пока) способ побороть Transfer-Encoding: chunked
 				if fw:
@@ -1756,17 +1899,27 @@ class Firmware(webapp.RequestHandler):
 				else:
 					self.response.out.write('NOT FOUND\r\n')
 
+			elif cmd == 'patch':
+				fws = datamodel.DBFirmware().all().fetch(500)
+				for fw in fws:
+					if fw.boot:
+						pass
+					else:
+						fw.boot = False
+						fw.put()
+				self.redirect("/firmware")
 			else:
 				self.redirect("/firmware")
 		else:
-			template_values = ckechUser(self.request.uri, self.response)
-			if not template_values:
-				return
+			#template_values = ckechUser(self.request.uri, self.response)
+			#if not template_values:
+			#	return
+			template_values = {}
 
 			if hwid:
-				firmwares = datamodel.DBFirmware().all().filter('hwid =', int(hwid, 16)).fetch(100)
+				firmwares = datamodel.DBFirmware().all().filter('boot =', boot).filter('hwid =', int(hwid, 16)).fetch(100)
 			else:
-				firmwares = datamodel.DBFirmware().all().fetch(100)
+				firmwares = datamodel.DBFirmware().all().filter('boot =', boot).fetch(100)
 			nfw = []
 			for fw in firmwares:
 				#fw.ofwid = "%X" % fw.hwid
@@ -1780,22 +1933,31 @@ class Firmware(webapp.RequestHandler):
 					'desc': fw.desc,
 				})
 			template_values['firmwares'] = nfw
-			path = os.path.join(os.path.dirname(__file__), 'firmware.html')
-			self.response.out.write(template.render(path, template_values))
+			#path = os.path.join(os.path.dirname(__file__), 'firmware.html')
+			#self.response.out.write(template.render(path, template_values))
+			self.write_template(template_values)
+
 
 	def post(self):
 		self.response.headers['Content-Type'] = 'text/plain'
+
+		boot = self.request.get('boot')
 
 		pdata = self.request.body
 		hwid = int(self.request.get('hwid'), 16)
 		swid = int(self.request.get('swid'), 16)
 
-		newfw = datamodel.DBFirmware(key_name = "FWGPS%04X%04X" % (hwid, swid))
+		if boot:
+			newfw = datamodel.DBFirmware(key_name = "FWBOOT%04X" % hwid)
+			newfw.desc = u"Загрузчик"
+			newfw.boot = True
+		else:
+			newfw = datamodel.DBFirmware(key_name = "FWGPS%04X%04X" % (hwid, swid))
+			newfw.desc = u"Образ ядра"
 		newfw.hwid = hwid
 		newfw.swid = swid
 		newfw.data = pdata
 		newfw.size = len(pdata)
-		newfw.desc = u"Нет описания"
 		newfw.put()
 
 		self.response.out.write("ROM ADDED: %d\r\n" % len(pdata))
@@ -1828,6 +1990,26 @@ class SetDescription(webapp.RequestHandler):
 		nejson = json.dumps(jsonresp)
 		self.response.out.write(callback + "(" + nejson + ")\r")
 
+class SetUserDescription(webapp.RequestHandler):
+	def get(self):
+		callback = self.request.get('callback')
+		uimei = self.request.get('imei')
+		value = self.request.get('value')
+
+		self.response.headers['Content-Type']   = 'text/javascript; charset=utf-8'
+
+		userdb = datamodel.DBUser().all().filter('imei =', uimei).fetch(1)
+		if userdb:
+			userdb[0].desc = value
+			userdb[0].put()
+
+			jsonresp = {"responseData": {"confirm": 1}}
+		else:
+			jsonresp = {"responseData": {"confirm": 0}}
+
+		nejson = json.dumps(jsonresp)
+		self.response.out.write(callback + "(" + nejson + ")\r")
+
 application = webapp.WSGIApplication(
 	[('/', MainPage),
 	('/regid', RegId),
@@ -1855,6 +2037,7 @@ application = webapp.WSGIApplication(
 	('/system.*', System),
 	('/firmware.*', Firmware),
 	('/setdescr.*', SetDescription),
+	('/setuserdescr.*', SetUserDescription),
 	],
 	debug=True
 )

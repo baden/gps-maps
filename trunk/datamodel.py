@@ -66,6 +66,7 @@ class DBGPSBinParts(db.Model):
 
 class DBFirmware(db.Model):
 	cdate = db.DateTimeProperty(auto_now_add=True)	# Дата размещения прошивки
+	boot = db.BooleanProperty(default=False)	# Устанавливается в True если это образ загрузчика
 	hwid = db.IntegerProperty()			# Версия аппаратуры
 	swid = db.IntegerProperty()			# Версия прошивки
 	data = db.BlobProperty()			# Образ прошивки
