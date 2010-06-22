@@ -41,6 +41,8 @@
 		//google.load("mootools", "1.2.1");
 		var map;
 		var object1 = new google.maps.LatLng(48.408206, 35.048925);
+		var directionsService = new google.maps.DirectionsService();
+		var directionsDisplay;
 //		var points = 1;
 		var pathCoordinates = [];
 		var obj1x = 48.408206;
@@ -200,6 +202,7 @@
 
 			var track = document.getElementById('track').value;
 			var optim = document.getElementById('optim').value;
+			var navi = document.getElementById('navi').value;
 			//alert(track);
 			if(optim) url+="&optim=yes";
 
@@ -226,21 +229,22 @@
 					var dateminjs = data.responseData.dateminjs;
 					var datemaxjs = data.responseData.datemaxjs;
 
-					var minx = results[0].lat;
-					var miny = results[0].long;
-					var maxx = results[0].lat;
-					var maxy = results[0].long;
+					//var minx = results[0].lat;
+					//var miny = results[0].long;
+					//var maxx = results[0].lat;
+					//var maxy = results[0].long;
+					var pos;
 
 					for (var i=0; i < results.length; i++) {
 //						$("#progress").html("Загружаем новые (" + i + ")");
 						// Display each result however you wish
 						//content.innerHTML += results[i].lat + "," + results[i].long + "<br/>";
-						if(minx > results[i].lat) minx = results[i].lat;
-						if(maxx < results[i].lat) maxx = results[i].lat;
-						if(miny > results[i].long) miny = results[i].long;
-						if(maxy < results[i].long) maxy = results[i].long;
+						//if(minx > results[i].lat) minx = results[i].lat;
+						//if(maxx < results[i].lat) maxx = results[i].lat;
+						//if(miny > results[i].long) miny = results[i].long;
+						//if(maxy < results[i].long) maxy = results[i].long;
 
-						var pos = new google.maps.LatLng(results[i].lat, results[i].long);
+						pos = new google.maps.LatLng(results[i].lat, results[i].long);
 //						var pos = new google.maps.LatLng(results[i].lat + (Math.random()*0.005)-0.002, results[i].long+(Math.random()*0.005)-0.002);
 
 //						path.insertAt(path.length, pos);
@@ -274,24 +278,65 @@
 
 					if(flightPath) flightPath.setMap(null);
 
+					if(navi){
+						var start = new google.maps.LatLng(results[0].lat, results[0].long);
+						var end = new google.maps.LatLng(results[results.length-1].lat, results[results.length-1].long);
+
+						var waypts = [];
+						var ticktack = 0;
+
+						for (var i=10; i < (results.length-10); i+=10) {
+							waypts.push({
+								location: new google.maps.LatLng(results[i].lat, results[i].long),
+								stopover: (ticktack == 1)
+							});
+							ticktack = 1-ticktack;
+						}
+
+						//var minx = results[0].lat;
+						//var miny = results[0].long;
+						//var maxx = results[0].lat;
+						//var maxy = results[0].long;
+
+						var request = {
+	    						origin:start, 
+	    						destination:end,
+							waypoints: waypts,
+							optimizeWaypoints: false,
+	    						travelMode: google.maps.DirectionsTravelMode.DRIVING
+	  					};
+
+						directionsService.route(request, function(result, status) {
+							if (status == google.maps.DirectionsStatus.OK) {
+							      directionsDisplay.setDirections(result);
+							}
+						});
+					}
+					//map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+
+
 					if(track){
 						flightPath = new google.maps.Polyline({
 							path: flightPlanCoordinates,
 							strokeColor: '#F08000',
 							strokeOpacity: 0.8,
-							strokeWeight: 3
+							strokeWeight: 5
 						});
 					}else{
 						flightPath = new google.maps.Polyline({
 							path: flightPlanCoordinates,
 							strokeColor: '#F08000',
 							strokeOpacity: 0.8,
-							strokeWeight: 2
+							strokeWeight: 5
 						});
 					}
 					flightPath.setMap(map);
 
+					// Центровать на середину трека
 					//map.setCenter(new google.maps.LatLng((minx+maxx)/2, (miny+maxy)/2), 11);
+
+					// Центровать на последнюю точку
+					map.setCenter(pos);
 
 					document.getElementById('points').innerHTML = flightPlanCoordinates.length;
 					var now = new Date()
@@ -367,7 +412,7 @@
 		// Set CSS for the control interior
 		var controlText = document.createElement('div');
 		controlText.setAttribute('class', 'MapNavText');
-		controlText.innerHTML = '{{ user.imei }}: {{ user.desc }}';
+		controlText.innerHTML = '<a href="map?imei={{ user.imei }}">{{ user.imei }}: {{ user.desc }}</a>';
 		controlUI.appendChild(controlText);
 
 		{% endfor %}
@@ -384,9 +429,9 @@
 
 		// Setup the click event listeners: simply set the map to
 		// Chicago
-		google.maps.event.addDomListener(controlUI, 'click', function() {
-			map.setCenter(object);
-		});
+		//google.maps.event.addDomListener(controlUI, 'click', function() {
+		//	map.setCenter(object);
+		//});
 		google.maps.event.addDomListener(controlNav, 'click', function() {
 			if(controlNav.style.backgroundColor == 'lime')
 				controlNav.style.backgroundColor = 'white';
@@ -478,6 +523,9 @@
 			mapTypeId: google.maps.MapTypeId.ROADMAP
 		};
 		map = new google.maps.Map(document.getElementById("map"), myOptions);
+
+		directionsDisplay = new google.maps.DirectionsRenderer();
+		directionsDisplay.setMap(map);
 
 		var homeControlDiv = document.createElement('div');
 		var homeControl = new HomeControl(homeControlDiv, map, object1);
@@ -698,6 +746,8 @@
 	<br />
 	<input type="checkbox" title="Отображать только трек" id="track" onchange="datePoints();"/><label for="track" title="Отображать только трек">Трек</label>
 	<input type="checkbox" title="Дополнительная оптимизация трека" id="optim" onchange="datePoints();"/><label for="optim" title="Дополнительная оптимизация трека">Оптим</label>
+	<br />
+	<input type="checkbox" title="Показывать рекометдацию трека от Google" id="navi" onchange="datePoints();"/><label for="navi" title="Показывать рекометдацию трека от Google">Нави</label>
 	<div id="progress" style="background: lime;">Загрузка, ждите...</div>
 {% endblock %}
 

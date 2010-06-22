@@ -48,15 +48,15 @@ function ChangeParam(me)
 
 {% block body %}
     <h1>Конфигурация системы {{ user.desc }}</h1>
-	<form action="config" method="get" name="myform" id="myform" style="border:none;">
+	<!--form action="config" method="get" name="myform" id="myform" style="border:none;">
 		<select name="imei" size=1 onChange="myform.submit();">
 			<option value="" SELECTED>Выбрать другую:
         		{% for user in users %}
 			<option value="{{ user.imei }}">{{ user.imei }}: {{ user.desc }}
 			{% endfor %}
 		</select>
-	</form>
-	<form action="/config?imei={{ imei }}" enctype="multipart/form-data" method="post" style="border:solid;">
+	</form-->
+	<form action="/config?imei={{ imei }}" enctype="multipart/form-data" method="post" style="border:solid; display:block;" disabled>
 		<table>
 			<tr>
 				<th rowspan="2">Параметр</th>

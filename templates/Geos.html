@@ -29,7 +29,7 @@
         {% for geolog in geologs %}
             <tr>
             	<!--td>{{ geolog.key.id }}</td-->
-            	<td>{{ geolog.imei }}<a href="geos?imei={{ geolog.imei }}" title="filter">[x]</a></td>
+            	<td>{{ geolog.imei }}<a class="smallButton" href="geos?imei={{ geolog.imei }}" title="filter">f</a></td>
 				<td>{{ geolog.date|date:"d/m/y G:i:s" }}</td>
 				<td>{{ geolog.latitude|floatformat:4 }}</td>
 				<td>{{ geolog.longitude|floatformat:4 }}</td>
@@ -43,8 +43,13 @@
 	{% endfor %}
     </table>
 	<a class="pushLink" href="geos?format=nmea" title="Получить лог в NMEA-формате">Получить NMEA</a>
+	{% if imei %}
+	<a class="pushLink" href="map?imei={{ imei }}" title="Посмотреть на карте">Карта</a>
+	<div style="float:right; margin-right:20px;"></span><a class="pushLink" href="delgeos?imei={{ imei }}" title="Удаляет 500 самых старых записей для выбранной системы">Очистить логи {{ imei }} сервера</a></div>
+	{% else %}
 	<a class="pushLink" href="map" title="Посмотреть на карте">Карта</a>
-	<div style="float:right; margin-right:20px;"></span><a class="pushLink" href="delgeos" title="Удаляет 500 самых старых записей">Очистить логи сервера</a></div>
+	<div style="float:right; margin-right:20px;"></span><a class="pushLink" href="delgeos" title="Удаляет 500 самых старых записей для всех систем">Очистить логи сервера</a></div>
+	{% endif %}
     
 {% endblock %}
 

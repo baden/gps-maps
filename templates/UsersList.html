@@ -8,34 +8,38 @@
 {% endblock %}
 
 {% block body %}
-    Тут закралась путанница. Здесь перечислены наблюдаемые системы а не список зарегестрированных пользоваелей.
-    <h1>Зарегестрированные пользователи</h1>
-    <table>
-            <thead>
-                <tr>
-                    <th>Иденти-фикаторр</th>
-                    <th>IMEI</th>
-                    <th>Номер телефона</th>
-                    <th>Пароль</th>
-                    <th>Дата регистрации</th>
-					<th>Ключ</th>
-					<th>X</th>
-                </tr>
-            </thead>
-            <tbody>
+	Тут закралась путанница. Здесь перечислены наблюдаемые системы а не список зарегестрированных пользоваелей.
+	<h1>Зарегестрированные пользователи</h1>
+	<table>
+		<thead>
+			<tr>
+				<th>Иденти-фикаторр</th>
+				<th>IMEI</th>
+				<th>Номер телефона</th>
+				<th>Пароль</th>
+				<th>Дата регистрации</th>
+				<th>Ключ</th>
+				{% if admin %}
+				<th>X</th>
+				{% endif %}
+			</tr>
+		</thead>
+		<tbody>
                 {% for dbuser in dbusers %}
-                <tr>
-                    <td>{{ dbuser.key.id }}</td>
-                    <td>{{ dbuser.imei }}</td>
-                    <td>{{ dbuser.phone }}</td>
-                    <td>{{ dbuser.password }}</td>
-                    <td>{{ dbuser.date }}</td>
-                    <td>{{ dbuser.key }}</td>
-					<td><a href="delUser?id={{ dbuser.key.id }}" title="Удалить пользователя.">X</a></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-    </table>
+			<tr>
+				<td>{{ dbuser.key.id }}</td>
+				<td>{{ dbuser.imei }}</td>
+				<td>{{ dbuser.phone }}</td>
+				<td>{{ dbuser.password }}</td>
+				<td>{{ dbuser.date }}</td>
+				<td>{{ dbuser.key }}</td>
+				{% if admin %}
+				<td><a href="delUser?id={{ dbuser.key.id }}" title="Удалить пользователя.">X</a></td>
+				{% endif %}
+			</tr>
+		{% endfor %}
+		</tbody>
+		</table>
     Количество записей: <b>{{ gpslogs_count }}</b><br>
 {% endblock %}
 
