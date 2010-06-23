@@ -495,7 +495,7 @@ class LastPos(webapp.RequestHandler):
 			sdatetime = self.request.get('datetime')
 			sats = long(self.request.get('sats'))
 			fix = long(self.request.get('fix'))
-			speed = float(self.request.get('speed'))
+			speed = float(self.request.get('speed')) * 1.852	# переведем в км/ч
 			course = float(self.request.get('course'))
 			altitude = float(self.request.get('alt'))
 			in1 = float(self.request.get('in1'))*100.0/65535 
@@ -1360,7 +1360,7 @@ def SaveGPSPointFromBin(pdata, result):
 	sats = ord(pdata[14])
 
 	fix = 1
-	speed = float(ord(pdata[15])) + float(ord(pdata[16])) / 100.0;
+	speed = (float(ord(pdata[15])) + float(ord(pdata[16])) / 100.0) * 1.852; # Переведем в км/ч
 
 	if ord(pdata[13]) & 4:
 		course = float(ord(pdata[17])*2 + 1) + float(ord(pdata[18])) / 100.0;
