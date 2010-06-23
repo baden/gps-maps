@@ -379,6 +379,45 @@
 			//var url = "geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
 
 		}
+		function dateFrom() {
+			var datefrom = document.getElementById('datepickerfrom').value.replace(/[\/]/g,"") +
+				document.getElementById('timefrom').value.replace(/[\:]/g,"") + "00";
+			
+			loadPoints("geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&callback=?");
+			//var url = "geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
+
+		}
+		function dateTo() {
+			var dateto = document.getElementById('datepickerto').value.replace(/[\/]/g,"") +
+				document.getElementById('timeto').value.replace(/[\:]/g,"") + "59";
+			
+			loadPoints("geosjson?imei=" + userimei + "&last=500&dateto=" + dateto + "&callback=?");
+			//var url = "geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
+
+		}
+
+		function checkTime(i) {
+			if (i<10) return '0'+i.toString();
+			else return i.toString();
+		}
+
+		function dateToday() {
+			var datefrom1 = document.getElementById('datepickerfrom').value.replace(/[\/]/g,"") +
+				document.getElementById('timefrom').value.replace(/[\:]/g,"") + "00";
+
+			var now=new Date();
+			var year = now.getFullYear().toString();
+			var month = checkTime(now.getMonth()+1);
+			var day = checkTime(now.getDate());
+			datefrom = day + month + year  + "000000";
+
+			//alert(datefrom1 + '\n\r' + datefrom);
+			
+			loadPoints("geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&callback=?");
+			//var url = "geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
+
+		}
+
 	// Define a property to hold the Home state
 	HomeControl.prototype.home_ = null;
 
@@ -660,6 +699,8 @@
 		}
 		function dateshow(obj) {
 //			periodicalApp();
+			alert(obj.form);
+			//if(obj['submit'].value=='today') alert('fff');
 			datePoints();
 		}
 	</script>
@@ -718,6 +759,7 @@
 					<input type="text" id="datepickerfrom" value="29/01/2010" size="10" style="width:90px;">
 					<!--input id="datefrom" name="datefrom" type="text"/-->
 					<input type="text" id="timefrom" name="timefrom" value="00:00" size="5" style="width:50px;"/>
+					<input type="button" name="seefrom" value="&gt;" onclick="javascript:dateFrom();"/>
 				</td>
 			</tr>
 			<tr>
@@ -728,11 +770,13 @@
 					<input type="text" id="datepickerto" value="01/02/2010" size="10" style="width:90px;">
 					<!--input id="dateto" name="dateto" type="text"  value="30/01/2010" size="10" style="width:90px;"/-->
 					<input type="text" id="timeto" name="timeto" value="00:00" size="5" style="width:50px;"/>
+					<input type="button" name="seefrom" value="&lt;" onclick="javascript:dateTo();"/>
 				</td>
 			</tr>
 			<tr>
 				<td>
-					<input type="submit" name="submit" value="Показать.">
+					<input type="submit" name="submitkey" value="Показать">
+					<input type="button" name="today" value="Сегодня" onclick="javascript:dateToday();">
 				</td>
 			</tr>
 		</table>

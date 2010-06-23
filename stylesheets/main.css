@@ -111,8 +111,13 @@ table {
 	width: 100%;
 }
 
-table, th, td {
+table, th {
     background: #FFF0FF;
+    border: 2px solid black;
+    border-collapse: collapse;
+}
+
+td {
     border: 2px solid black;
     border-collapse: collapse;
 }
@@ -120,6 +125,15 @@ table, th, td {
 th {
     background: #CFF0FF;
 }
+
+
+tr:nth-child(even) {
+    background: #F0E8F8;
+    border: 2px solid black;
+    border-collapse: collapse;
+}
+
+
 
 form {
 //    background: #CFF0FF;
