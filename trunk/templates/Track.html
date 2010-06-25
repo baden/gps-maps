@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application_name }} Зарегестрированные пользователи {% endblock %}
+
+{% block head %}
+  <!--meta http-equiv="refresh" content="10"-->
+  <style type="text/css">{% include "css/index.css" %}</style>
+  <script type="text/javascript" src="js/track.js"></script>
+
+	<script type="text/javascript" language="JavaScript">
+	</script>
+
+{% endblock %}
+
+{% block body %}
+	Отладка всякой всячины.
+	<a href="trackjs.js">Скрипт</a>
+	<br />
+	<input type="button" value="Жмакай" onclick="javascript:aaa();" />
+	Тут будет результат работы: <output id="result"></output>
+
+	<br />
+	<input type="button" value="Жмакай2" onclick="javascript:json();" />
+	Тут будет результат работы: <output id="result2"></output>
+{% endblock %}
+
+{% block final %}
+{% endblock %}

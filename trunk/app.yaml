@@ -65,6 +65,9 @@ handlers:
   script: $PYTHON_LIB/google/appengine/ext/remote_api/handler.py
   login: admin
 
+- url: /track.*
+  script: track.py
+
 - url: /.*
   script: gps-maps.py
 
