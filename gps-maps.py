@@ -400,7 +400,9 @@ class ViewLogs(TemplatedPage):
 		#gpslogs_count = len(gpslogs)
 		for gpslog in gpslogs:
 			#gpslog.date = gpslog.date.replace(microsecond=0).replace(second=0)
-			gpslog.sdate = gpslog.date.strftime("%d/%m/%Y %H:%M")
+			gpslog.sdate = fromUTC(gpslog.date).strftime("%d/%m/%Y %H:%M")
+			#geolog.date = fromUTC(geolog.date) #.astimezone(utc)
+
 			try:
 				uuser = gpslog.user
 				gpslog.imei = uuser.imei 
@@ -593,6 +595,26 @@ class Geos(TemplatedPage):
 		#path = os.path.join(os.path.dirname(__file__), 'geos.html')
 		#self.response.out.write(template.render(path, template_values))
 		self.write_template({'geologs': geologs, 'imei': uimei})
+
+class GetTrack(webapp.RequestHandler):
+	def get(self):
+		self.response.headers['Content-Type'] = 'text/plain'
+		uimei = self.request.get('imei')
+		userdb = getUser(self.request)
+
+		if userdb == None:
+			geologs = datamodel.DBGPSPoint.all().order('-date').fetch(500)
+		else:
+			geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('-date').fetch(500)
+		points = []
+		for geolog in geologs:
+			points.append({
+				'date': geolog.date,	#.strftime("%d/%m/%Y %H:%M:%S"),
+				'lat': geolog.latitude,
+				'long': geolog.longitude,
+				'speed': geolog.speed
+			})
+		self.response.out.write(repr(points))
 
 def dec2angle_real(x, y):
 	if x==0 and y==0:
@@ -2038,6 +2060,7 @@ application = webapp.WSGIApplication(
 	('/firmware.*', Firmware),
 	('/setdescr.*', SetDescription),
 	('/setuserdescr.*', SetUserDescription),
+	('/gettrack.*', GetTrack),
 	],
 	debug=True
 )

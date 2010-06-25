@@ -62,24 +62,13 @@
 			// The anchor for this image is the base of the flagpole at 0,32.
 			new google.maps.Point(16, 16));
 		var image2 = new google.maps.MarkerImage('stylesheets/marker2.png',
-			// This marker is 20 pixels wide by 32 pixels tall.
-			new google.maps.Size(10, 10),
-			// The origin for this image is 0,0.
-			new google.maps.Point(0,0),
-			// The anchor for this image is the base of the flagpole at 0,32.
-			new google.maps.Point(5, 5));
-/*		var shadow = new google.maps.MarkerImage('stylesheets/beachflag_shadow.png',
-			// The shadow image is larger in the horizontal dimension
-			// while the position and offset are the same as for the main image.
-			new google.maps.Size(37, 32),
-			new google.maps.Point(0,0),
-			new google.maps.Point(0, 32));
-			// Shapes define the clickable region of the icon.
-			// The type defines an HTML <area> element 'poly' which
-			// traces out a polygon as a series of X,Y points. The final
-			// coordinate closes the poly by connecting to the first
-		// coordinate.
-*/
+			new google.maps.Size(10, 10),	// This marker is 20 pixels wide by 32 pixels tall.
+			new google.maps.Point(0,0),	// The origin for this image is 0,0.
+			new google.maps.Point(5, 5));	// The anchor for this image is the base of the flagpole at 0,32.
+		var image3 = new google.maps.MarkerImage('stylesheets/marker3.png',
+			new google.maps.Size(10, 10),	// This marker is 20 pixels wide by 32 pixels tall.
+			new google.maps.Point(0,0),	// The origin for this image is 0,0.
+			new google.maps.Point(5, 5));	// The anchor for this image is the base of the flagpole at 0,32.
 		var shape = {
 //			coord: [1, 1, 1, 20, 18, 20, 18 , 1],
 			coord: [0, 16, 0, 32, 32, 32, 32 ,16, 18, 0],
@@ -120,8 +109,15 @@
 			{% endif %}
 		})();
 
-		function createMarker(name, pos) {
-			var marker = new google.maps.Marker({position: pos, map: map, icon: image2, shape: shape2});
+		
+
+		function createMarker(name, pos, stop) {
+			var marker;
+			if(stop){
+				marker = new google.maps.Marker({position: pos, map: map, icon: image3, shape: shape2});
+			} else {
+				marker = new google.maps.Marker({position: pos, map: map, icon: image2, shape: shape2});
+			}
 			google.maps.event.addListener(marker, "click", function() {
 				if (infowindow) infowindow.close();
 				infowindow = new google.maps.InfoWindow({content: name});
@@ -263,7 +259,7 @@
 								'\nДатчик 1: ' + results[i].in1 +
 								'\nДатчик 2: ' + results[i].in2
 								,
-								pos));
+								pos, results[i].speed < 1.0));
 						}
 //
 //						var marker = new google.maps.Marker({
@@ -375,7 +371,7 @@
 			var dateto = document.getElementById('datepickerto').value.replace(/[\/]/g,"") +
 				document.getElementById('timeto').value.replace(/[\:]/g,"") + "59";
 			
-			loadPoints("geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
+			loadPoints("geosjson?imei=" + userimei + "&first=500&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
 			//var url = "geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
 
 		}
@@ -383,7 +379,7 @@
 			var datefrom = document.getElementById('datepickerfrom').value.replace(/[\/]/g,"") +
 				document.getElementById('timefrom').value.replace(/[\:]/g,"") + "00";
 			
-			loadPoints("geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&callback=?");
+			loadPoints("geosjson?imei=" + userimei + "&first=500&datefrom=" + datefrom + "&callback=?");
 			//var url = "geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
 
 		}
@@ -699,7 +695,7 @@
 		}
 		function dateshow(obj) {
 //			periodicalApp();
-			alert(obj.form);
+			//alert(obj.form);
 			//if(obj['submit'].value=='today') alert('fff');
 			datePoints();
 		}

@@ -43,6 +43,7 @@
 	{% endfor %}
     </table>
 	<a class="pushLink" href="geos?format=nmea" title="Получить лог в NMEA-формате">Получить NMEA</a>
+	<a class="pushLink" href="gettrack?imei={{ imei }}" title="Получить лог в RAW-формате">Получить RAW</a>
 	{% if imei %}
 	<a class="pushLink" href="map?imei={{ imei }}" title="Посмотреть на карте">Карта</a>
 	<div style="float:right; margin-right:20px;"></span><a class="pushLink" href="delgeos?imei={{ imei }}" title="Удаляет 500 самых старых записей для выбранной системы">Очистить логи {{ imei }} сервера</a></div>
