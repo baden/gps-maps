@@ -44,12 +44,15 @@
 		var directionsService = new google.maps.DirectionsService();
 		var directionsDisplay;
 //		var points = 1;
-		var pathCoordinates = [];
+//		var pathCoordinates = [];
 		var obj1x = 48.408206;
 		var obj1y = 35.048925;
 		var infowindow;
 		var repaircnt = 0;
+
 		var flightPath;
+		var flightPlanCoordinates = [];
+
 		var datemin;
 		var datemax;
 		var userimei;
@@ -80,6 +83,8 @@
 			type: 'poly'
 		};
 
+		var results;
+
 		(function () {
  
 			google.maps.Map.prototype.markers = new Array();
@@ -91,7 +96,18 @@
 			google.maps.Map.prototype.getMarkers = function() {
 				return this.markers;
 			};
-    
+
+			google.maps.Map.prototype.delMarker = function(i) {
+				if(infowindow) {
+					infowindow.close();
+				}
+				this.markers[i].setMap(null);
+				for(var i=i; i<this.markers.length; i++){
+					this.markers[i].index--;
+				}
+				//this.markers.slice(i, 1);
+			};
+
 			google.maps.Map.prototype.clearMarkers = function() {
 				if(infowindow) {
 					infowindow.close();
@@ -100,6 +116,7 @@
 				for(var i=0; i<this.markers.length; i++){
 					this.markers[i].setMap(null);
 				}
+				this.markers = [];
 			};
 
 			{% if imei %}
@@ -109,23 +126,69 @@
 			{% endif %}
 		})();
 
-		
+		{% if admin %}
+		function DeletePoint(i) {
+			//alert('Delete point /i=' + i + ' /index=' + map.getMarkers()[i].index);
+			
+			//var datepoint = results[realindex].date.replace(/[\/\: ]/g,"");
+			var datepoint = results[i].date.replace(/[\/\: ]/g,"");
 
-		function createMarker(name, pos, stop) {
+			//alert("Title=" + map.getMarkers()[i].title + "\r\nPoint:" + results[i].date);
+			//alert(datepoint);
+
+			$.getJSON("del1geos?imei=" + userimei + "&datetime=" + datepoint, function (data) {
+				//$("#progress").html("Обрабатываем...");
+				if (data.responseData.results && data.responseData.results.length > 0) {
+					results = data.responseData.results;
+				}
+			});
+
+			path = flightPath.getPath();
+			path.removeAt(map.getMarkers()[i].index);
+			map.delMarker(i);
+
+			//alert(flightPlanCoordinates[i]);
+			//delete flightPlanCoordinates[i];
+			//pos = new google.maps.LatLng(flightPlanCoordinates[i].lat()-0.01, flightPlanCoordinates[i].lng());
+			//flightPlanCoordinates[i] = pos;
+			//alert(flightPlanCoordinates[i]);
+		}
+		{% endif %}
+
+		function createMarker(i, pos) {
+//		function createMarker(i, date, name, pos, stop) {
 			var marker;
-			if(stop){
-				marker = new google.maps.Marker({position: pos, map: map, icon: image3, shape: shape2});
+//			if(stop){
+			if(results[i].speed < 1.0){
+				marker = new google.maps.Marker({position: pos, map: map, icon: image3, shape: shape2, index:i});
 			} else {
-				marker = new google.maps.Marker({position: pos, map: map, icon: image2, shape: shape2});
+				marker = new google.maps.Marker({position: pos, map: map, icon: image2, shape: shape2, index:i});
 			}
+
 			google.maps.event.addListener(marker, "click", function() {
 				if (infowindow) infowindow.close();
-				infowindow = new google.maps.InfoWindow({content: name});
+//				infowindow = new google.maps.InfoWindow({content:name});
+				infowindow = new google.maps.InfoWindow({content:
+					'Дата: <b>' + results[i].date +
+					'</b><br />Скорость: <b>' + results[i].speed +
+					'</b><br />Направление: <b>' + results[i].course +
+					'</b><br />Долгота: <b>' + results[i].lat +
+					'</b><br />Широта: <b>' + results[i].long +
+					'</b><br />Спутники: <b>' + results[i].sats +
+					'</b><br />Датчик 1: <b>' + results[i].in1 +
+					'</b><br />Датчик 2: <b>' + results[i].in2 {% if admin %}+
+					'</b><br /><a class="smallButton" href="javascript:DeletePoint('+i+');" title="Удалить точку">X</a>'
+					{% endif %}
+				});
 				infowindow.open(map, marker);
 			});
-			marker.setTitle(name)
+
+			//marker.setTitle(date)
+			marker.setTitle(results[i].date);
+
 			return marker;
 		}
+
 
 		jQuery(function($){
 			$.datepicker.regional['ru'] = {
@@ -194,7 +257,7 @@
 			//google.maps.Map
 
 			$("#progress").html("Загружаем новые...");
-			var flightPlanCoordinates = [];
+			flightPlanCoordinates = [];
 
 			var track = document.getElementById('track').value;
 			var optim = document.getElementById('optim').value;
@@ -206,7 +269,7 @@
 				$("#progress").html("Обрабатываем...");
 				map.clearMarkers();
 				if (data.responseData.results && data.responseData.results.length > 0) {
-					var results = data.responseData.results;
+					results = data.responseData.results;
 					//var content = document.getElementById('progress');
 					//content.innerHTML = 'Получено ' + results.length + ":<br/>";
 					//for (var i=0; i < 500; i++) {
@@ -249,7 +312,9 @@
 //						points = points + 1;
 //						path.insertAt(points, pos);
 						if(!track){
-							map.addMarker(createMarker(
+/*
+							map.addMarker(createMarker(i,
+								'Дата:' + results[i].date,
 								'Дата:' + results[i].date +
 								'\nСкорость: ' + results[i].speed +
 								'\nНаправление: ' + results[i].course +
@@ -257,9 +322,12 @@
 								'\nШирота: ' + results[i].long +
 								'\nСпутники: ' + results[i].sats +
 								'\nДатчик 1: ' + results[i].in1 +
-								'\nДатчик 2: ' + results[i].in2
+								'\nДатчик 2: ' + results[i].in2 +
+								'\n<a class="smallButton" href="javascript:DeletePoint('+i+');" title="Удалить точку">X</a>'
 								,
 								pos, results[i].speed < 1.0));
+*/
+							map.addMarker(createMarker(i, pos));
 						}
 //
 //						var marker = new google.maps.Marker({
@@ -353,6 +421,11 @@
 
 					$("#datepickerto").datepicker('setDate', new Date(datemaxjs));
 					document.getElementById('timeto').value = datemaxjs.replace(/.* /,"");
+
+					document.getElementById('dellink').href =
+						"delgeos?imei=" + userimei +
+						"&datefrom=" + datemin.replace(/[\/\: ]/g,"") +
+						"&dateto=" + datemax.replace(/[\/\: ]/g,"");
 				} else {
 					$("#progress").html("Ошибка.");
 				}
@@ -371,7 +444,8 @@
 			var dateto = document.getElementById('datepickerto').value.replace(/[\/]/g,"") +
 				document.getElementById('timeto').value.replace(/[\:]/g,"") + "59";
 			
-			loadPoints("geosjson?imei=" + userimei + "&first=500&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
+			//loadPoints("geosjson?imei=" + userimei + "&first=500&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
+			loadPoints("geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
 			//var url = "geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
 
 		}
@@ -573,7 +647,7 @@
 
 		// We create pathCoordinates as an MVCArray so we can
 		// manipulate it using the insertAt() method
-		pathCoordinates = new google.maps.MVCArray();
+		//pathCoordinates = new google.maps.MVCArray();
 
 /*		var flightPlanCoordinates = [
 			new google.maps.LatLng(48.408206, 35.048925),
@@ -773,6 +847,11 @@
 				<td>
 					<input type="submit" name="submitkey" value="Показать">
 					<input type="button" name="today" value="Сегодня" onclick="javascript:dateToday();">
+					{% if admin %}
+					<!--div style="float:right; margin-right:20px;"-->
+					<a class="smallButton" href="fake-delgeos?imei={{ imei }}" title="Удаляет записи выбранного диапазона" id="dellink">X</a>
+					<!--/div-->
+					{% endif %}
 				</td>
 			</tr>
 		</table>

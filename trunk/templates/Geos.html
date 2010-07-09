@@ -14,22 +14,22 @@
         <thead>
         	<tr>
         		<!--th>ID</th-->
-        		<th>IMEI пользователя</th>
-				<th>Дата и время</th>
-				<th>Долгота<br><i>Град</i></th>
-				<th>Широта<br><i>Град</i></th>
-				<th>Спут.<br>(Fix)</th>
-				<th>Скорость<br><i>км/ч</i></th>
-				<th>Напр-ние<br><i>Град</i></th>
-				<th>Высота<br><i>м</i></th>
-				<th>Вход 1<br><i>%</i></th>
-				<th>Вход 2<br><i>%</i></th>
-			</tr>
-		</thead>
+        		<th>Система</th>
+			<th>Дата и время</th>
+			<th>Долгота<br><i>Град</i></th>
+			<th>Широта<br><i>Град</i></th>
+			<th>Спут.<br>(Fix)</th>
+			<th>Скорость<br><i>км/ч</i></th>
+			<th>Напр-ние<br><i>Град</i></th>
+			<th>Высота<br><i>м</i></th>
+			<th>Вход 1<br><i>%</i></th>
+			<th>Вход 2<br><i>%</i></th>
+		</tr>
+	</thead>
         {% for geolog in geologs %}
             <tr>
             	<!--td>{{ geolog.key.id }}</td-->
-            	<td>{{ geolog.imei }}<a class="smallButton" href="geos?imei={{ geolog.imei }}" title="filter">f</a></td>
+            	<td>{{ geolog.user.desc }}<a class="smallButton" href="geos?imei={{ geolog.user.imei }}" title="filter">f</a></td>
 				<td>{{ geolog.date|date:"d/m/y G:i:s" }}</td>
 				<td>{{ geolog.latitude|floatformat:4 }}</td>
 				<td>{{ geolog.longitude|floatformat:4 }}</td>
@@ -49,7 +49,9 @@
 	<div style="float:right; margin-right:20px;"></span><a class="pushLink" href="delgeos?imei={{ imei }}" title="Удаляет 500 самых старых записей для выбранной системы">Очистить логи {{ imei }} сервера</a></div>
 	{% else %}
 	<a class="pushLink" href="map" title="Посмотреть на карте">Карта</a>
-	<div style="float:right; margin-right:20px;"></span><a class="pushLink" href="delgeos" title="Удаляет 500 самых старых записей для всех систем">Очистить логи сервера</a></div>
+	{% if admin %}
+		<div style="float:right; margin-right:20px;"></span><a class="pushLink" href="delgeos" title="Удаляет 500 самых старых записей для всех систем">Очистить логи сервера</a></div>
+	{% endif %}
 	{% endif %}
     
 {% endblock %}
