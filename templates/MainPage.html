@@ -154,9 +154,16 @@ $("#menu-main").hover(function () {
 			<td>fwupdate</td>
 			<td>Обновить внутреннее программное обеспечение</td>
 		</tr>
+		<tr>
+			<td>gsm reboot</td>
+			<td>Перезапустить GSM-модуль</td>
+		</tr>
+
 	</table>
 	
 
+	{% if admin %}
+	SERVER_NAME = {{ server_name }}
 	<h1>Тестовые функции</h1>
 	        <a class="pushLink" href="/track">Отладочная1</a><br />
 
@@ -190,7 +197,6 @@ $("#menu-main").hover(function () {
 		<br />
 		<a href="testdb">Операции с базой данных</a>
 		
-
 	<h1>Меню пользователя</h1>
         <!--a class="pushLink" href="gps.php">[ <span>Просмотреть треки на карте</span> ]</a><br-->
         <!--a class="pushLink" href="debuglogo.php?name=baden&text=Test_message">[ <span>Добавить тестовую строку в лог</span> ]</a-->
@@ -206,6 +212,7 @@ $("#menu-main").hover(function () {
 
 	<h1>Меню инициализации</h1>
         <a class="pushLink" href="init.php">[ <span>Очистить базу данных/создать базу данных</span> ]</a><br />
+	{% endif %}
 
 {% endblock %}
 

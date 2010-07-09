@@ -5,6 +5,7 @@ import logging
 import os
 import zlib
 import math
+import random
 
 #from datetime import date
 #from datetime import datetime
@@ -29,7 +30,9 @@ from google.appengine.ext.webapp import template
 #import models
 import datamodel
 
-ADMIN_USERNAME = 'baden.i.ua'
+#ADMIN_USERNAME = 'baden.i.ua'
+
+SERVER_NAME = os.environ['SERVER_NAME']
 
 #ZERO = timedelta(0)
 TIMEZONE = timedelta(hours =+ 2)
@@ -153,7 +156,8 @@ def checkUser(uri, response):
 	return {
 		'login_url': login_url,
 		'username': username,
-		'admin': username == ADMIN_USERNAME,
+		#'admin': username == ADMIN_USERNAME,
+		'admin': users.is_current_user_admin(),
 	}
 
 class TemplatedPage(webapp.RequestHandler):
@@ -167,7 +171,9 @@ class TemplatedPage(webapp.RequestHandler):
 			username = user.nickname()
 			values['login_url'] = login_url
 			values['username'] = username
-			values['admin'] = (username == ADMIN_USERNAME)
+			#values['admin'] = (username == ADMIN_USERNAME)
+			values['admin'] = users.is_current_user_admin()
+			values['server_name'] = SERVER_NAME
 
 			path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
 			self.response.out.write(template.render(path, values))
@@ -274,7 +280,8 @@ def getUser(request, create=False):
 
 class AddLog(webapp.RequestHandler):
 	def get(self):
-		self.response.headers['Content-Type'] = 'text/plain'	#minimizing data
+		#self.response.headers['Content-Type'] = 'text/plain'	#minimizing data
+		self.response.headers['Content-Type'] = 'application/octet-stream'
 		userdb = getUser(self.request, create=True)
 
 		#uimei = self.request.get('imei')
@@ -295,12 +302,17 @@ class AddLog(webapp.RequestHandler):
 		#		userdb = None
 		#		self.response.out.write('User not found by imei (%s)\r\n' % uimei)
 
+		newconfigs = datamodel.DBNewConfig().all().filter('user = ', userdb).fetch(1)
+		if newconfigs:
+			self.response.out.write('CONFIGUP\r\n')
+
 		if userdb:
 			gpslog = datamodel.GPSLogs()
 			gpslog.user = userdb
 			gpslog.text = text
 			gpslog.put()
-			self.response.out.write('Add log for user (phone:%s IMEI:%s).\r\n' % (userdb.phone, userdb.imei))
+			#self.response.out.write('Add log for user (phone:%s IMEI:%s).\r\n' % (userdb.phone, userdb.imei))
+			self.response.out.write('ADDLOG: OK\r\n')
 
 		#userdb = datamodel.DBUser().get('imei', user_imei)
 		#userdb = datamodel.DBUser().get_by_id(ids, parent)
@@ -364,29 +376,51 @@ class ViewLogs(TemplatedPage):
 
 		datemark = self.request.get('date')
 		prevmark = self.request.get('prev')
+		uimei = self.request.get('imei')
+
+		userdb = getUser(self.request, create=False)
+
 		#datemark = datetime(2009, 12, 23, 21, 0, 0)
 		#datemark = datetime("2009-12-23 21:10:59.140000")
 		#datemark = datetime.strptime(
 
 		if prevmark:
 			if prevmark == '0':
-				urlprev = '<a class="Prev" href="logs">First</a>'
+				if uimei:
+					urlprev = '<a class="Prev" href="logs?imei=%s">First</a>' % uimei
+				else:
+					urlprev = '<a class="Prev" href="logs">First</a>'
 			else:
-				urlprev = '<a class="Prev" href="logs?date=%s&prev=0">Prev</a>' % prevmark
+				if uimei:
+					urlprev = '<a class="Prev" href="logs?imei=%s&date=%s&prev=0">Prev</a>' % (uimei, prevmark)
+				else:
+					urlprev = '<a class="Prev" href="logs?date=%s&prev=0">Prev</a>' % prevmark
 		else:
 			urlprev = ''
 
 		if datemark:
-			gpslogs = datamodel.GPSLogs.all().filter('date <=', datetime.strptime(datemark, "%Y%m%d%H%M%S%f")).order('-date').fetch(MAXLOGS+1)
+			if uimei:
+				gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date').fetch(MAXLOGS+1)
+			else:
+				gpslogs = datamodel.GPSLogs.all().filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date').fetch(MAXLOGS+1)
 			#urlprev = '<a href="logs?date=%s">Prev</a> %s ' % (gpslogs[0].date.strftime("%d-%m-%y %H:%M:%S.%f"), datemark)  
 		else:
-			gpslogs = datamodel.GPSLogs.all().order('-date').fetch(MAXLOGS+1)
+			if uimei:
+				gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
+			else:
+				gpslogs = datamodel.GPSLogs.all().order('-date').fetch(MAXLOGS+1)
 		gpslogs_count = len(gpslogs)
 		if gpslogs_count == MAXLOGS+1:
 			if datemark:
-				urlnext = '<a class="Next" href="logs?date=%s&prev=%s">Next</a> ' % (gpslogs[-1].date.strftime("%Y%m%d%H%M%S%f"), datemark)
+				if uimei:
+					urlnext = '<a class="Next" href="logs?imei=%s&date=%s&prev=%s">Next</a> ' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"), datemark)
+				else:
+					urlnext = '<a class="Next" href="logs?date=%s&prev=%s">Next</a> ' % (fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"), datemark)
 			else:
-				urlnext = '<a class="Next" href="logs?date=%s&prev=0">Next</a>' % gpslogs[-1].date.strftime("%Y%m%d%H%M%S%f")
+				if uimei:
+					urlnext = '<a class="Next" href="logs?imei=%s&date=%s&prev=0">Next</a>' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"))
+				else:
+					urlnext = '<a class="Next" href="logs?date=%s&prev=0">Next</a>' % fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S")
 			gpslogs.pop()
 		else:
 			urlnext = 'Next'
@@ -403,11 +437,11 @@ class ViewLogs(TemplatedPage):
 			gpslog.sdate = fromUTC(gpslog.date).strftime("%d/%m/%Y %H:%M")
 			#geolog.date = fromUTC(geolog.date) #.astimezone(utc)
 
-			try:
-				uuser = gpslog.user
-				gpslog.imei = uuser.imei 
-			except:
-				gpslog.imei = 'deleted' 
+			#try:
+			#	uuser = gpslog.user
+			#	gpslog.imei = uuser.imei
+			#except:
+			#	gpslog.imei = 'deleted' 
 			#if not gpslog.user:
 			#    gpslog.user.imei = "deleted"
 
@@ -584,12 +618,12 @@ class Geos(TemplatedPage):
 			geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
 		#geologs = datamodel.DBGPSPoint.all().order('-date').fetch(100)
 		for geolog in geologs:
-			try:
-				uuser = geolog.user
-				geolog.imei = uuser.imei
-			except:
-				geolog.imei = 'deleted'
-			geolog.sdate = geolog.cdate.strftime("%d/%m/%Y %H:%M")
+			#try:
+			#	uuser = geolog.user
+			#	geolog.imei = uuser.imei
+			#except:
+			#	geolog.imei = 'deleted'
+			#geolog.sdate = geolog.cdate.strftime("%d/%m/%Y %H:%M")
 			geolog.date = fromUTC(geolog.date) #.astimezone(utc)
 
 		#path = os.path.join(os.path.dirname(__file__), 'geos.html')
@@ -837,12 +871,71 @@ class GeosJSON(webapp.RequestHandler):
 
 class DelGeos(webapp.RequestHandler):
 	def get(self):
-		geologs = datamodel.DBGPSPoint.all().order('-date').fetch(500)
+		uimei = self.request.get('imei')
+		datefrom_s = self.request.get('datefrom')
+		if datefrom_s:
+			datefrom = toUTC(datetime.strptime(datefrom_s, "%d%m%Y%H%M%S"))
+
+		dateto_s = self.request.get('dateto')
+		if dateto_s:
+			dateto = toUTC(datetime.strptime(dateto_s, "%d%m%Y%H%M%S"))
+
+		userdb = getUser(self.request)
+
+		if datefrom_s:
+			logging.info("Deleting data from %s to %s 4 user %s" % (datefrom, dateto, uimei))
+			if userdb == None:
+				geologs = datamodel.DBGPSPoint.all().filter('date >=', datefrom).filter('date <=', dateto).order('date').fetch(500)
+			else:
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('date').fetch(500)
+			logging.info("Delete %d items" % len(geologs))
+			if geologs:
+				db.delete(geologs)
+			if uimei:
+				self.redirect("/maps?imei=%s" % uimei)
+			else:
+				self.redirect("/maps")
+		else:
+			logging.info("Deleting old data 4 user %s" % uimei)
+			if userdb == None:
+				geologs = datamodel.DBGPSPoint.all().order('date').fetch(500)
+			else:
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('date').fetch(500)
+
+			if geologs:
+				db.delete(geologs)
+			if uimei:
+				self.redirect("/geos?imei=%s" % uimei)
+			else:
+				self.redirect("/geos")
+
+class Del1Geos(webapp.RequestHandler):
+	def get(self):
+		self.response.headers['Content-Type']   = 'text/javascript; charset=utf-8'
+		callback = self.request.get('callback')
+
+		uimei = self.request.get('imei')
+		datepoint = self.request.get('datetime')
+		if datepoint:
+			datepoint = toUTC(datetime.strptime(datepoint, "%d%m%Y%H%M%S"))
+
+		logging.info("Delete 1 GPS point %s" % datepoint)
+
+		geologs = datamodel.DBGPSPoint.all().filter('date ==', datepoint).fetch(2)
 		if geologs:
-			db.delete(geologs)
-		#for geolog in geologs:
-		#	geolog.delete()
-		self.redirect("/geos")
+			logging.info("OK key=%s" % geologs[0].key())
+			geologs[0].delete()
+		else:
+			logging.info("ERROR point not found")
+
+		jsonresp = {
+			"responseData": {
+				"answer": "ok",
+			}
+		}
+
+		nejson = json.dumps(jsonresp)
+		self.response.out.write(callback + "(" + nejson + ")\r")
 
 class CSSfiles(webapp.RequestHandler):
 	def get(self):
@@ -1031,7 +1124,8 @@ class Config(TemplatedPage):
 
 		cmd = self.request.get('cmd')
 		if cmd == 'save':
-			self.response.headers['Content-Type'] = 'text/plain'	#minimizing data
+			#self.response.headers['Content-Type'] = 'text/plain'	#minimizing data
+			self.response.headers['Content-Type'] = 'application/octet-stream'
 			newconfigs = datamodel.DBConfig().all().filter('user = ', userdb).fetch(1)
 			if newconfigs:
 				newconfig = newconfigs[0]
@@ -1107,6 +1201,7 @@ class Params(webapp.RequestHandler):
 			return
 
 		if cmd == 'params':
+			self.response.headers['Content-Type'] = 'application/octet-stream'
 			#self.response.out.write("<html><body>CONFIG:<br><table>")
 			newconfig = datamodel.DBNewConfig().all().filter('user = ', userdb).fetch(1)
 			#for dbconfig in newconfig:
@@ -1130,6 +1225,7 @@ class Params(webapp.RequestHandler):
 			self.response.out.write("DELETED")
 
 		elif cmd == 'confirm':
+			self.response.headers['Content-Type'] = 'application/octet-stream'
 			newconfig = datamodel.DBNewConfig().all().filter('user = ', userdb).fetch(100)
 
 			if newconfig:
@@ -1357,7 +1453,12 @@ class BinGeos(webapp.RequestHandler):
 		#_log += "\n {DATABASE PUT() DISABLED}"
 		logging.info(_log)
 
+jit_lat = 0
+jit_long = 0
+
 def SaveGPSPointFromBin(pdata, result):
+	global jit_lat
+	global jit_long
 	#logging.info('[%d]' % len(pdata))
 	#_log += '*'
 
@@ -1397,6 +1498,13 @@ def SaveGPSPointFromBin(pdata, result):
 	if latitude < -90.0: error = True
 	if longitude > 180.0: error = True
 	if longitude < -180.0: error = True
+
+	if SERVER_NAME=='localhost':
+		#jit_lat = jit_lat + (random.random()-0.5)*0.001
+		#jit_long = jit_long + (random.random()-0.5)*0.001
+		#latitude = latitude + jit_lat
+		#longitude = longitude + jit_long
+		pass
 
 	if error:
 		logging.error("Corrupt latitude or longitude %f, %f" % (latitude, longitude))
@@ -1836,7 +1944,8 @@ class Firmware(TemplatedPage):
 
 		if cmd:
 			if cmd == 'del':
-				if username == ADMIN_USERNAME:
+				#if username == ADMIN_USERNAME:
+				if users.is_current_user_admin():
 					if fid:
 						datamodel.DBFirmware().get_by_key_name(fid).delete()
 				self.redirect("/firmware")
@@ -1852,6 +1961,7 @@ class Firmware(TemplatedPage):
 				#
 				#self.response.out.write("NOT FOUND\r\n")
 				#return
+				#self.response.out.write("FIRMWARE\r\n")
 						
 				fw = datamodel.DBFirmware().all().filter('boot =', boot).filter('hwid =', int(hwid, 16)).order('-swid').fetch(1)
 				if fw:
@@ -1901,6 +2011,12 @@ class Firmware(TemplatedPage):
 					self.response.out.write("SWID:%04X" % fw[0].swid)
 					self.response.out.write("\r\nLENGTH:%04X" % len(fw[0].data))
 					#cuting = 0
+
+					#config2 = ord(fw[0].data[24]) + ord(fw[0].data[25])*256
+					#config1 = ord(fw[0].data[26]) + ord(fw[0].data[27])*256
+					#self.response.out.write("\r\nCONFIG2:%04X" % config2)
+					#self.response.out.write("\r\nCONFIG1:%04X" % config1)
+
 					for byte in fw[0].data:
 						if by == 0:
 							self.response.out.write("\r\nLINE%04X:" % line)
@@ -2042,6 +2158,7 @@ application = webapp.WSGIApplication(
 	('/logs.*', ViewLogs),
 	('/dellogs.*', DelLogs),
 	('/delgeos.*', DelGeos),
+	('/del1geos.*', Del1Geos),
 	('/lastpos.*', LastPos),
 	('/geosjson', GeosJSON),
 	('/geos.*', Geos),

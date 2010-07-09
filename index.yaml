@@ -44,3 +44,9 @@ indexes:
   - name: date<=
   - name: date
     direction: desc
+
+- kind: GPSLogs
+  properties:
+  - name: user
+  - name: date
+    direction: desc
