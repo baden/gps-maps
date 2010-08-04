@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application_name }} Просмотр бинарных данных GPS-лога {% endblock %}
+
+{% block head %}
+  <!--meta http-equiv="refresh" content="10"-->
+  <style type="text/css">{% include "css/logs.css" %}</style>
+{% endblock %}
+
+{% block body %}
+    <h1>Записи в логе:</h1>
+	{{ urlprev }}{{ urlnext }}
+    <table>
+        <thead>
+        	<tr>
+        		<th>Система</th>
+			<th>Дата и время лога</th>
+			<th>Размер</th>
+			<th>Получить</th>
+			<th>Удалить</th>
+			</tr>
+		</thead>
+        {% for bindata in dbbindata %}
+            <tr>
+            	<td>{{ bindata.user.desc }}</td>
+            	<td>{{ bindata.cdate }}</td>
+            	<td>{{ bindata.datasize }}</td>
+		<td>
+		 <a class="smallButton" href="binbackup?cmd=getbin&key={{ bindata.key }}" title="Загрузить данные в сыром виде">B</a>
+		</td>
+		<td>
+		 <a class="smallButton" href="binbackup?cmd=del&key={{ bindata.key }}" title="Удалить эти данные">X</a>
+		</td>
+		
+	    </tr>
+	{% endfor %}
+    </table>
+	<a class="pushLink" href="binbackup?cmd=delall" title="Удаляет 1000 самых старых записей">Очистить 1000 записей</a>
+    
+Отладочная: {{ cacheuser.hello }}
+{% endblock %}
+
+{% block final %}
+{% endblock %}

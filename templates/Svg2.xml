@@ -1,0 +1,33 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE html PUBLIC
+    "-//W3C//DTD XHTML 1.1 plus MathML 2.0 plus SVG 1.1//EN"
+
+"http://www.w3.org/2002/04/xhtml-math-svg/xhtml-math-svg.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+  <title>SVG as embedded object and nested namespace</title>
+</head>
+<body>
+
+<h2>Object tag</h2>
+<object type="image/svg+xml" data="standalone.svg">
+Your browser is currently unable to display SVG images.
+</object>
+<h2>Nested namespace</h2>
+<svg:svg version="1.1" width="5cm" height="4cm"
+      xmlns:svg="http://www.w3.org/2000/svg">
+  <svg:title>Four rectangles</svg:title>
+
+  <svg:rect x="0.5cm" y="0.5cm" width="2cm" height="1cm"/>
+  <svg:rect x="0.5cm" y="2cm" width="1cm" height="1.5cm"/>
+  <svg:rect x="3cm" y="0.5cm" width="1.5cm" height="2cm"/>
+  <svg:rect x="3.5cm" y="3cm" width="1cm" height="0.5cm"/>
+  <!-- Show outline of canvas using 'rect' element -->
+  <svg:rect x=".01cm" y=".01cm" width="4.98cm" height="3.98cm"
+       fill="none" stroke="blue" stroke-width=".02cm" />
+
+</svg:svg>
+<h2>Embed tag</h2>
+<embed id="svg3" src="standalone.svg" />
+</body>
+</html>

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application_name }} Commet, WebSockets and so on... {% endblock %}
+
+{% block head %}
+  <!--meta http-equiv="refresh" content="10"-->
+  <style type="text/css">{% include "css/index.css" %}</style>
+
+
+  <script src='/_ah/channel/jsapi'></script>
+  <!--script src='http://talkgadget.google.com/talkgadget/channel.js'></script-->
+  <script>
+    var channelId = '{{ channel_id }}';
+    var channel = new goog.appengine.Channel(channelId);
+    var socket = channel.open();
+    socket.onmessage = function(evt) {
+      alert(evt.data);
+    };
+  </script>
+
+{% endblock %}
+
+{% block body %}
+	Отладка всякой всячины про Commet, WebSockets и др..
+
+	<a href="commet-msg">Тыц</a>
+
+{% endblock %}
+
+{% block final %}
+{% endblock %}

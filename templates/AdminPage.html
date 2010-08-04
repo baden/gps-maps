@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application_name }} GPS-MAPS avto {% endblock %}
+
+{% block javainit %}
+
+{% endblock %}
+
+{% block head %}
+  <link type="text/css" rel="stylesheet" href="stylesheets/ui.all.css" />
+  <style type="text/css">{% include "css/index.css" %}</style>
+	<style type="text/css">
+
+	</style>
+
+	<script type="text/javascript" language="JavaScript">
+
+
+		//$('#menu-main').css({'background-color' : 'green'});
+		function MakeBinRequest(url, data) {
+			http_request = false;
+			if (window.XMLHttpRequest) { // Mozilla, Safari,...
+				http_request = new XMLHttpRequest();
+				if (http_request.overrideMimeType) {
+					// set type accordingly to anticipated content type
+					//http_request.overrideMimeType('text/xml');
+					//http_request.overrideMimeType('text/html');
+					http_request.overrideMimeType('application/octet-stream');
+				}
+			} else if (window.ActiveXObject) { // IE
+				try {
+					http_request = new ActiveXObject("Msxml2.XMLHTTP");
+				} catch (e) {
+					try {
+					http_request = new ActiveXObject("Microsoft.XMLHTTP");
+					} catch (e) {}
+				}
+			}
+			if (!http_request) {
+				alert('Cannot create XMLHTTP instance');
+				return false;
+			}
+			http_request.onreadystatechange = alertContents;
+			http_request.open('POST', url, true);
+			http_request.setRequestHeader("Content-type", "application/octet-stream");
+			http_request.setRequestHeader("Content-length", data.length);
+			http_request.setRequestHeader("Connection", "close");
+			//header('Content-Type: text/plain; charset=windows-1251');
+
+			http_request.send(data);			
+		}
+		
+		function alertContents() {
+			if (http_request.readyState == 4) {
+				if (http_request.status == 200) {
+					//alert(http_request.responseText);
+					result = http_request.responseText;
+					document.getElementById('myspan').innerHTML = result;            
+				} else {
+					alert('There was a problem with the request.');
+				}
+			}
+		}
+
+		var dataid = 0;
+		function binpost(obj) {
+			//var data = "ABCDEFG\x01\x80\xFF" + String.fromCharCode(65) + String.fromCharCode(150);
+			var data = "";
+			var i;
+			var j;
+			data += "\x23\x02\xDB\x24\x03\x07\x01\x45\x1B\x58\x06"
+			for(j=0; j<=750; j++)
+				data += "\xF2\x1D\x01\x10\x14\x13\x30\x18\x00\x58\x13\x23\x02\xDB\x24\x03\x07\x01\x45\x1B\x58\x06"
+					//data += String.fromCharCode(i);
+			data += "\xF2\x1D\x01\x10\x14\x13\x30\x18\x00"
+			//var data = "\x1D\x01\x10\x14\x13\x30\x18\x00\x58\x13\x23\x02\xDB\x24\x03\x07\x00\x01\x45\x1B\x58\x06"
+			//var data = "\x1D\x01\x12\x38\x2B\x00\x30\x18\x2C\x13\x23\x02\xD0\x24\x08\x00\x0B\x00\x00\x00\x47\x06"
+
+			//var data1 = data.encodeUTF8();
+			data = "";
+			for(i=0; i<256; i++){
+				data += String.fromCharCode(i);
+			}
+
+			//var data = new Blob();
+			//data.Type = 2;
+			//data.Charset = "Windows-1251";
+			//data.WriteText("ABCDEFG");
+			MakeBinRequest('bingeos?imei=123456789012&enc=utf8&dataid=' + dataid.toString(16).toUpperCase(), data);
+			dataid++;
+		}
+	</script>
+{% endblock %}
+
+{% block body %}
+	<h1>Административное меню</h1>
+        <!--a class="pushLink" href="test.php">[ <span>Тест</span> ]</a><br-->
+        <!--a class="pushLink" href="login.php">[ <span>Войти под своим именем</span> ]</a-->
+	<!--div style="position:absolute; right: 10px; top: 10px;">
+		Вы вошли как: <b>{{ username }}</b>
+	        <a class="smallButton" href="{{ login_url }}" title="Войти под другим именем">X</a>
+	</div-->
+
+	<div class="menu" title="Меню">
+		<ul>
+			<li><a href="/"><div>Главная</div><a></li>
+			<li><a href="/map"><div>Карта</div><a></li>
+			<li><a href="/config"><div>Конфигурация</div><a></li>
+			<li><a href="/logs"><div>События</div><a></li>
+			<li><a href="/geos"><div>События GPS</div><a></li>
+		</ul>
+	</div>
+
+	<h2>Список пользователей</h2>
+	<table>
+		<tr>
+			<th>e-mail</th>
+			<th>Имя</th>
+			<th>Список наблюдаемых систем</th>
+		</tr>
+		<tr>
+		</tr>
+	</table>
+	<a class="pushLink" href="/admin-add">Добавить пользователя</a><br />
+	
+
+	<br />
+        <!--a class="pushLink" href="register.php">[ <span>Зарегестрироваться в системе</span> ]</a><br-->
+
+	<!--div>CRC1 = {{ crc1 }} {{ my }}</div-->
+
+	<!--a class="pushLink" href="system?cmd=add">Добавить систему</a-->
+
+	{% if admin %}
+	SERVER_NAME = {{ server_name }}
+	<h1>Тестовые функции</h1>
+	        <a class="pushLink" href="/binbackup">Бинарные данные</a><br />
+	        <a class="pushLink" href="/track">Отладочная Track</a>
+	        <a class="pushLink" href="/commet">Отладочная Commet</a>
+	        <a class="pushLink" href="/svg1.html">Svg1</a>
+	        <a class="pushLink" href="/svg2.xml">Svg2</a><br />
+
+		<a class="pushLink" href="users">Просмотреть список систем</a>
+		<br />
+
+        <a class="pushLink" href="/addlog?imei=123456789013&text=Sample%20message">Добавление в лог методом GET</a>
+        <a class="pushLink" href="/lastpos?imei=123456789013&datetime={{ now|date:"dmyGis" }}&latitude=48.4082&longitude=35.0492&sats=4&fix=2&speed=0.0&course=0.0&alt=150.0&in1=0&in2=234">Добавление координат методом GET</a>
+		<!--a class="pushLink" href="/testbin">Проба bin-посылки</a-->
+		<form action="javascript:binpost(document.getElementById('myform'));" name="myform" id="myform">
+			<input type="button" name="button" value="Отправка бинарных данных" onclick="javascript:binpost(this.parentNode);">
+			Ответ сервера:
+			<hr>
+			<span name="myspan" id="myspan"></span>
+			<hr>
+		</form>
+		<a class="pushLink" href="/parsebingeos">Обработка бинарных данных</a>
+		
+
+        <form action="/addlog?id=1" method="post">
+            <div><textarea name="content" rows="8" style="width:98%;"></textarea></div>
+            <div><input type="file" name="file"></div>
+            <div><input type="submit" value="Sign Guestbook"></div>
+        </form>
+
+        <a href="/addlog?id=1&text=Sample%20message">Протестировать добавление в лог методом POST</a><br />
+		<a href="http://localhost/_ah/admin/datastore" target="_blank">Админка на локалхосте</a>
+		<a href="http://localhost:8080/_ah/admin/datastore" target="_blank">(порт 8080)</a>
+		<a href="https://appengine.google.com/dashboard?&app_id=gps-maps" target="_blank">Админка в онлайн</a>
+		<a href="http://code.google.com/p/gps-maps/" target="_blank">Страница проекта</a>
+		<br />
+		<a href="testdb">Операции с базой данных</a>
+		
+	<h1>Меню пользователя</h1>
+        <!--a class="pushLink" href="gps.php">[ <span>Просмотреть треки на карте</span> ]</a><br-->
+        <!--a class="pushLink" href="debuglogo.php?name=baden&text=Test_message">[ <span>Добавить тестовую строку в лог</span> ]</a-->
+        <!--a class="pushLink" href="debuglogo.php?name=alex&text=Test_message">[ <span>(пользователь №2)</span> ]</a><br-->
+
+        <!--a class="pushLink" href="debugadduser.php?user=380679332332">[ <span>Добавить пользователя (380679332332)</span> ]</a><br-->
+
+        <!--div class="chat-bubble">
+          Небезопасные операции!
+          <div class="chat-bubble-arrow-border"></div>
+          <div class="chat-bubble-arrow"></div>
+        </div-->
+
+	<h1>Меню инициализации</h1>
+        <a class="pushLink" href="init.php">[ <span>Очистить базу данных/создать базу данных</span> ]</a><br />
+	{% endif %}
+
+{% endblock %}
+
+{% block final %}
+{% endblock %}
