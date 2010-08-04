@@ -176,6 +176,7 @@ class TemplatedPage(webapp.RequestHandler):
 			values['server_name'] = SERVER_NAME
 
 			path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
+			#self.response.headers['Content-Type']   = 'text/xml'
 			self.response.out.write(template.render(path, values))
 		else:
 			self.response.out.write("<html><body>")
@@ -189,21 +190,6 @@ class MainPage(TemplatedPage):
 	def get(self):
 		template_values = {}
 		template_values['now'] = datetime.now()
-
-		#crc = 0
-		#crc = updcrc2(crc, ord('0'))
-		#crc = updcrc2(crc, ord('0'))
-		#crc = updcrc2(crc, ord('0'))
-		#template_values['crc1'] = "0x%04X" % crc
-
-		#logging.warning("Test warning logging.");
-		#logging.error("Test error logging.");
-		#logging.debug("Test debug logging.");
-		#logging.info("Test info logging.");
-		#logging.critical("Test critical logging.");
-
-		#path = os.path.join(os.path.dirname(__file__), 'index.html')
-		#self.response.out.write(template.render(path, template_values))
 		self.write_template(template_values)
 
 class System(webapp.RequestHandler):
@@ -362,6 +348,10 @@ class UsersList(TemplatedPage):
 
 MAXLOGS = 20
 
+class CacheUser:
+	def hello(self):
+		return "Hello, from user_function"
+
 class ViewLogs(TemplatedPage):
 	def get(self):
 		#gpslogs_query = datamodel.GPSLogs.all().order('-date').fetch(MAXLOGS+1)
@@ -377,6 +367,7 @@ class ViewLogs(TemplatedPage):
 		datemark = self.request.get('date')
 		prevmark = self.request.get('prev')
 		uimei = self.request.get('imei')
+		exclude = self.request.get('exclude')
 
 		userdb = getUser(self.request, create=False)
 
@@ -387,12 +378,18 @@ class ViewLogs(TemplatedPage):
 		if prevmark:
 			if prevmark == '0':
 				if uimei:
-					urlprev = '<a class="Prev" href="logs?imei=%s">First</a>' % uimei
+					if exclude:
+						urlprev = '<a class="Prev" href="logs?imei=%s&exclude=yes">First</a>' % uimei
+					else:
+						urlprev = '<a class="Prev" href="logs?imei=%s">First</a>' % uimei
 				else:
 					urlprev = '<a class="Prev" href="logs">First</a>'
 			else:
 				if uimei:
-					urlprev = '<a class="Prev" href="logs?imei=%s&date=%s&prev=0">Prev</a>' % (uimei, prevmark)
+					if exclude:
+						urlprev = '<a class="Prev" href="logs?imei=%s&exclude=yes&date=%s&prev=0">Prev</a>' % (uimei, prevmark)
+					else:
+						urlprev = '<a class="Prev" href="logs?imei=%s&date=%s&prev=0">Prev</a>' % (uimei, prevmark)
 				else:
 					urlprev = '<a class="Prev" href="logs?date=%s&prev=0">Prev</a>' % prevmark
 		else:
@@ -400,25 +397,54 @@ class ViewLogs(TemplatedPage):
 
 		if datemark:
 			if uimei:
-				gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date').fetch(MAXLOGS+1)
+				if exclude:
+					tgpslogs = datamodel.GPSLogs.all().filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date') #.fetch(MAXLOGS+1)
+					gpslogs = []
+					i = MAXLOGS+1
+					for item in tgpslogs:
+						if item.user.imei != uimei:
+						#if item.user != userdb:
+							gpslogs.append(item)
+							i = i - 1
+							if i == 0: break
+				else:
+					gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date').fetch(MAXLOGS+1)
 			else:
 				gpslogs = datamodel.GPSLogs.all().filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date').fetch(MAXLOGS+1)
 			#urlprev = '<a href="logs?date=%s">Prev</a> %s ' % (gpslogs[0].date.strftime("%d-%m-%y %H:%M:%S.%f"), datemark)  
 		else:
 			if uimei:
-				gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
+				if exclude:
+					tgpslogs = datamodel.GPSLogs.all().order('-date') #.fetch(MAXLOGS+1)
+					gpslogs = []
+					i = MAXLOGS+1
+					for item in tgpslogs:
+						if item.user.imei != uimei:
+						#if item.user != userdb:
+							gpslogs.append(item)
+							i = i - 1
+							if i == 0: break
+
+				else:
+					gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
 			else:
 				gpslogs = datamodel.GPSLogs.all().order('-date').fetch(MAXLOGS+1)
 		gpslogs_count = len(gpslogs)
 		if gpslogs_count == MAXLOGS+1:
 			if datemark:
 				if uimei:
-					urlnext = '<a class="Next" href="logs?imei=%s&date=%s&prev=%s">Next</a> ' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"), datemark)
+					if exclude:
+						urlnext = '<a class="Next" href="logs?imei=%s&exclude=yes&date=%s&prev=%s">Next</a> ' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"), datemark)
+					else:
+						urlnext = '<a class="Next" href="logs?imei=%s&date=%s&prev=%s">Next</a> ' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"), datemark)
 				else:
 					urlnext = '<a class="Next" href="logs?date=%s&prev=%s">Next</a> ' % (fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"), datemark)
 			else:
 				if uimei:
-					urlnext = '<a class="Next" href="logs?imei=%s&date=%s&prev=0">Next</a>' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"))
+					if exclude:
+						urlnext = '<a class="Next" href="logs?imei=%s&exclude=yes&date=%s&prev=0">Next</a>' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"))
+					else:
+						urlnext = '<a class="Next" href="logs?imei=%s&date=%s&prev=0">Next</a>' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"))
 				else:
 					urlnext = '<a class="Next" href="logs?date=%s&prev=0">Next</a>' % fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S")
 			gpslogs.pop()
@@ -432,9 +458,21 @@ class ViewLogs(TemplatedPage):
 		#gpslogs.extend(gpslogs_query.fetch(10))
 		#gpslogs_count = gpslogs_query.count()
 		#gpslogs_count = len(gpslogs)
+
+
+		#userdescs = {}
+		#userimeis = {}
+
 		for gpslog in gpslogs:
 			#gpslog.date = gpslog.date.replace(microsecond=0).replace(second=0)
 			gpslog.sdate = fromUTC(gpslog.date).strftime("%d/%m/%Y %H:%M")
+			#if gpslog.user.key() not in userdescs:
+			#	userdescs[gpslog.user.key()] = gpslog.user.desc
+			#	userimeis[gpslog.user.key()] = gpslog.user.imei
+			#gpslog.desc = userdescs[gpslog.user.key()]
+			#gpslog.imei = userimeis[gpslog.user.key()]
+			gpslog.desc = gpslog.user.desc
+			gpslog.imei = gpslog.user.imei
 			#geolog.date = fromUTC(geolog.date) #.astimezone(utc)
 
 			#try:
@@ -449,6 +487,9 @@ class ViewLogs(TemplatedPage):
 		template_values['gpslogs'] = gpslogs
 		template_values['urlnext'] = urlnext
 		template_values['urlprev'] = urlprev
+
+		cacheuser = CacheUser()
+		template_values['cacheuser'] = cacheuser
 
 		#path = os.path.join(os.path.dirname(__file__), 'logs.html')
 		#self.response.out.write(template.render(path, template_values))
@@ -1037,13 +1078,16 @@ class Config(TemplatedPage):
 
 		if userdb == None:
 			allusers = datamodel.DBUser.all().fetch(100)
-			template_values = {'now': datetime.now(),
-			    'users':allusers
+			template_values = {
+				'now': datetime.now(),
+				'users':allusers
 			}
 
-			path = os.path.join(os.path.dirname(__file__), 'templates/config.html')
-			self.response.out.write(template.render(path, template_values))
+			#path = os.path.join(os.path.dirname(__file__), 'templates/config.html')
+			#self.response.out.write(template.render(path, template_values))
 
+			#template_values = {}
+			self.write_template(template_values)
 		else:
 			if cmd == 'last':
 				#self.response.out.write('<html><head><link type="text/css" rel="stylesheet" href="stylesheets/main.css" /></head><body>CONFIG:<br><table>')
@@ -1098,8 +1142,9 @@ class Config(TemplatedPage):
 					    'imei': uimei
 					}
 
-					path = os.path.join(os.path.dirname(__file__), 'templates/config-last.html')
-					self.response.out.write(template.render(path, template_values))
+					#path = os.path.join(os.path.dirname(__file__), 'templates/config-last.html')
+					#self.response.out.write(template.render(path, template_values))
+					self.write_template(template_values)
 				else:
 					self.response.out.write(u"<html><body>Нет записей</body></html>")
 					#self.response.out.write("</table></body></html>")
@@ -1433,6 +1478,13 @@ class BinGeos(webapp.RequestHandler):
 			newbin.dataid = dataid
 			newbin.data = pdata #db.Text(pdata)
 			newbin.put()
+
+			_log += '\nSaving to backup'
+			newbinb = datamodel.DBGPSBinBackup()
+			newbinb.user = userdb
+			newbinb.dataid = dataid
+			newbinb.data = pdata
+			newbinb.put()
 
 			_log += '\nSaved to DBGPSBin creating tasque'
 
@@ -2148,6 +2200,69 @@ class SetUserDescription(webapp.RequestHandler):
 		nejson = json.dumps(jsonresp)
 		self.response.out.write(callback + "(" + nejson + ")\r")
 
+
+class Svg1(TemplatedPage):
+	def get(self):
+		uimei = self.request.get('imei')
+
+		template_values = {}
+		template_values['imei'] = uimei
+		#self.write_template(template_values)
+		self.response.headers['Content-Type']   = 'text/html'
+		path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
+		self.response.out.write(template.render(path, template_values))
+
+class Svg2(TemplatedPage):
+	def get(self):
+		uimei = self.request.get('imei')
+
+		template_values = {}
+		template_values['imei'] = uimei
+		#self.write_template(template_values)
+		self.response.headers['Content-Type']   = 'text/xml'
+		path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.xml')
+		self.response.out.write(template.render(path, template_values))
+
+
+class BinBackup(TemplatedPage):
+	def get(self):
+		cmd = self.request.get('cmd')
+		if cmd:
+			ukey = self.request.get('key')
+			if cmd == 'getbin':
+				self.response.headers['Content-Type'] = 'application/octet-stream'
+				#bindata = datastore.Get(datastore.Key(ukey))
+				bindata = db.get(datastore.Key(ukey))
+				self.response.out.write(bindata.data)
+				return
+			elif cmd == 'del':
+				datastore.Delete(datastore.Key(ukey))
+				self.redirect("/binbackup")
+				return
+			elif cmd == 'delall':
+				dbbindata = datamodel.DBGPSBinBackup.all().order('cdate').fetch(1000)
+				for bindata in dbbindata:
+					bindata.delete()
+				self.redirect("/binbackup")
+				return
+
+
+		uimei = self.request.get('imei')
+
+		dbbindata = datamodel.DBGPSBinBackup.all().order('-cdate').fetch(1000)
+
+		for bindata in dbbindata:
+			bindata.datasize = len(bindata.data)
+
+		template_values = {}
+		template_values['imei'] = uimei
+		template_values['dbbindata'] = dbbindata
+
+		self.response.headers['Content-Type']   = 'text/html'
+		path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
+		self.response.out.write(template.render(path, template_values))
+
+
 application = webapp.WSGIApplication(
 	[('/', MainPage),
 	('/regid', RegId),
@@ -2178,6 +2293,9 @@ application = webapp.WSGIApplication(
 	('/setdescr.*', SetDescription),
 	('/setuserdescr.*', SetUserDescription),
 	('/gettrack.*', GetTrack),
+	('/svg1.*', Svg1),
+	('/svg2.*', Svg2),
+	('/binbackup.*', BinBackup),
 	],
 	debug=True
 )

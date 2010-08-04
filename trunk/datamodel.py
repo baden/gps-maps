@@ -3,6 +3,13 @@
 
 from google.appengine.ext import db
 
+class DBAccount(db.Model):
+	userid = db.IntegerProperty()			# Unique ID
+	user = db.UserProperty()			# Пользователь
+	name = db.StringProperty(multiline=False)	# Отображаемое имя
+	systems = db.StringListProperty()		# Перечеть наблюдаемых систем (их IMEI)
+
+
 class DBUser(db.Model):
 	userid = db.IntegerProperty()			# Unique
 	imei = db.StringProperty(multiline=False)	# IMEI
@@ -59,6 +66,12 @@ class DBGPSBin(db.Model):
 	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
 
 class DBGPSBinParts(db.Model):
+	user = db.ReferenceProperty(DBUser)
+	cdate = db.DateTimeProperty(auto_now_add=True)
+	dataid = db.IntegerProperty()
+	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
+
+class DBGPSBinBackup(db.Model):
 	user = db.ReferenceProperty(DBUser)
 	cdate = db.DateTimeProperty(auto_now_add=True)
 	dataid = db.IntegerProperty()

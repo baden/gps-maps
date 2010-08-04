@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block title %}{{ application_name }}     {% endblock %}
@@ -30,6 +29,7 @@
 	<!-- gps-maps.appspot.com -->
 	<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
 
+	<script type="text/javascript" src="js/myarrow.js"></script>
 	<!--script type="text/javascript" src="js/mootools-1.2.4-core-yc.js"></script-->
 	<!--script type="text/javascript" src="js/mootools-1.2.0.js"></script-->
 	<!--script type="text/javascript" src="js/mootools.js"></script-->
@@ -40,14 +40,14 @@
 
 		//google.load("mootools", "1.2.1");
 		var map;
-		var object1 = new google.maps.LatLng(48.408206, 35.048925);
+		var object1 = new google.maps.LatLng(48.408236, 35.049025);
+		var object2 = new google.maps.LatLng(48.408236, 35.048025);
 		var directionsService = new google.maps.DirectionsService();
 		var directionsDisplay;
 //		var points = 1;
 //		var pathCoordinates = [];
 		var obj1x = 48.408206;
 		var obj1y = 35.048925;
-		var infowindow;
 		var repaircnt = 0;
 
 		var flightPath;
@@ -56,69 +56,11 @@
 		var datemin;
 		var datemax;
 		var userimei;
+		var supportsCanvas = false;
+		var mapcanvas;
 
-		var image = new google.maps.MarkerImage('stylesheets/marker1.png',
-			// This marker is 20 pixels wide by 32 pixels tall.
-			new google.maps.Size(32, 32),
-			// The origin for this image is 0,0.
-			new google.maps.Point(0,0),
-			// The anchor for this image is the base of the flagpole at 0,32.
-			new google.maps.Point(16, 16));
-		var image2 = new google.maps.MarkerImage('stylesheets/marker2.png',
-			new google.maps.Size(10, 10),	// This marker is 20 pixels wide by 32 pixels tall.
-			new google.maps.Point(0,0),	// The origin for this image is 0,0.
-			new google.maps.Point(5, 5));	// The anchor for this image is the base of the flagpole at 0,32.
-		var image3 = new google.maps.MarkerImage('stylesheets/marker3.png',
-			new google.maps.Size(10, 10),	// This marker is 20 pixels wide by 32 pixels tall.
-			new google.maps.Point(0,0),	// The origin for this image is 0,0.
-			new google.maps.Point(5, 5));	// The anchor for this image is the base of the flagpole at 0,32.
-		var shape = {
-//			coord: [1, 1, 1, 20, 18, 20, 18 , 1],
-			coord: [0, 16, 0, 32, 32, 32, 32 ,16, 18, 0],
-			type: 'poly'
-		};
-		var shape2 = {
-//			coord: [1, 1, 1, 20, 18, 20, 18 , 1],
-			coord: [0, 0, 0, 16, 16, 16, 16, 0],
-			type: 'poly'
-		};
-
-		var results;
 
 		(function () {
- 
-			google.maps.Map.prototype.markers = new Array();
-    
-			google.maps.Map.prototype.addMarker = function(marker) {
-				this.markers[this.markers.length] = marker;
-			};
-    
-			google.maps.Map.prototype.getMarkers = function() {
-				return this.markers;
-			};
-
-			google.maps.Map.prototype.delMarker = function(i) {
-				if(infowindow) {
-					infowindow.close();
-				}
-				this.markers[i].setMap(null);
-				for(var i=i; i<this.markers.length; i++){
-					this.markers[i].index--;
-				}
-				//this.markers.slice(i, 1);
-			};
-
-			google.maps.Map.prototype.clearMarkers = function() {
-				if(infowindow) {
-					infowindow.close();
-				}
-    
-				for(var i=0; i<this.markers.length; i++){
-					this.markers[i].setMap(null);
-				}
-				this.markers = [];
-			};
-
 			{% if imei %}
 			userimei = {{ imei }}
 			{% else %}
@@ -155,39 +97,6 @@
 		}
 		{% endif %}
 
-		function createMarker(i, pos) {
-//		function createMarker(i, date, name, pos, stop) {
-			var marker;
-//			if(stop){
-			if(results[i].speed < 1.0){
-				marker = new google.maps.Marker({position: pos, map: map, icon: image3, shape: shape2, index:i});
-			} else {
-				marker = new google.maps.Marker({position: pos, map: map, icon: image2, shape: shape2, index:i});
-			}
-
-			google.maps.event.addListener(marker, "click", function() {
-				if (infowindow) infowindow.close();
-//				infowindow = new google.maps.InfoWindow({content:name});
-				infowindow = new google.maps.InfoWindow({content:
-					'Дата: <b>' + results[i].date +
-					'</b><br />Скорость: <b>' + results[i].speed +
-					'</b><br />Направление: <b>' + results[i].course +
-					'</b><br />Долгота: <b>' + results[i].lat +
-					'</b><br />Широта: <b>' + results[i].long +
-					'</b><br />Спутники: <b>' + results[i].sats +
-					'</b><br />Датчик 1: <b>' + results[i].in1 +
-					'</b><br />Датчик 2: <b>' + results[i].in2 {% if admin %}+
-					'</b><br /><a class="smallButton" href="javascript:DeletePoint('+i+');" title="Удалить точку">X</a>'
-					{% endif %}
-				});
-				infowindow.open(map, marker);
-			});
-
-			//marker.setTitle(date)
-			marker.setTitle(results[i].date);
-
-			return marker;
-		}
 
 
 		jQuery(function($){
@@ -259,7 +168,7 @@
 			$("#progress").html("Загружаем новые...");
 			flightPlanCoordinates = [];
 
-			var track = document.getElementById('track').value;
+			//var track = document.getElementById('track').value;
 			var optim = document.getElementById('optim').value;
 			var navi = document.getElementById('navi').value;
 			//alert(track);
@@ -311,24 +220,13 @@
 						flightPlanCoordinates.push(pos);
 //						points = points + 1;
 //						path.insertAt(points, pos);
-						if(!track){
-/*
-							map.addMarker(createMarker(i,
-								'Дата:' + results[i].date,
-								'Дата:' + results[i].date +
-								'\nСкорость: ' + results[i].speed +
-								'\nНаправление: ' + results[i].course +
-								'\nДолгота: ' + results[i].lat +
-								'\nШирота: ' + results[i].long +
-								'\nСпутники: ' + results[i].sats +
-								'\nДатчик 1: ' + results[i].in1 +
-								'\nДатчик 2: ' + results[i].in2 +
-								'\n<a class="smallButton" href="javascript:DeletePoint('+i+');" title="Удалить точку">X</a>'
-								,
-								pos, results[i].speed < 1.0));
-*/
-							map.addMarker(createMarker(i, pos));
-						}
+//						if(!track){
+{% if admin %}
+							map.addMarker(createMarker(i, pos, 1), i);
+{% else %}
+							map.addMarker(createMarker(i, pos, 0), i);
+{% endif %}
+//						}
 //
 //						var marker = new google.maps.Marker({
 //							position: pos,
@@ -379,21 +277,21 @@
 					//map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
 
 
-					if(track){
+/*					if(track){
 						flightPath = new google.maps.Polyline({
 							path: flightPlanCoordinates,
 							strokeColor: '#F08000',
 							strokeOpacity: 0.8,
 							strokeWeight: 5
 						});
-					}else{
+					}else{*/
 						flightPath = new google.maps.Polyline({
 							path: flightPlanCoordinates,
 							strokeColor: '#F08000',
 							strokeOpacity: 0.8,
 							strokeWeight: 5
 						});
-					}
+//					}
 					flightPath.setMap(map);
 
 					// Центровать на середину трека
@@ -612,6 +510,15 @@
 	function Repair() {
 		repaircnt = repaircnt + 1;
 		//$("#progress").html("Repair:" + repaircnt);
+
+		/*canvas.clearRect(0,0,32,32);     // clear the canvas
+		canvas.save();                   // save the canvas state
+		//canvas.rotate(angle);            // rotate the canvas
+		//canvas.translate(16*sina+16*cosa,16*cosa-16*sina); // translate the canvas 16,16 in the rotated axes
+		//canvas.drawImage(img,-16,-16);   // plot the car
+		canvas.fillRect(0,0,16,16);
+		canvas.restore();                // restore the canvas state, to undo the rotate and translate		
+		*/		
 	}
 
 	function initialize() {
@@ -621,6 +528,14 @@
 //		$(window).resize(function(){
 //			alert("Stop it!");
 //		});
+
+/*
+		if (document.getElementById('mapcanvas').getContext) {
+			supportsCanvas = true;
+		} else {
+			supportsCanvas = false;
+		}
+*/
 
 		var myOptions = {
 			zoom: 17,
@@ -641,6 +556,18 @@
 
 		homeControlDiv.index = 1;
 		map.controls[google.maps.ControlPosition.TOP_LEFT].push(homeControlDiv);
+
+		/*var CircleOptions = {center: object1, radius: 100, fillColor: "#405060"};
+		var circle = new google.maps.Circle(CircleOptions);
+		circle.setMap(map);*/
+
+		//var label = new ELabel(map.getCenter(), '<canvas id="mapcanvas" width="32" height="32"><\/canvas>',null,new google.maps.Size(-16,16));
+		//map.addOverlay(label);
+		//label.setMap(map);
+
+		//canvas = document.getElementById("mapcanvas").getContext('2d');
+
+
 //		alert(map.controls[google.maps.ControlPosition.TOP_LEFT].get("homeControlDiv"))
 
 //		setMarkers(map, beaches);
@@ -817,7 +744,34 @@
 
 {% block menu %}
 	<!--div id="control" style="width: 100%; position: relative; border: none;"-->
-	<div id="control" style="position:relative;">
+
+{% endblock %}
+
+{% block javainit %}
+			initialize();
+			//setInterval(periodicalApp, 1000);
+{% endblock %}
+
+{% block body %}
+	<!--div id="map" style="width: 100%; height: 400px"></div-->
+	<!--div id="map" style="width: 100%; height: 100%; position: absolute; left: 0;"></div-->
+	<div id="map" style="width: 100%; height: 100%;	overflow-x: hidden; overflow-y: hidden;"></div>
+	<!--canvas id="mapcanvas" width="1" height="1"></canvas-->
+
+        <!--script src="http://www.gmodules.com/ig/ifr?url=http://code.google.com/apis/kml/embed/embedkmlgadget.xml&amp;up_kml_url=http%3A%2F%2Fmw1.google.com%2Fmw-earth-vectordb%2FImagery_Updates%2F12-17-2009_Imagery_Update.kmz%20&amp;up_view_mode=earth&amp;up_earth_2d_fallback=0&amp;up_earth_fly_from_space=1&amp;up_earth_show_nav_controls=1&amp;up_earth_show_buildings=1&amp;up_earth_show_terrain=1&amp;up_earth_show_roads=1&amp;up_earth_show_borders=1&amp;up_earth_sphere=earth&amp;up_maps_zoom_out=0&amp;up_maps_default_type=map&amp;synd=open&amp;w=470&amp;h=500&amp;title=December+17th+Imagery+Update&amp;border=%23ffffff%7C3px%2C1px+solid+%23999999&amp;output=js"></script-->
+
+<!--div style="border: solid 1px; width: 256px; height: 256px; overflow-x: hidden; overflow-y: hidden; position: absolute; left: 5px; top: 656px; ">
+ <svg style="position: absolute; left: 0px; top: 0px; " version="1.1" overflow="hidden" width="256px" height="256px" viewBox="0 0 256 256" clip="rect(0px, 256px, 256px, 0px)">
+  <path stroke-linejoin="round" stroke-linecap="round" d="M 27.1 266 L 0.3 87.4 L 8.8 25.1 L -10 47 L -10 189.6 L -4.7 130.5 L 10.6 66.3 L -10 24.6 L -10 9.8 L 20.3 34.8 L -7.9 47.8 L -10 45.4 L -10 44 L -5.1 41 L 16.6 -4.6 L 18.1 81 L -10 80.7 L -10 42.9 L -0.3 66 L 9.9 25 L 25.8 -10 L 42.3 -10 L 40.7 29.4 L 24.3 -10" style="cursor: pointer; " fill="none" stroke="#F08000" stroke-opacity="1.0" stroke-width="5">
+  </path>
+ </svg>
+	БЛЯ №1
+</div-->
+	<!--div style="border-style: solid; border-color: blue; border-width: 1px; position: absolute; left: 6px; top: 880px; width: 16px; height: 16px; "><svg width="16px" height="16px" version="1.1" xmlns="http://www.w3.org/2000/svg"><g><path style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" d="M 8,15 8,1"></path><path style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" d="M 3 7 L 8 1 L 13 7"></path></g></svg-->
+	<!--object style="-webkit-transform: rotate(30deg);width:16px;height:16px;background-color:green;" data="svg/arrow.svg" type="image/svg+xml" codebase="http://www.adobe.com/svg/viewer/install/"></object-->
+	<!--/div-->
+
+	<div id="control">
 		Управление
 		<form action="javascript:dateshow(document.getElementById('myform'));" name="myform" id="myform" style="border:none;">
 		<table>
@@ -860,27 +814,15 @@
 		<div class="sm-button" id="seeprev" title="Предыдущие 500">&lt;</div>
 		<div class="sm-button" id="seenext" title="Следующие 500">&gt;</div>
 		<div class="sm-button" id="seelast" title="Последние известные координаты">&gt;&gt;</div>
-	</div>
 	<div style="background: white;">Точек:<div id="points" style="float: right;">0</div></div>
 	<br />
-	<input type="checkbox" title="Отображать только трек" id="track" onchange="datePoints();"/><label for="track" title="Отображать только трек">Трек</label>
+	<!--input type="checkbox" title="Отображать только трек" id="track" onchange="datePoints();"/><label for="track" title="Отображать только трек">Трек</label-->
 	<input type="checkbox" title="Дополнительная оптимизация трека" id="optim" onchange="datePoints();"/><label for="optim" title="Дополнительная оптимизация трека">Оптим</label>
-	<br />
-	<input type="checkbox" title="Показывать рекометдацию трека от Google" id="navi" onchange="datePoints();"/><label for="navi" title="Показывать рекометдацию трека от Google">Нави</label>
-	<div id="progress" style="background: lime;">Загрузка, ждите...</div>
-{% endblock %}
+	
+	<input style="display:none;" type="checkbox" title="Показывать рекометдацию трека от Google" id="navi" onchange="datePoints();"/><label style="display:none;" for="navi" title="Показывать рекометдацию трека от Google">Нави</label>
+	<div id="progress" style="">Загрузка, ждите...</div>
+	</div>
 
-{% block javainit %}
-			initialize();
-			//setInterval(periodicalApp, 1000);
-{% endblock %}
-
-{% block body %}
-	<!--div id="map" style="width: 100%; height: 400px"></div-->
-	<!--div id="map" style="width: 100%; height: 100%; position: absolute; left: 0;"></div-->
-	<div id="map" style="width: 100%; height: 100%;	overflow-x: hidden; overflow-y: hidden;"></div>
-
-        <!--script src="http://www.gmodules.com/ig/ifr?url=http://code.google.com/apis/kml/embed/embedkmlgadget.xml&amp;up_kml_url=http%3A%2F%2Fmw1.google.com%2Fmw-earth-vectordb%2FImagery_Updates%2F12-17-2009_Imagery_Update.kmz%20&amp;up_view_mode=earth&amp;up_earth_2d_fallback=0&amp;up_earth_fly_from_space=1&amp;up_earth_show_nav_controls=1&amp;up_earth_show_buildings=1&amp;up_earth_show_terrain=1&amp;up_earth_show_roads=1&amp;up_earth_show_borders=1&amp;up_earth_sphere=earth&amp;up_maps_zoom_out=0&amp;up_maps_default_type=map&amp;synd=open&amp;w=470&amp;h=500&amp;title=December+17th+Imagery+Update&amp;border=%23ffffff%7C3px%2C1px+solid+%23999999&amp;output=js"></script-->
 {% endblock %}
 
 {% block final %}

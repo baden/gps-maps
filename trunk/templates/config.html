@@ -117,9 +117,11 @@ function ChangeParam(me)
 		<div id="imei">111</div>
 	</div>
 
-	<div style="border: none; text-align:left; padding: 2px 2px 2px 2px;">
+	{% if admin %}
+	<div style="border: none; text-align:center; padding: 2px 2px 2px 2px;">
 	<a class="smallButton" href="firmware" title="Обновление внутреннего программного обеспечения системы.">U</a>
 	</div>
+	{% endif %}
 {% endblock %}
 
 {% block final %}

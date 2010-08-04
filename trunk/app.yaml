@@ -6,11 +6,18 @@ api_version: 1
 handlers:
 - url: /stylesheets
   static_dir: stylesheets
-  expiration: 30d
+#  expiration: 30d
+  expiration: 1s
 
 - url: /js
   static_dir: js
-  expiration: 30d
+  expiration: 1s
+
+- url: /svg
+  static_dir: svg
+  mime_type: image/svg+xml
+  expiration: 1s
+#  expiration: 30d
 
 - url: /images/(.*\.(gif|png|jpg|ico))
   static_files: images/\1
@@ -67,6 +74,13 @@ handlers:
 
 - url: /track.*
   script: track.py
+
+- url: /commet.*
+  script: commet.py
+
+- url: /admin.*
+  script: gps-admin.py
+  login: admin
 
 - url: /.*
   script: gps-maps.py
