@@ -5,6 +5,27 @@
 {% block head %}
   <!--meta http-equiv="refresh" content="10"-->
   <style type="text/css">{% include "css/users.css" %}</style>
+
+	<script type="text/javascript" language="JavaScript">
+
+		function dodel(id)
+		{
+			var r=confirm(
+				"Внимание!!!\r\n\r\n" +
+				"Не рекомендуется пользоваться этой функцией в данный момент, " +
+				"так как она оставляет потерянные данные в базе данных, к которым " +
+				"никак нельзя обратиться и удалить.\r\n\r\n" +
+				"Вы действительно уверены в своих действиях?"
+			);
+			if (r==true) {
+				window.location = "/delUser?id={{ dbuser.key.id }}";
+			} else {
+			}
+			//alert("Внимание!!! Не стоит пока пользоваться данной функцией так как она не удаляет треки. " + id);
+			//
+		}
+	</script>
+
 {% endblock %}
 
 {% block body %}
@@ -13,12 +34,12 @@
 	<table>
 		<thead>
 			<tr>
-				<th>Иденти-фикаторр</th>
+				<!--th>Иденти-фикаторр</th-->
 				<th>IMEI</th>
 				<th>Номер телефона</th>
-				<th>Пароль</th>
+				<th>Описание</th>
 				<th>Дата регистрации</th>
-				<th>Ключ</th>
+				<!--th>Ключ</th-->
 				{% if admin %}
 				<th>X</th>
 				{% endif %}
@@ -27,14 +48,14 @@
 		<tbody>
                 {% for dbuser in dbusers %}
 			<tr>
-				<td>{{ dbuser.key.id }}</td>
+				<!--td>{{ dbuser.key.id }}</td-->
 				<td>{{ dbuser.imei }}</td>
 				<td>{{ dbuser.phone }}</td>
-				<td>{{ dbuser.password }}</td>
+				<td>{{ dbuser.desc }}</td>
 				<td>{{ dbuser.date }}</td>
-				<td>{{ dbuser.key }}</td>
+				<!--td>{{ dbuser.key }}</td-->
 				{% if admin %}
-				<td><a href="delUser?id={{ dbuser.key.id }}" title="Удалить пользователя.">X</a></td>
+				<td><a href="javascript:dodel({{ dbuser.key.id }});" title="Удалить пользователя.">X</a></td>
 				{% endif %}
 			</tr>
 		{% endfor %}

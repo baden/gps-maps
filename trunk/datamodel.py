@@ -3,12 +3,6 @@
 
 from google.appengine.ext import db
 
-class DBAccount(db.Model):
-	userid = db.IntegerProperty()			# Unique ID
-	user = db.UserProperty()			# Пользователь
-	name = db.StringProperty(multiline=False)	# Отображаемое имя
-	systems = db.StringListProperty()		# Перечеть наблюдаемых систем (их IMEI)
-
 
 class DBUser(db.Model):
 	userid = db.IntegerProperty()			# Unique
@@ -17,6 +11,12 @@ class DBUser(db.Model):
 	password = db.StringProperty(multiline=False)	# User password
 	date = db.DateTimeProperty(auto_now_add=True)	# Registration date
 	desc = db.StringProperty(multiline=False)	# Описание
+
+class DBAccounts(db.Expando):
+	user = db.UserProperty()			# Пользователь
+	name = db.StringProperty(multiline=False)	# Отображаемое имя
+	systems = db.StringListProperty()		# Перечеть наблюдаемых систем (их keys)
+	#systems = db.ListProperty(db.Blob)		# Перечеть наблюдаемых систем
 
 class GPSLogs(db.Model):
 	user = db.ReferenceProperty(DBUser)

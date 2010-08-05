@@ -8,13 +8,22 @@
 {% endblock %}
 
 {% block body %}
-    <h1>Записи в GEO-логе:</h1>
+	{% if imei %}
+
 	{{ urlprev }}{{ urlnext }}
+    <h1>Записи в GEO-логе</h1>
+	{{ userdb.imei }}:{{ userdb.desc }}
+	<a class="smallButton" href="/geos?imei={{ imei }}" title="Обновить">U</a>
+	{% if single %}
+	{% else %}
+	<a class="smallButton" href="/geos" title="Выбрать другую">S</a> 
+	{% endif %}
+	<a class="smallButton" href="map?imei={{ imei }}" title="Посмотреть на карте">M</a>
     <table>
         <thead>
         	<tr>
         		<!--th>ID</th-->
-        		<th>Система</th>
+        		<!--th>Система</th-->
 			<th>Дата и время</th>
 			<th>Долгота<br><i>Град</i></th>
 			<th>Широта<br><i>Град</i></th>
@@ -29,7 +38,7 @@
         {% for geolog in geologs %}
             <tr>
             	<!--td>{{ geolog.key.id }}</td-->
-            	<td>{{ geolog.user.desc }}<a class="smallButton" href="geos?imei={{ geolog.user.imei }}" title="filter">f</a></td>
+            	<!--td>{{ geolog.user.desc }}<a class="smallButton" href="geos?imei={{ geolog.user.imei }}" title="filter">f</a></td-->
 				<td>{{ geolog.date|date:"d/m/y G:i:s" }}</td>
 				<td>{{ geolog.latitude|floatformat:4 }}</td>
 				<td>{{ geolog.longitude|floatformat:4 }}</td>
@@ -42,16 +51,33 @@
 			</tr>
 	{% endfor %}
     </table>
+	{% if admin %}
 	<a class="pushLink" href="geos?format=nmea" title="Получить лог в NMEA-формате">Получить NMEA</a>
 	<a class="pushLink" href="gettrack?imei={{ imei }}" title="Получить лог в RAW-формате">Получить RAW</a>
-	{% if imei %}
-	<a class="pushLink" href="map?imei={{ imei }}" title="Посмотреть на карте">Карта</a>
-	<div style="float:right; margin-right:20px;"></span><a class="pushLink" href="delgeos?imei={{ imei }}" title="Удаляет 500 самых старых записей для выбранной системы">Очистить логи {{ imei }} сервера</a></div>
-	{% else %}
-	<a class="pushLink" href="map" title="Посмотреть на карте">Карта</a>
-	{% if admin %}
-		<div style="float:right; margin-right:20px;"></span><a class="pushLink" href="delgeos" title="Удаляет 500 самых старых записей для всех систем">Очистить логи сервера</a></div>
 	{% endif %}
+
+	<div style="float:right; margin-right:20px;"></span><a class="pushLink" href="delgeos?imei={{ imei }}" title="Удаляет 500 самых старых записей для выбранной системы">Очистить GPS-логи</a></div>
+
+	{% else %}
+
+    <h1>Выберите систему:</h1>
+    <table class="selector">
+        <thead>
+        	<tr>
+        	</tr>
+        </thead>
+	        {% for user in users %}
+            <tr>
+		<td>
+		{{ forloop.counter }}
+		</td>
+		<td>
+		<a class="selector" style="" href="/geos?imei={{ user.imei }}"><div style="width: 100%;">{{ user.imei }}: {{ user.desc }}</div></a>
+		</td>
+            </tr>
+		{% endfor %}
+    </table>
+
 	{% endif %}
     
 {% endblock %}

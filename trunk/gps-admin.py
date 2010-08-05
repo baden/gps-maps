@@ -83,7 +83,9 @@ class TemplatedPage(webapp.RequestHandler):
 
 class AdminPage(TemplatedPage):
 	def get(self):
-		template_values = {}
+		accounts = datamodel.DBAccounts().all()
+
+		template_values = {'accounts': accounts}
 		#template_values['now'] = datetime.now()
 		self.write_template(template_values)
 
