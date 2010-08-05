@@ -419,7 +419,7 @@
 		// Set CSS for the control interior
 		var controlText = document.createElement('div');
 		controlText.setAttribute('class', 'MapNavText');
-		controlText.innerHTML = '<a style="text-decoration: none;" href="map?imei={{ user.imei }}" title="{{ user.imei }}"><img align="middle" src="/stylesheets/beachflag.png" />{{ user.desc }}</a>';
+		controlText.innerHTML = '<a style="text-decoration: none;" href="map?imei={{ user.imei }}" title="{{ user.imei }}"><img align="middle" src="/svg/user-1.svg" />{{ user.desc }}</a>';
 		controlUI.appendChild(controlText);
 
 		{% endfor %}
