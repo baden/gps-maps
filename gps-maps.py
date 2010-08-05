@@ -161,21 +161,45 @@ def checkUser(uri, response):
 	}
 
 class TemplatedPage(webapp.RequestHandler):
-	def write_template(self, values):
+	def __init__(self):
+		logging.info(" TemplatedPage-init")
+		self.user = users.get_current_user()
+		accounts = datamodel.DBAccounts().all().filter('user =', self.user).fetch(1)
+		if accounts:
+			self.account = accounts[0]
+		else:
+			self.account = datamodel.DBAccounts()
+			self.account.user = self.user
+			self.account.name = u"Имя не задано"
+			self.account.systems = []
+			self.account.put()
 
-		user = users.get_current_user()
+		self.users = []
+		for account in self.account.systems:
+			self.users.append(db.get(db.Key(account)))
 
-		if user:
+		if len(self.users) == 1:
+			self.single = True
+		else:
+			self.single = False
+
+
+	def write_template(self, values, alturl=None):
+		if self.user:
 			#url = users.create_logout_url(self.request.uri)
 			login_url = users.create_login_url(self.request.uri)
-			username = user.nickname()
 			values['login_url'] = login_url
-			values['username'] = username
-			#values['admin'] = (username == ADMIN_USERNAME)
+			values['username'] = self.user.nickname()
 			values['admin'] = users.is_current_user_admin()
 			values['server_name'] = SERVER_NAME
+			values['account'] = self.account
+			values['single'] = self.single
+			values['users'] = self.users
 
-			path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
+			if alturl:
+				path = os.path.join(os.path.dirname(__file__), 'templates', alturl)
+			else:
+				path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
 			#self.response.headers['Content-Type']   = 'text/xml'
 			self.response.out.write(template.render(path, values))
 		else:
@@ -367,9 +391,14 @@ class ViewLogs(TemplatedPage):
 		datemark = self.request.get('date')
 		prevmark = self.request.get('prev')
 		uimei = self.request.get('imei')
-		exclude = self.request.get('exclude')
 
 		userdb = getUser(self.request, create=False)
+
+		if userdb == None:
+			if len(self.account.systems)==1:
+				userdb = db.get(db.Key(self.account.systems[0]))
+				uimei = userdb.imei
+
 
 		#datemark = datetime(2009, 12, 23, 21, 0, 0)
 		#datemark = datetime("2009-12-23 21:10:59.140000")
@@ -378,18 +407,12 @@ class ViewLogs(TemplatedPage):
 		if prevmark:
 			if prevmark == '0':
 				if uimei:
-					if exclude:
-						urlprev = '<a class="Prev" href="logs?imei=%s&exclude=yes">First</a>' % uimei
-					else:
-						urlprev = '<a class="Prev" href="logs?imei=%s">First</a>' % uimei
+					urlprev = '<a class="Prev" href="logs?imei=%s">First</a>' % uimei
 				else:
 					urlprev = '<a class="Prev" href="logs">First</a>'
 			else:
 				if uimei:
-					if exclude:
-						urlprev = '<a class="Prev" href="logs?imei=%s&exclude=yes&date=%s&prev=0">Prev</a>' % (uimei, prevmark)
-					else:
-						urlprev = '<a class="Prev" href="logs?imei=%s&date=%s&prev=0">Prev</a>' % (uimei, prevmark)
+					urlprev = '<a class="Prev" href="logs?imei=%s&date=%s&prev=0">Prev</a>' % (uimei, prevmark)
 				else:
 					urlprev = '<a class="Prev" href="logs?date=%s&prev=0">Prev</a>' % prevmark
 		else:
@@ -397,54 +420,36 @@ class ViewLogs(TemplatedPage):
 
 		if datemark:
 			if uimei:
-				if exclude:
-					tgpslogs = datamodel.GPSLogs.all().filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date') #.fetch(MAXLOGS+1)
-					gpslogs = []
-					i = MAXLOGS+1
-					for item in tgpslogs:
-						if item.user.imei != uimei:
-						#if item.user != userdb:
-							gpslogs.append(item)
-							i = i - 1
-							if i == 0: break
-				else:
-					gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date').fetch(MAXLOGS+1)
+				gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date').fetch(MAXLOGS+1)
 			else:
 				gpslogs = datamodel.GPSLogs.all().filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date').fetch(MAXLOGS+1)
 			#urlprev = '<a href="logs?date=%s">Prev</a> %s ' % (gpslogs[0].date.strftime("%d-%m-%y %H:%M:%S.%f"), datemark)  
 		else:
 			if uimei:
-				if exclude:
-					tgpslogs = datamodel.GPSLogs.all().order('-date') #.fetch(MAXLOGS+1)
-					gpslogs = []
-					i = MAXLOGS+1
-					for item in tgpslogs:
-						if item.user.imei != uimei:
-						#if item.user != userdb:
-							gpslogs.append(item)
-							i = i - 1
-							if i == 0: break
-
-				else:
-					gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
+				gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
 			else:
-				gpslogs = datamodel.GPSLogs.all().order('-date').fetch(MAXLOGS+1)
+				#gpslogs = datamodel.GPSLogs.all().order('-date').fetch(MAXLOGS+1)
+				gpslogs = []
+				"""
+				gpslogsq = datamodel.GPSLogs.all().order('-date')
+				gpslogs = []
+				i = MAXLOGS+1
+				for gpslog in gpslogsq:
+					if str(gpslog.user.key()) in self.account.systems:
+						gpslogs.append(gpslog)
+						i = i - 1
+						if i <= 0: break
+				"""
 		gpslogs_count = len(gpslogs)
 		if gpslogs_count == MAXLOGS+1:
 			if datemark:
 				if uimei:
-					if exclude:
-						urlnext = '<a class="Next" href="logs?imei=%s&exclude=yes&date=%s&prev=%s">Next</a> ' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"), datemark)
-					else:
-						urlnext = '<a class="Next" href="logs?imei=%s&date=%s&prev=%s">Next</a> ' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"), datemark)
+					urlnext = '<a class="Next" href="logs?imei=%s&date=%s&prev=%s">Next</a> ' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"), datemark)
 				else:
 					urlnext = '<a class="Next" href="logs?date=%s&prev=%s">Next</a> ' % (fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"), datemark)
 			else:
 				if uimei:
-					if exclude:
-						urlnext = '<a class="Next" href="logs?imei=%s&exclude=yes&date=%s&prev=0">Next</a>' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"))
-					else:
-						urlnext = '<a class="Next" href="logs?imei=%s&date=%s&prev=0">Next</a>' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"))
+					urlnext = '<a class="Next" href="logs?imei=%s&date=%s&prev=0">Next</a>' % (uimei, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"))
 				else:
 					urlnext = '<a class="Next" href="logs?date=%s&prev=0">Next</a>' % fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S")
 			gpslogs.pop()
@@ -487,6 +492,8 @@ class ViewLogs(TemplatedPage):
 		template_values['gpslogs'] = gpslogs
 		template_values['urlnext'] = urlnext
 		template_values['urlprev'] = urlprev
+		template_values['userdb'] = userdb
+		template_values['imei'] = uimei
 
 		cacheuser = CacheUser()
 		template_values['cacheuser'] = cacheuser
@@ -654,9 +661,16 @@ class Geos(TemplatedPage):
 		userdb = getUser(self.request)
 
 		if userdb == None:
-			geologs = datamodel.DBGPSPoint.all().order('-date').fetch(MAXLOGS+1)
+			if len(self.account.systems)==1:
+				userdb = db.get(db.Key(self.account.systems[0]))
+				uimei = userdb.imei
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
+			else:
+				#geologs = datamodel.DBGPSPoint.all().order('-date').fetch(MAXLOGS+1)
+				geologs = []
 		else:
 			geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
+
 		#geologs = datamodel.DBGPSPoint.all().order('-date').fetch(100)
 		for geolog in geologs:
 			#try:
@@ -669,7 +683,7 @@ class Geos(TemplatedPage):
 
 		#path = os.path.join(os.path.dirname(__file__), 'geos.html')
 		#self.response.out.write(template.render(path, template_values))
-		self.write_template({'geologs': geologs, 'imei': uimei})
+		self.write_template({'geologs': geologs, 'imei': uimei, 'userdb': userdb})
 
 class GetTrack(webapp.RequestHandler):
 	def get(self):
@@ -1073,14 +1087,84 @@ class Config(TemplatedPage):
 		cmd = self.request.get('cmd')
 		uimei = self.request.get('imei')
 
+		if cmd == 'addsys':
+			uphone = self.request.get('phone')
+
+			logging.info("== ADD SYS ==")
+			oper = "undef"
+
+			# Сначала проверим введенные данные (есть ли такая система в базе)
+			userdb = None
+			if uimei:
+				userdbq = datamodel.DBUser().all().filter('imei =', uimei).fetch(1)
+				if userdbq:
+					userdb = userdbq[0]
+			if not userdb:
+				#if uphone and (len(uphone)>0):
+				if uphone and (uphone != ""):
+					userdbq = datamodel.DBUser().all().filter('phone =', uphone).fetch(1)
+					if userdbq:
+						userdb = userdbq[0]
+			if userdb:
+				#Теперь посмотрим не наблюдаем ли мы уже эту систему
+				if str(userdb.key()) in self.account.systems:
+					oper = "already"
+				else:
+					#Не наблюдаем :)
+					self.account.systems.append(str(userdb.key()))
+					self.account.put()
+					oper = "added"
+			else:
+				oper = "not found"
+
+
+			self.response.headers['Content-Type']   = 'text/javascript; charset=utf-8'
+			callback = self.request.get('callback')
+			jsonresp = {
+				"responseData": {
+					"confirm": 1,
+					"systems": self.account.systems,
+					"result": oper,
+				}
+			}
+			nejson = json.dumps(jsonresp)
+			self.response.out.write(callback + "(" + nejson + ")\r")
+			return
+		elif cmd == 'delsys':
+			oper="undef"
+			userdbq = datamodel.DBUser().all().filter('imei =', uimei).fetch(1)
+			if userdbq:
+				self.account.systems.remove(str(userdbq[0].key()))
+				self.account.put()
+				oper = "ok"
+			else:
+				oper = "not found"
+
+			callback = self.request.get('callback')
+			jsonresp = {
+				"responseData": {
+					"confirm": 1,
+					"systems": self.account.systems,
+					"result": oper,
+				}
+			}
+			nejson = json.dumps(jsonresp)
+			self.response.out.write(callback + "(" + nejson + ")\r")
+			return
+
+
 		userdb = getUser(self.request)
 		#logging.debug(userdb.imei)
 
 		if userdb == None:
-			allusers = datamodel.DBUser.all().fetch(100)
+			#allusers = datamodel.DBUser.all().fetch(100)
+			#accounts = datamodel.DBAccounts().all().filter('user =', self.user).fetch(1)
+			#allusers = []
+			#for account in self.account.systems:
+			#	allusers.append(db.get(db.Key(account)))
+
 			template_values = {
 				'now': datetime.now(),
-				'users':allusers
 			}
 
 			#path = os.path.join(os.path.dirname(__file__), 'templates/config.html')
@@ -1144,7 +1228,7 @@ class Config(TemplatedPage):
 
 					#path = os.path.join(os.path.dirname(__file__), 'templates/config-last.html')
 					#self.response.out.write(template.render(path, template_values))
-					self.write_template(template_values)
+					self.write_template(template_values, alturl='config-last.html')
 				else:
 					self.response.out.write(u"<html><body>Нет записей</body></html>")
 					#self.response.out.write("</table></body></html>")
@@ -1837,10 +1921,10 @@ class Map(TemplatedPage):
 	def get(self):
 		uimei = self.request.get('imei')
 
-		allusers = datamodel.DBUser.all().fetch(100)
+		#allusers = datamodel.DBUser.all().fetch(100)
 		template_values = {}
 		template_values['map'] = True
-		template_values['users'] = allusers
+		#template_values['users'] = allusers
 		template_values['imei'] = uimei
 		template_values['now'] = datetime.now()
 

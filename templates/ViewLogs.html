@@ -8,32 +8,63 @@
 {% endblock %}
 
 {% block body %}
-    <h1>Записи в логе:</h1>
+
+	{% if imei %}
+
+    <h1>Записи в логе</h1>
+	{{ userdb.imei }}:{{ userdb.desc }}
+	<a class="smallButton" href="/logs?imei={{ imei }}" title="Обновить">U</a>
+	{% if single %}
+	{% else %}
+	<a class="smallButton" href="/logs" title="Выбрать другую">S</a> 
+	{% endif %}
 	{{ urlprev }}{{ urlnext }}
     <table>
         <thead>
         	<tr>
         		<!--th>ID</th-->
-        		<th>Система</th>
-			<th>Строка лога</th>
-			<th>Дата и время лога</th>
+        		<!--th>Система</th-->
+			<th style="width: 180px;">Дата и время лога</th>
+			<th style="text-align: left; padding-left: 10px;">Строка лога</th>
 			</tr>
 		</thead>
         {% for gpslog in gpslogs %}
             <tr>
             	<!--td>{{ gpslog.key.id }}</td-->
-		<td>
+		<!--td>
 			{{ gpslog.desc }}
 			<a class="smallButton" href="logs?imei={{ gpslog.imei }}" title="filter">f</a>
 			<a class="smallButton" href="logs?imei={{ gpslog.imei }}&exclude=yes" title="Исключить">x</a>
-		</td>
-				<td>{{ gpslog.text }}</td><td>{{ gpslog.sdate }}</td>
+		</td-->
+				<td>{{ gpslog.sdate }}</td>
+				<td style="text-align: left; padding-left: 10px;">{{ gpslog.text }}</td>
 			</tr>
 	{% endfor %}
     </table>
-	<a class="pushLink" href="dellogs" title="Удаляет 100 самых старых записей">Очистить логи сервера</a>
+	<a class="pushLink" href="dellogs?imei={{ imei }}" title="Удаляет 100 самых старых записей">Очистить логи сервера</a>
+
+	{% else %}
+
+    <h1>Выберите систему:</h1>
+    <table class="selector">
+        <thead>
+        	<tr>
+        	</tr>
+        </thead>
+	        {% for user in users %}
+            <tr>
+		<td>
+		{{ forloop.counter }}
+		</td>
+		<td>
+		<a class="selector" style="" href="/logs?imei={{ user.imei }}"><div style="width: 100%;">{{ user.imei }}: {{ user.desc }}</div></a>
+		</td>
+            </tr>
+		{% endfor %}
+    </table>
+
+	{% endif %}
     
-Отладочная: {{ cacheuser.hello }}
 {% endblock %}
 
 {% block final %}

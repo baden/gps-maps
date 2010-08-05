@@ -94,8 +94,8 @@ function SetDescription(name)
 			<th>Значение</th>
 			<th>Заводская установка</th>
 			<th>Описание</th>
-			<th>Мин</th>
-			<th>Макс</th>
+			<!--th>Мин</th>
+			<th>Макс</th-->
 		</tr>
 		{% for config in configs %}
 		<tr>
@@ -114,6 +114,7 @@ function SetDescription(name)
 		</tr>
 		{% endfor %}
 	</table>
+	{% if admin %}
 	<div style="border: none; text-align:left; padding: 2px 2px 2px 2px;">
 	<a class="smallButton" href="firmware" title="Обновление внутреннего программного обеспечения системы.">U</a>
 	<a class="smallButton" href="params?cmd=params&imei={{ imei }}" title="Посмотреть очередь команд конфигурации.">N</a>
@@ -121,6 +122,7 @@ function SetDescription(name)
 	<a class="smallButton" href="params?cmd=confirm&imei={{ imei }}" title="Применить изменения из очереди команд конфигурации.">CX</a>
 	<a class="smallButton" href="params?cmd=check&imei={{ imei }}" title="Запросить наличие очереди (без самих данных).">?X</a>
 	</div>
+	{% endif %}
 {% endblock %}
 
 {% block final %}

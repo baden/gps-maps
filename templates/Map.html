@@ -419,11 +419,12 @@
 		// Set CSS for the control interior
 		var controlText = document.createElement('div');
 		controlText.setAttribute('class', 'MapNavText');
-		controlText.innerHTML = '<a href="map?imei={{ user.imei }}">{{ user.imei }}: {{ user.desc }}</a>';
+		controlText.innerHTML = '<a style="text-decoration: none;" href="map?imei={{ user.imei }}" title="{{ user.imei }}"><img align="middle" src="/stylesheets/beachflag.png" />{{ user.desc }}</a>';
 		controlUI.appendChild(controlText);
 
 		{% endfor %}
 
+		/*
 		var controlNav = document.createElement('div');
 		controlNav.setAttribute('class', 'MapNav');
 		controlNav.title = 'Click to set navigation';
@@ -445,6 +446,9 @@
 			else
 				controlNav.style.backgroundColor = 'lime';
 		});
+
+		*/
+
 	}
 
 
@@ -551,11 +555,16 @@
 		directionsDisplay = new google.maps.DirectionsRenderer();
 		directionsDisplay.setMap(map);
 
+		{% if single %}
+		{% else %}
+
 		var homeControlDiv = document.createElement('div');
 		var homeControl = new HomeControl(homeControlDiv, map, object1);
 
 		homeControlDiv.index = 1;
 		map.controls[google.maps.ControlPosition.TOP_LEFT].push(homeControlDiv);
+
+		{% endif %}
 
 		/*var CircleOptions = {center: object1, radius: 100, fillColor: "#405060"};
 		var circle = new google.maps.Circle(CircleOptions);

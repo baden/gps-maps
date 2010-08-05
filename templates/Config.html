@@ -40,14 +40,15 @@ function ChangeParam(me)
 	$(function() {
 		$("#dialog").dialog("destroy");
 		$("#dialog-modal").dialog({
-			height: 140,
+			width: 400,
+			height: 200,
 			modal: true,
 			autoOpen: false,
 			buttons: {
 				'Да, я уверен.': function() {
 					var imei = $("#imei").html();
-					$.getJSON("/system?cmd=del&imei=" + imei, function (data) {
-						window.location = "/";
+					$.getJSON("/config?cmd=delsys&imei=" + imei, function (data) {
+						window.location = "/config";
 					});
 					$(this).dialog('close');
 				},
@@ -56,6 +57,35 @@ function ChangeParam(me)
 				}
 			}
 		});
+
+		$("#dialog-addsys").dialog({
+			width: 400,
+			height: 200,
+			modal: true,
+			autoOpen: false,
+			buttons: {
+				'Добавить систему.': function() {
+					var imei = document.getElementById('addsys_imei').value;
+					//var phone = document.getElementById('addsys_phone').value;
+					//$.getJSON("/config?cmd=addsys&imei=" + imei + "&phone=" + phone, function (data) {
+					$.getJSON("/config?cmd=addsys&imei=" + imei, function (data) {
+						//window.location = "/config";
+						$(this).dialog('close');
+						result = data.responseData.result;
+						if(result == "not found"){
+							alert("Система не найдена. возможно система ни разу не выходила на связь с сервером.");
+						} else if(result == "already"){
+							alert("Вы уже наблюдаете за этой системой");
+						} else if(result == "added") window.location = "/config";
+					});
+					$(this).dialog('close');
+				},
+				'Отменить': function() {
+					$(this).dialog('close');
+				}
+			}
+		});
+
 	});
 
 	function dodel(imei) {
@@ -77,6 +107,12 @@ function ChangeParam(me)
 			var item = document.getElementById('desc_' + imei)
 			item.innerHTML = nvalue;
 		});
+	}
+
+	function addsys()
+	{
+		$("#dialog-addsys").dialog('open');
+		//alert('aa');
 	}
 
 </script>
@@ -112,10 +148,26 @@ function ChangeParam(me)
 
 	</table>
 
-	<div id="dialog-modal" title="Внимание!!!">
+	<a class="pushLink" href="javascript:addsys();">Добавить систему</a><br />
+
+
+	<div id="dialog-modal" title="Внимание!!!" style="font-size: 1.5em;">
 		<p>Вы действительно хотите отказаться от слежения за системой?</p>
 		<div id="imei">111</div>
 	</div>
+
+	<div id="dialog-addsys" title="Добавление системы">
+		<form style="font-size: 1.5em;">
+			<label>Укажите IMEI добавляемой системы</label>
+			<br /><br />
+            		<div><textarea id="addsys_imei" name="imei" rows="1" style="width:98%;"></textarea></div>
+			<br />
+			<!--label>Или номер SIM-карты в формате +380xxxxxxxxx</label>
+			<br /><br />
+            		<div><textarea id="addsys_phone" name="phone" rows="1" style="width:98%;"></textarea></div-->
+		</form>
+	</div>
+
 
 	{% if admin %}
 	<div style="border: none; text-align:center; padding: 2px 2px 2px 2px;">

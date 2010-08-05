@@ -118,8 +118,13 @@
 			<th>Имя</th>
 			<th>Список наблюдаемых систем</th>
 		</tr>
+                {% for account in accounts %}
 		<tr>
+			<td>{{ account.user }}</td>
+			<td>{{ account.name }}</td>
+			<td>{{ account.systems }}</td>
 		</tr>
+		{% endfor %}
 	</table>
 	<a class="pushLink" href="/admin-add">Добавить пользователя</a><br />
 	
