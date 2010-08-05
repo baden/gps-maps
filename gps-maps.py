@@ -391,6 +391,18 @@ class ViewLogs(TemplatedPage):
 		datemark = self.request.get('date')
 		prevmark = self.request.get('prev')
 		uimei = self.request.get('imei')
+		cmd = self.request.get('cmd')
+
+		if cmd:
+			if cmd=="delmsg":
+				key = self.request.get('key')
+				db.get(db.Key(key)).delete()
+
+			if uimei:
+				self.redirect('/logs?imei=%s' % uimei)
+			else:
+				self.redirect('/logs')
+			
 
 		userdb = getUser(self.request, create=False)
 

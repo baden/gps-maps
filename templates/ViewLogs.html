@@ -13,7 +13,7 @@
 
     <h1>Записи в логе</h1>
 	{{ userdb.imei }}:{{ userdb.desc }}
-	<a class="smallButton" href="/logs?imei={{ imei }}" title="Обновить">U</a>
+	<a class="smallButton" href="/logs?imei={{ imei }}" title="Обновить"><img valign="middle" src="/svg/button-update.svg" /></a>
 	{% if single %}
 	{% else %}
 	<a class="smallButton" href="/logs" title="Выбрать другую">S</a> 
@@ -26,8 +26,11 @@
         		<!--th>Система</th-->
 			<th style="width: 180px;">Дата и время лога</th>
 			<th style="text-align: left; padding-left: 10px;">Строка лога</th>
-			</tr>
-		</thead>
+			{% if admin %}
+			<th style="width: 48px;" title="Удалить сообщение">X</th>
+			{% endif %}
+		</tr>
+	</thead>
         {% for gpslog in gpslogs %}
             <tr>
             	<!--td>{{ gpslog.key.id }}</td-->
@@ -38,6 +41,9 @@
 		</td-->
 				<td>{{ gpslog.sdate }}</td>
 				<td style="text-align: left; padding-left: 10px;">{{ gpslog.text }}</td>
+				{% if admin %}
+				<td title="Удалить сообщение"><a class="smallButton" href="/logs?cmd=delmsg&imei={{ imei }}&key={{ gpslog.key }}">X</a></td>
+				{% endif %}
 			</tr>
 	{% endfor %}
     </table>
