@@ -10,10 +10,14 @@
 	background-color: #C0C0FF;
 	border: 1px solid black;
 	border-radius: 4px;
-	padding-left: 3px;
-	padding-right: 3px;
+	padding-left: 8px;
+	padding-right: 8px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	margin-left:1px;
 	float: left;
 	cursor: pointer;
+	-webkit-box-shadow:0px 0px 4px #808080;
 }
 .sm-button:hover {
 	background-color: #0000FF;
@@ -156,6 +160,13 @@
 			$('#seelast').click(function() {
 				loadPoints("geosjson?imei=" + userimei + "&last=500&callback=?");
 			});
+
+			window.addEventListener('keydown', function (e) {
+				if (e.keyCode == 32) { // space				
+					loadPoints("geosjson?imei=" + userimei + "&last=500&callback=?");
+				}
+			}, false);
+
 			
 		});
 
@@ -419,7 +430,7 @@
 		// Set CSS for the control interior
 		var controlText = document.createElement('div');
 		controlText.setAttribute('class', 'MapNavText');
-		controlText.innerHTML = '<a style="text-decoration: none;" href="map?imei={{ user.imei }}" title="{{ user.imei }}"><img align="middle" src="/svg/user-1.svg" />{{ user.desc }}</a>';
+		controlText.innerHTML = '<a style="text-decoration: none;" href="map?imei={{ user.imei }}" title="{{ user.imei }}"><img align="top" src="/svg/user-1.svg" />{{ user.desc }}</a>';
 		controlUI.appendChild(controlText);
 
 		{% endfor %}
@@ -545,6 +556,8 @@
 			zoom: 17,
 			center: object1,
 			mapTypeControl: true,
+			draggableCursor: "pointer",
+			//draggingCursor: "pointer",
 			mapTypeControlOptions: {style: google.maps.MapTypeControlStyle.DROPDOWN_MENU},
 			navigationControl: true,
 			navigationControlOptions: {style: google.maps.NavigationControlStyle.SMALL},
@@ -709,6 +722,25 @@
 			//if(obj['submit'].value=='today') alert('fff');
 			datePoints();
 		}
+
+		function show_control() {
+			control = document.getElementById('control');
+			control.setAttribute("style", "right: 0px;");
+
+			x_control = document.getElementById('x_control');
+			//x_control.parentElement.setAttribute("style", "left: 0px;");
+			x_control.href = "javascript:hide_control();";
+			x_control.innerHTML = "&gt;";
+		}
+		function hide_control() {
+			control = document.getElementById('control');
+			control.setAttribute("style", "right: -200px;");
+
+			x_control = document.getElementById('x_control');
+			//x_control.parentElement.setAttribute("style", "left: -16px;");
+			x_control.href = "javascript:show_control();";
+			x_control.innerHTML = "&lt;";
+		}
 	</script>
 
 <!--script type="text/javascript" src="http://www.google.com/jsapi"></script>
@@ -780,7 +812,16 @@
 	<!--object style="-webkit-transform: rotate(30deg);width:16px;height:16px;background-color:green;" data="svg/arrow.svg" type="image/svg+xml" codebase="http://www.adobe.com/svg/viewer/install/"></object-->
 	<!--/div-->
 
+	<div style="top: -4px; left:50%; position: absolute;">
+		<div class="sm-button" id="seefirst" title="Самые старые">&lt;&lt;</div>
+		<div class="sm-button" id="seeprev" title="Предыдущие 500">&lt;</div>
+		<div class="sm-button" id="seenext" title="Следующие 500">&gt;</div>
+		<div class="sm-button" id="seelast" title="Последние известные координаты (пробел)">&gt;&gt;</div>
+	</div>
+
+
 	<div id="control">
+		<div id="div_control" style="left:0px;"><a id="x_control" class="smallButton" href="javascript:show_control();">&lt;</a></div>
 		Управление
 		<form action="javascript:dateshow(document.getElementById('myform'));" name="myform" id="myform" style="border:none;">
 		<table>
@@ -819,10 +860,10 @@
 			</tr>
 		</table>
 		</form>
-		<div class="sm-button" id="seefirst" title="Самые старые">&lt;&lt;</div>
+		<!--div class="sm-button" id="seefirst" title="Самые старые">&lt;&lt;</div>
 		<div class="sm-button" id="seeprev" title="Предыдущие 500">&lt;</div>
 		<div class="sm-button" id="seenext" title="Следующие 500">&gt;</div>
-		<div class="sm-button" id="seelast" title="Последние известные координаты">&gt;&gt;</div>
+		<div class="sm-button" id="seelast" title="Последние известные координаты">&gt;&gt;</div-->
 	<div style="background: white;">Точек:<div id="points" style="float: right;">0</div></div>
 	<br />
 	<!--input type="checkbox" title="Отображать только трек" id="track" onchange="datePoints();"/><label for="track" title="Отображать только трек">Трек</label-->

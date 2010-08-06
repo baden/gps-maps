@@ -1,10 +1,9 @@
 #Menu a div#menu-maps {% include "css/menu-select.css" %}
 
-.arrowdiv {
+div.arrowdiv {
 	position: absolute;
 	width: 16px;
 	height: 16px;
 	border: none 0px;
 	background-image: url(svg/arrow.svg);
-	//-webkit-transform: rotate(30deg);
 }

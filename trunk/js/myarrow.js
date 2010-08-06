@@ -29,9 +29,9 @@ var image3 = new google.maps.MarkerImage('images/marker3.png',
 
 var image4 = new google.maps.MarkerImage('images/marker4.png',
 //var image4 = new google.maps.MarkerImage('svg/arrow.svg',
-	new google.maps.Size(32, 32),	// This marker is 20 pixels wide by 32 pixels tall.
+	new google.maps.Size(16, 16),	// This marker is 20 pixels wide by 32 pixels tall.
 	new google.maps.Point(0,0),	// The origin for this image is 0,0.
-	new google.maps.Point(16, 16));	// The anchor for this image is the base of the flagpole at 0,32.
+	new google.maps.Point(8, 8));	// The anchor for this image is the base of the flagpole at 0,32.
 
 /*
 var image3 = new google.maps.MarkerImage('svg/arrow.svg',
@@ -227,11 +227,12 @@ MyArrow.prototype.onAdd = function() {
   var div = document.createElement('div');
 //  div.setAttribute("style", "border: solid 1px; -webkit-border-radius: 0px; -webkit-transform: rotate(30deg);width:16px;height:16px;");
   div.setAttribute("class", "arrowdiv");
-  div.setAttribute("style", "-webkit-transform: rotate(" + this.angle + "deg);");
+  div.setAttribute("style", "-webkit-transform: rotate(" + this.angle + "deg); width: 16px; height: 16px;");
+//  div.style.width = '16px';
+//  div.style.height = '16px';
 //  div.setAttribute("onMouseOver", "javascript:ArrowMouseOver(" + this.index +");");
 //  div.setAttribute("onMouseOut", "javascript:ArrowMouseOut(" + this.index + ");");
   div.setAttribute("title", "Бла-бла-бла");
-
 
 
 //  div.style.transform = "rotate(30deg)";
@@ -326,8 +327,9 @@ MyArrow.prototype.draw = function() {
   var div = this.div;
   div.style.left = divpx.x - 8 + 'px';
   div.style.top = divpx.y - 8 + 'px';
-  div.style.width = '16px';
-  div.style.height = '16px';
+//  div.style.width = '16px';
+//  div.style.height = '16px';
+//  div.className = 'smalldot';
 
   //var drw = this.canvas.getContext('2d');
   //canvas = document.getElementById("mapcanvas").getContext('2d');
