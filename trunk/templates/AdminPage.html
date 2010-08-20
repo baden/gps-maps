@@ -139,16 +139,28 @@
 	{% if admin %}
 	SERVER_NAME = {{ server_name }}
 	<h1>Тестовые функции</h1>
-	        <a class="pushLink" href="/binbackup">Бинарные данные</a><br />
+	        <a class="pushLink" href="/binbackup">Бинарные данные</a>
+
+		<br />
+
+	        <a class="pushLink" href="/static/game.html">Мини игрушка</a>
+	        <a class="pushLink" href="/admin.closure">Отладочная Closure</a>
 	        <a class="pushLink" href="/track">Отладочная Track</a>
 	        <a class="pushLink" href="/commet">Отладочная Commet</a>
 	        <a class="pushLink" href="/svg1.html">Svg1</a>
-	        <a class="pushLink" href="/svg2.xml">Svg2</a><br />
+	        <a class="pushLink" href="/svg2.xml">Svg2</a>
+	        <a class="pushLink" href="/svg3.html">Svg3</a>
 
-		<a class="pushLink" href="users">Просмотреть список систем</a>
 		<br />
 
-        <a class="pushLink" href="/addlog?imei=123456789013&text=Sample%20message">Добавление в лог методом GET</a>
+		<a class="pushLink" href="users">Просмотреть список систем</a>
+
+		<br />
+
+
+        <a class="pushLink" href="/addlog?imei=123456789013&text=Sample%20message%201">Добавление в лог методом GET</a>
+        <a class="pushLink" href="/addlog?imei=123456789013&text=Sample%20message%202">Добавление в лог методом GET</a>
+
         <a class="pushLink" href="/lastpos?imei=123456789013&datetime={{ now|date:"dmyGis" }}&latitude=48.4082&longitude=35.0492&sats=4&fix=2&speed=0.0&course=0.0&alt=150.0&in1=0&in2=234">Добавление координат методом GET</a>
 		<!--a class="pushLink" href="/testbin">Проба bin-посылки</a-->
 		<form action="javascript:binpost(document.getElementById('myform'));" name="myform" id="myform">

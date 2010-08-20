@@ -1,28 +1,84 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html lang="en-US" xml:lang="en-US" xmlns="http://www.w3.org/1999/xhtml">
 
-<body>
+<head>
+	<!--script type="text/javascript" src="http://www.google.com/jsapi?key=ABQIAAAADIf1TyW8EOrlksPTOSU_ahRSRM19lJ9EelRQvSBfwIzY3S55QBS-8_3mcz6GYcDrbbRrvEniskCZzw"></script-->
+	<script type="text/javascript" src="js/mysvg.js"></script>
+	<script type="text/javascript" language="JavaScript">
+
+//google.require('goog.graphics.Font');
+
+	function MyOwnMarker() {
+//		this.setElemById(id);
+//		this.init();
+//		alert('init');
+  		var div = document.createElement('div');
+  		div.setAttribute("class", "arrowdiv");
+		div.setAttribute("style", "width: 16px; height: 16px; border: 1px solid blue; margin: 0px; padding:0px;");
+		div.setAttribute("title", "Ѕла-бла-бла");
+		this.div = div;
+		div.marker = this;
+		//div.innerHTML = "aaa";
 
 
-<embed src="images/arrow.svg" width="300" height="100"
-type="image/svg+xml"
-pluginspage="http://www.adobe.com/svg/viewer/install/" />
+		div.addEventListener('mouseover', function(e) {
+			//svg.setAttribute('width', e.clientX);
+			//svg_path.setAttribute('style', 'fill:none;stroke:#FF00FF;stroke-width:4px;stroke-linecap:butt;stroke-linejoin:miter');
+			//svg.highlight();
+			//alert('aa');
+			//var svg = MySvg(div);
+			//this.marker.svg = svg;
+			//this.marker.svg = new MySvg(this);
+			//alert(this.offsetTop);
+			this.marker.svg = new MySvg(document.body, this.offsetLeft, this.offsetTop);
+			//alert(this.marker.svg);
+		}, false);
 
-<object data="images/arrow.svg" width="300" height="100"
-type="image/svg+xml"
-codebase="http://www.adobe.com/svg/viewer/install/" />
+		div.addEventListener('mouseout', function(e) {
+			//svg.setAttribute('width', e.clientX);
+			//svg_path.setAttribute('style', 'fill:none;stroke:#000000;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter');
+			this.marker.svg.remove();
+		}, false);
+
+		div.addEventListener('click', function(e) {
+			//svg.setAttribute('width', e.clientX);
+			//svg_path.setAttribute('style', 'fill:none;stroke:#FF0000;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter');
+		}, false);
+
+		document.body.appendChild(div);
+	}
+
+	//MyOwnMarker.prototype.unused = function() { alert("unused") }
+
+	//MySvg.prototype.addEventListener = this.div.addEventListener;
+//	MyOwnMarker.prototype.addEventListener = function(p1, p2, p3) {
+//		this.elem.addEventListener(p1, p2, p3);
+//	}
 
 
-<iframe src="images/arrow.svg" width="300" height="100">
-</iframe>
+	function initialize() {
+	
+		for(i=0; i<12; i++) {
+			var ob1 = new MyOwnMarker();
+			//ob1.setSayHandler();
+			/*
+			ob1.addEventListener('click', function(e) {
+				//svg.setAttribute('width', e.clientX);
+				//svg_path.setAttribute('style', 'fill:none;stroke:#FF0000;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter');
+				alert('clicked');
+			}, false);
+			*/
+
+		}
+
+	}
+
+	</script>
+</head>
+
+<body onload="initialize()">
 
 
-
-
-<svg:svg width="300" height="100" version="1.1" >
-<svg:circle cx="100" cy="50" r="40" stroke="black"
-stroke-width="2" fill="red" />
-</svg:svg>
 
 </body>
 </html>

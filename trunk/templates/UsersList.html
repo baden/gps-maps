@@ -8,7 +8,7 @@
 
 	<script type="text/javascript" language="JavaScript">
 
-		function dodel(id)
+		function dodel(key)
 		{
 			var r=confirm(
 				"Внимание!!!\r\n\r\n" +
@@ -18,7 +18,7 @@
 				"Вы действительно уверены в своих действиях?"
 			);
 			if (r==true) {
-				window.location = "/delUser?id={{ dbuser.key.id }}";
+				window.location = "/delUser?key=" + key;
 			} else {
 			}
 			//alert("Внимание!!! Не стоит пока пользоваться данной функцией так как она не удаляет треки. " + id);
@@ -55,7 +55,7 @@
 				<td>{{ dbuser.date }}</td>
 				<!--td>{{ dbuser.key }}</td-->
 				{% if admin %}
-				<td><a href="javascript:dodel({{ dbuser.key.id }});" title="Удалить пользователя.">X</a></td>
+				<td><a href="javascript:dodel('{{ dbuser.key }}');" title="Удалить пользователя.">X</a></td>
 				{% endif %}
 			</tr>
 		{% endfor %}

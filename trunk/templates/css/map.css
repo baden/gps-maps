@@ -2,8 +2,34 @@
 
 div.arrowdiv {
 	position: absolute;
-	width: 16px;
-	height: 16px;
+	width: 32px;
+	height: 32px;
 	border: none 0px;
-	background-image: url(svg/arrow.svg);
+	background-image: url(svg/marker-arrow2.svg);
 }
+
+div.mymarker {
+	position: absolute;
+	width: 5px;
+	height: 5px;
+	/*border: 1px solid #F08000;*/
+	/*border-radius: 3px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;*/
+
+	/*background-image: url(images/marker3.png);*/
+	/*-webkit-transition: all 0.1s ease-out;*/
+}
+
+div:hover.mymarker {
+	/*position: absolute;*/
+	/*width: 9px;
+	height: 9px;*/
+	/*border: none 0px;*/
+	/*background-image: url(svg/marker-big.svg);*/
+	/*-webkit-transform: translate(-2px,-2px);*/
+
+	/*-webkit-transform: scale(2.0) translate(-0px,-0px);
+	-moz-transform: scale(2.0) translate(-0px,-0px);*/
+}
+

@@ -3,7 +3,7 @@ version: 1
 runtime: python
 api_version: 1
 default_expiration: "1d"
-#default_expiration: "1s"
+#default_expiration: "60s"
 
 handlers:
 - url: /stylesheets
@@ -20,9 +20,14 @@ handlers:
   static_files: images/\1
   upload: images/(.*\.(gif|png|jpg|ico))
 
-- url: /(.*\.(gif|png|jpg|ico))
+- url: .*/(.*\.(gif|png|jpg|ico))
   static_files: static/\1
   upload: static/(.*\.(gif|png|jpg|ico))
+
+- url: /static
+  static_dir: static
+#  static_files: static/\1
+#  upload: static/.*
 
 - url: /flatcgi
   script: flatcgi.py
@@ -78,6 +83,9 @@ handlers:
 - url: /admin.*
   script: gps-admin.py
   login: admin
+
+- url: /bingps.*
+  script: gps-bingps.py
 
 - url: /.*
   script: gps-maps.py

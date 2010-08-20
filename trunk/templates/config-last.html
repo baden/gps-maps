@@ -62,6 +62,7 @@ function ChangeParam(name, dvalue)
 	//alert('Вы ввели ' + nvalue);
 }
 
+{% if admin %}
 function SetDescription(name)
 {
 	var item = document.getElementById(name + '_descr')
@@ -79,6 +80,7 @@ function SetDescription(name)
 //	alert('Вы ввели ' + nvalue);
 	item.innerHTML = nvalue;
 }
+{% endif %}
 
 </script>
 
@@ -93,7 +95,12 @@ function SetDescription(name)
 			<!--th>Тип</th-->
 			<th>Значение</th>
 			<th>Заводская установка</th>
-			<th>Описание</th>
+			<th>
+				Описание
+				{% if admin %}
+				<a class="smallButton" title="Показать все" href="/config?cmd=last&imei={{ imei }}&showall=yes">...<a>
+				{% endif %}
+			</th>
 			<!--th>Мин</th>
 			<th>Макс</th-->
 		</tr>
@@ -109,7 +116,7 @@ function SetDescription(name)
 			<td>{{ config.1.2 }}<a class="smallButton" href="javascript:ResetParam('{{ config.0 }}', {{ config.1.2 }}, {{ config.1.1 }})" title="Сбросить значение на заводскую установку">&times;</a></td>
 			<td>
 				<div style="display: inline-block;" id="{{ config.0 }}_descr" align="left">{{ config.1.4 }}</div>
-				<a class="smallButton" href="javascript:SetDescription('{{ config.0 }}')" title="Изменить описание">...</a>
+				{% if admin %}<a class="smallButton" href="javascript:SetDescription('{{ config.0 }}')" title="Изменить описание">...</a>{% endif %}
 			</td>
 		</tr>
 		{% endfor %}
