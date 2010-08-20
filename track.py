@@ -43,7 +43,7 @@ def get_counter():
 		return counter
 	else:
 		counter = 1
-		memcache.add("counter", counter, 10)
+		memcache.add("counter", counter, 3600)
 		return counter
 
 def incr_counter():

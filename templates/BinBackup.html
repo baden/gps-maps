@@ -4,40 +4,55 @@
 
 {% block head %}
   <!--meta http-equiv="refresh" content="10"-->
-  <style type="text/css">{% include "css/logs.css" %}</style>
+  <style type="text/css">{% include "css/binbackup.css" %}</style>
 {% endblock %}
 
 {% block body %}
-    <h1>Записи в логе:</h1>
-	{{ urlprev }}{{ urlnext }}
-    <table>
-        <thead>
-        	<tr>
-        		<th>Система</th>
-			<th>Дата и время лога</th>
-			<th>Размер</th>
-			<th>Получить</th>
-			<th>Удалить</th>
-			</tr>
-		</thead>
+
+	{% if imei %}
+
+    <h1>Архив бинарных данных:</h1>
+	{{ userdb.imei }}: <b>{{ userdb.desc }}</b>
+	<a class="smallButton" href="/binbackup" title="Выбрать другую">S</a> 
+
+	<br />
+
+	<div style="margin-left:50px;">
+
         {% for bindata in dbbindata %}
-            <tr>
-            	<td>{{ bindata.user.desc }}</td>
-            	<td>{{ bindata.cdate }}</td>
-            	<td>{{ bindata.datasize }}</td>
-		<td>
+	<div class="bblock">
+		<div>{{ bindata.sdate|date:"d/m/y G:i:s" }}</div>
+		{{ bindata.datasize }} bytes
 		 <a class="smallButton" href="binbackup?cmd=getbin&key={{ bindata.key }}" title="Загрузить данные в сыром виде">B</a>
-		</td>
-		<td>
-		 <a class="smallButton" href="binbackup?cmd=del&key={{ bindata.key }}" title="Удалить эти данные">X</a>
-		</td>
-		
-	    </tr>
+		 {% if admin %}<a class="smallButton" href="binbackup?imei={{ imei }}&cmd=del&key={{ bindata.key }}" title="Удалить эти данные">X</a>{% endif %}
+	</div>
 	{% endfor %}
+
+	</div>
+	{% if admin %}
+	<a class="pushLink" href="binbackup?cmd=delall&imei={{ imei }}" title="Удаляет 500 самых старых записей">Очистить 500 старых записей</a>
+	{% endif %}
+
+	{% else %}
+
+    <h1>Выберите систему:</h1>
+
+    <table class="selector">
+        <!--thead>
+        	<tr>
+        	</tr>
+        </thead-->
+	        {% for user in allusers %}
+            <tr>
+		<td>{{ forloop.counter }}</td>
+		<td><a class="selector" style="" href="/binbackup?imei={{ user.imei }}"><div style="width: 100%;">{{ user.imei }}: {{ user.desc }}</div></a></td>
+            </tr>
+		{% endfor %}
     </table>
-	<a class="pushLink" href="binbackup?cmd=delall" title="Удаляет 1000 самых старых записей">Очистить 1000 записей</a>
+
+	{% endif %}
     
-Отладочная: {{ cacheuser.hello }}
+<!-- Отладочная: {{ cacheuser.hello }} -->
 {% endblock %}
 
 {% block final %}

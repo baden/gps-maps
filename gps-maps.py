@@ -26,13 +26,16 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 #TIME_ZONE = 'America/Los_Angeles'  # i.e., Mountain View
 
 from google.appengine.ext.webapp import template
+from google.appengine.api import memcache
 
 #import models
 import datamodel
+import utils
 
 #ADMIN_USERNAME = 'baden.i.ua'
 
 SERVER_NAME = os.environ['SERVER_NAME']
+MAX_TRACK_FETCH	= 500
 
 #ZERO = timedelta(0)
 TIMEZONE = timedelta(hours =+ 2)
@@ -77,67 +80,6 @@ def toUTC(localtime):
 
 #import pytz
 
-# 16-bit CRCs should detect 65535/65536 or 99.998% of all errors in
-# data blocks up to 4096 bytes
-"""
-MASK_CCITT = 0x1021 # CRC-CCITT mask (ISO 3309, used in X25, HDLC)
-MASK_CRC16 = 0xA001 # CRC16 mask (used in ARC files)
-
-#----------------------------------------------------------------------------
-# Calculate and return an incremental CRC value based on the current value
-# and the data bytes passed in as a string.
-#
-def updcrc1(crc, data, mask=MASK_CCITT):
-
-	# data_length = len(data)
-	# unpackFormat = '%db' % data_length
-	# unpackedData = struct.unpack(unpackFormat, data)
-
-	c = data
-	c = c << 8
-
-	for j in xrange(8):
-		if (crc ^ c) & 0x8000:
-			crc = (crc << 1) ^ mask
-		else:
-			crc = crc << 1
-		c = c << 1
-
-	return crc & 0xffff
-"""
-""" CRC16-CCITT hash, part of Battlefield 2142 Auth token maker
-This is the python module package for computing CRC16-CCITT hash.
-"""
-
-CRC16_CCITT_table = (
-        0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7, 0x8108, 0x9129, 0xa14a, 0xb16b,
-        0xc18c, 0xd1ad, 0xe1ce, 0xf1ef, 0x1231, 0x0210, 0x3273, 0x2252, 0x52b5, 0x4294, 0x72f7, 0x62d6,
-        0x9339, 0x8318, 0xb37b, 0xa35a, 0xd3bd, 0xc39c, 0xf3ff, 0xe3de, 0x2462, 0x3443, 0x0420, 0x1401,
-        0x64e6, 0x74c7, 0x44a4, 0x5485, 0xa56a, 0xb54b, 0x8528, 0x9509, 0xe5ee, 0xf5cf, 0xc5ac, 0xd58d,
-        0x3653, 0x2672, 0x1611, 0x0630, 0x76d7, 0x66f6, 0x5695, 0x46b4, 0xb75b, 0xa77a, 0x9719, 0x8738,
-        0xf7df, 0xe7fe, 0xd79d, 0xc7bc, 0x48c4, 0x58e5, 0x6886, 0x78a7, 0x0840, 0x1861, 0x2802, 0x3823,
-        0xc9cc, 0xd9ed, 0xe98e, 0xf9af, 0x8948, 0x9969, 0xa90a, 0xb92b, 0x5af5, 0x4ad4, 0x7ab7, 0x6a96,
-        0x1a71, 0x0a50, 0x3a33, 0x2a12, 0xdbfd, 0xcbdc, 0xfbbf, 0xeb9e, 0x9b79, 0x8b58, 0xbb3b, 0xab1a,
-        0x6ca6, 0x7c87, 0x4ce4, 0x5cc5, 0x2c22, 0x3c03, 0x0c60, 0x1c41, 0xedae, 0xfd8f, 0xcdec, 0xddcd,
-        0xad2a, 0xbd0b, 0x8d68, 0x9d49, 0x7e97, 0x6eb6, 0x5ed5, 0x4ef4, 0x3e13, 0x2e32, 0x1e51, 0x0e70,
-        0xff9f, 0xefbe, 0xdfdd, 0xcffc, 0xbf1b, 0xaf3a, 0x9f59, 0x8f78, 0x9188, 0x81a9, 0xb1ca, 0xa1eb,
-        0xd10c, 0xc12d, 0xf14e, 0xe16f, 0x1080, 0x00a1, 0x30c2, 0x20e3, 0x5004, 0x4025, 0x7046, 0x6067,
-        0x83b9, 0x9398, 0xa3fb, 0xb3da, 0xc33d, 0xd31c, 0xe37f, 0xf35e, 0x02b1, 0x1290, 0x22f3, 0x32d2,
-        0x4235, 0x5214, 0x6277, 0x7256, 0xb5ea, 0xa5cb, 0x95a8, 0x8589, 0xf56e, 0xe54f, 0xd52c, 0xc50d,
-        0x34e2, 0x24c3, 0x14a0, 0x0481, 0x7466, 0x6447, 0x5424, 0x4405, 0xa7db, 0xb7fa, 0x8799, 0x97b8,
-        0xe75f, 0xf77e, 0xc71d, 0xd73c, 0x26d3, 0x36f2, 0x0691, 0x16b0, 0x6657, 0x7676, 0x4615, 0x5634,
-        0xd94c, 0xc96d, 0xf90e, 0xe92f, 0x99c8, 0x89e9, 0xb98a, 0xa9ab, 0x5844, 0x4865, 0x7806, 0x6827,
-        0x18c0, 0x08e1, 0x3882, 0x28a3, 0xcb7d, 0xdb5c, 0xeb3f, 0xfb1e, 0x8bf9, 0x9bd8, 0xabbb, 0xbb9a,
-        0x4a75, 0x5a54, 0x6a37, 0x7a16, 0x0af1, 0x1ad0, 0x2ab3, 0x3a92, 0xfd2e, 0xed0f, 0xdd6c, 0xcd4d,
-        0xbdaa, 0xad8b, 0x9de8, 0x8dc9, 0x7c26, 0x6c07, 0x5c64, 0x4c45, 0x3ca2, 0x2c83, 0x1ce0, 0x0cc1,
-        0xef1f, 0xff3e, 0xcf5d, 0xdf7c, 0xaf9b, 0xbfba, 0x8fd9, 0x9ff8, 0x6e17, 0x7e36, 0x4e55, 0x5e74,
-        0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
-        )
-
-def updcrc2(crc, data):
-    """ Compute correct enough :grin: CRC16 CCITT for using in BF2142 auth token """
-    return (((crc << 8) & 0xff00) ^ CRC16_CCITT_table[((crc >> 8) ^ (0xff & data))])
-
 def checkUser(uri, response):
 	user = users.get_current_user()
 
@@ -146,12 +88,12 @@ def checkUser(uri, response):
 		login_url = users.create_login_url(uri)
 		username = user.nickname()
 	else:
-		response.out.write("<html><body>")
-		response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
-		response.out.write("Нажмите <a href=" + users.create_login_url(uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
-		response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
-		response.out.write("</body></html>")
-		#self.redirect(users.create_login_url(self.request.uri))
+		#response.out.write("<html><body>")
+		#response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
+		#response.out.write("Нажмите <a href=" + users.create_login_url(uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
+		#response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
+		#response.out.write("</body></html>")
+		self.redirect(users.create_login_url(self.request.uri))
 		return False
 	return {
 		'login_url': login_url,
@@ -203,12 +145,12 @@ class TemplatedPage(webapp.RequestHandler):
 			#self.response.headers['Content-Type']   = 'text/xml'
 			self.response.out.write(template.render(path, values))
 		else:
-			self.response.out.write("<html><body>")
-			self.response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
-			self.response.out.write("Нажмите <a href=" + users.create_login_url(self.request.uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
-			self.response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
-			self.response.out.write("</body></html>")
-			#self.redirect(users.create_login_url(self.request.uri))
+			#self.response.out.write("<html><body>")
+			#self.response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
+			#self.response.out.write("Нажмите <a href=" + users.create_login_url(self.request.uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
+			#self.response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
+			#self.response.out.write("</body></html>")
+			self.redirect(users.create_login_url(self.request.uri))
 
 class MainPage(TemplatedPage):
 	def get(self):
@@ -287,6 +229,26 @@ def getUser(request, create=False):
 
 	return userdb
 
+def get_loglastkey(user_key):
+	counter = memcache.get("lastlogkey_%s" % user_key)
+	if counter is not None:
+		logging.info("GET Memcache key: lastlogkey_%s = %s" % (user_key, counter))
+		return counter
+	else:
+		userdb = db.get(db.Key(user_key))
+		gpslogsq = datamodel.GPSLogs.all().filter('user =', userdb).order('-date').fetch(1)
+		if gpslogsq:
+			counter = gpslogsq[0].key()
+			memcache.add("lastlogkey_%s" % user_key, counter)
+			logging.info("ADD Memcache key: lastlogkey_%s = %s" % (user_key, counter))
+			return counter
+		else:
+			return "None"
+
+def set_loglastkey(user_key, counter):
+	memcache.set("lastlogkey_%s" % user_key, counter)
+	logging.info("SET Memcache key: lastlogkey_%s = %s" % (user_key, counter))
+
 
 class AddLog(webapp.RequestHandler):
 	def get(self):
@@ -321,6 +283,7 @@ class AddLog(webapp.RequestHandler):
 			gpslog.user = userdb
 			gpslog.text = text
 			gpslog.put()
+			set_loglastkey(str(userdb.key()), gpslog.key())
 			#self.response.out.write('Add log for user (phone:%s IMEI:%s).\r\n' % (userdb.phone, userdb.imei))
 			self.response.out.write('ADDLOG: OK\r\n')
 
@@ -350,11 +313,11 @@ class AddLog(webapp.RequestHandler):
 	#self.error(404)
 
 	#header_data = self.response.hr_dataedata = "";
-	def post(self):
-		userid = int(self.request.get('id'))
-		self.response.out.write('Request body (%s)<br>' % self.request.body)
-		file = self.request.get('file')
-		self.response.out.write('File: %s' % file)
+	#def post(self):
+	#	userid = int(self.request.get('id'))
+	#	self.response.out.write('Request body (%s)<br>' % self.request.body)
+	#	file = self.request.get('file')
+	#	self.response.out.write('File: %s' % file)
 
 class UsersList(TemplatedPage):
 	def get(self):
@@ -370,11 +333,82 @@ class UsersList(TemplatedPage):
 		#self.response.out.write(template.render(path, template_values))
 		self.write_template(template_values)
 
-MAXLOGS = 20
+MAXLOGS = 40
 
 class CacheUser:
 	def hello(self):
 		return "Hello, from user_function"
+
+class JsonLogs(webapp.RequestHandler):
+	def get(self):
+		#userdb = getUser(self.request, create=False)
+		userkey = self.request.get('userkey')
+		lastlogkey = self.request.get('lastlogkey')
+		if lastlogkey:
+			last_key = db.Key(lastlogkey)
+
+		#if userdb == None:
+		#	if len(self.account.systems)==1:
+		#		userdb = db.get(db.Key(self.account.systems[0]))
+		#		uimei = userdb.imei
+			
+		#gpslogsq = datamodel.GPSLogs.all().filter('key >', lastlogkey).filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
+
+		#if lastlogkey and get_loglastkey(str(userdb.key())) == last_key:
+		if lastlogkey and get_loglastkey(userkey) == last_key:
+			logging.info("No logs changes.")
+			gpslogsq = []
+		else:
+			userdb = db.get(db.Key(userkey))
+			gpslogsq = datamodel.GPSLogs.all().filter('user =', userdb).order('-date')
+
+		gpslogs = []
+
+		max = 20
+		for gpslog in gpslogsq:
+			if lastlogkey:
+				if gpslog.key() == last_key: break
+
+			gpslogs.append({
+				'date': fromUTC(gpslog.date).strftime("%d/%m/%Y %H:%M:%S"),
+				'text': gpslog.text,
+				'key': str(gpslog.key()),
+			})
+
+			if max > 0: max = max - 1
+			else: break
+
+
+		"""
+		if lastlogkey:
+			if get_loglastkey(str(userdb.key())) == last_key:
+				logging.info("No logs changes.")
+				gpslogsq = []
+			else:
+				gpslogsq = datamodel.GPSLogs.all().filter('user =', userdb).filter('__key__ >', last_key).order('__key__').fetch(MAXLOGS+1)
+		else:
+			gpslogsq = datamodel.GPSLogs.all().filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
+		gpslogs = []
+		for gpslog in gpslogsq:
+			gpslogs.append({
+				'date': fromUTC(gpslog.date).strftime("%d/%m/%Y %H:%M"),
+				'text': gpslog.text,
+				'key': str(gpslog.key()),
+			})
+		"""		
+		self.response.headers['Content-Type']   = 'text/javascript; charset=utf-8'
+		callback = self.request.get('callback')
+		jsonresp = {
+			"responseData": {
+				#"user": uimei,
+				#"counter": 1,
+				#"lastkey": str(get_loglastkey(str(userdb.key()))),
+				"logs": gpslogs,
+			}
+		}
+
+		nejson = json.dumps(jsonresp)
+		self.response.out.write(callback + "(" + nejson + ")\r")
 
 class ViewLogs(TemplatedPage):
 	def get(self):
@@ -397,6 +431,7 @@ class ViewLogs(TemplatedPage):
 			if cmd=="delmsg":
 				key = self.request.get('key')
 				db.get(db.Key(key)).delete()
+
 
 			if uimei:
 				self.redirect('/logs?imei=%s' % uimei)
@@ -476,13 +511,12 @@ class ViewLogs(TemplatedPage):
 		#gpslogs_count = gpslogs_query.count()
 		#gpslogs_count = len(gpslogs)
 
-
 		#userdescs = {}
 		#userimeis = {}
 
 		for gpslog in gpslogs:
 			#gpslog.date = gpslog.date.replace(microsecond=0).replace(second=0)
-			gpslog.sdate = fromUTC(gpslog.date).strftime("%d/%m/%Y %H:%M")
+			gpslog.sdate = fromUTC(gpslog.date).strftime("%d/%m/%Y %H:%M:%S")
 			#if gpslog.user.key() not in userdescs:
 			#	userdescs[gpslog.user.key()] = gpslog.user.desc
 			#	userimeis[gpslog.user.key()] = gpslog.user.imei
@@ -505,7 +539,13 @@ class ViewLogs(TemplatedPage):
 		template_values['urlnext'] = urlnext
 		template_values['urlprev'] = urlprev
 		template_values['userdb'] = userdb
+		if userdb:
+			template_values['userkey'] = str(userdb.key())
+		else:
+			template_values['userkey'] = "None"
 		template_values['imei'] = uimei
+		#template_values['loglastkey'] = get_loglastkey()
+		#template_values['loglastkey']
 
 		cacheuser = CacheUser()
 		template_values['cacheuser'] = cacheuser
@@ -529,6 +569,7 @@ class DelLogs(webapp.RequestHandler):
 			log.delete()
 		self.redirect("/logs")
 
+"""
 class RegId(webapp.RequestHandler):
 	def get(self):
 		self.response.headers['Content-Type'] = 'text/plain'    #minimizing data
@@ -562,14 +603,14 @@ class RegId(webapp.RequestHandler):
 
 		self.response.out.write('key=%s\r\n' % ukey)
 		self.response.out.write('id=%s\r\n' % ukey.id())
-
+"""
 class DelUser(webapp.RequestHandler):
 	def get(self):
 		ukey = self.request.get('key')
 		uid = self.request.get('id')
 		#duser = datamodel.DBUser().get_by_key_name(cls, key_names, parent)
 		if ukey:
-			datastore.Delete(datastore.Key(ukey))
+			db.delete(db.Key(ukey))
 
 		if uid:
 			userdb = datamodel.DBUser().get_by_id(long(uid))
@@ -692,6 +733,10 @@ class Geos(TemplatedPage):
 			#	geolog.imei = 'deleted'
 			#geolog.sdate = geolog.cdate.strftime("%d/%m/%Y %H:%M")
 			geolog.date = fromUTC(geolog.date) #.astimezone(utc)
+			if geolog.vin == None:
+				geolog.vin = 0.0
+			if geolog.vout == None:
+				geolog.vout = 0.0
 
 		#path = os.path.join(os.path.dirname(__file__), 'geos.html')
 		#self.response.out.write(template.render(path, template_values))
@@ -704,9 +749,9 @@ class GetTrack(webapp.RequestHandler):
 		userdb = getUser(self.request)
 
 		if userdb == None:
-			geologs = datamodel.DBGPSPoint.all().order('-date').fetch(500)
+			geologs = datamodel.DBGPSPoint.all().order('-date').fetch(MAX_TRACK_FETCH)
 		else:
-			geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('-date').fetch(500)
+			geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('-date').fetch(MAX_TRACK_FETCH)
 		points = []
 		for geolog in geologs:
 			points.append({
@@ -794,13 +839,13 @@ class GeosJSON(webapp.RequestHandler):
 				#logging.info("GeosJSON last: %s" % last)
 				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date <=', dateto).order('-date').fetch(int(last))
 			else:
-				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(500)
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(MAX_TRACK_FETCH)
 
 		#self.response.out.write("// User imei: %s\r// Date from: %s\r// Date to: %s\r" % (userdb.imei, datefrom, dateto))
 
 #.filter('date <=', datetime.strptime(datemark, "%Y%m%d%H%M%S%f"))
 		#geologs = DBGPSPoint.all().order('-date').filter('user =', userdb)
-		#geologs = DBGPSPoint.all().order('-date').fetch(500)
+		#geologs = DBGPSPoint.all().order('-date').fetch(MAX_TRACK_FETCH)
 		#geologs = DBGPSPoint.all().order('-date').fetch(MAXLOGS+1)
 
 		optim = self.request.get('optim')
@@ -877,6 +922,8 @@ class GeosJSON(webapp.RequestHandler):
 				"alt": geolog.altitude,
 				"in1": geolog.in1,
 				"in2": geolog.in2,
+				"vin": geolog.vin,
+				"vout": geolog.vout,
 				}
 			#try:
 			#	uuser = geolog.user
@@ -952,9 +999,9 @@ class DelGeos(webapp.RequestHandler):
 		if datefrom_s:
 			logging.info("Deleting data from %s to %s 4 user %s" % (datefrom, dateto, uimei))
 			if userdb == None:
-				geologs = datamodel.DBGPSPoint.all().filter('date >=', datefrom).filter('date <=', dateto).order('date').fetch(500)
+				geologs = datamodel.DBGPSPoint.all().filter('date >=', datefrom).filter('date <=', dateto).order('date').fetch(MAX_TRACK_FETCH)
 			else:
-				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('date').fetch(500)
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('date').fetch(MAX_TRACK_FETCH)
 			logging.info("Delete %d items" % len(geologs))
 			if geologs:
 				db.delete(geologs)
@@ -965,9 +1012,9 @@ class DelGeos(webapp.RequestHandler):
 		else:
 			logging.info("Deleting old data 4 user %s" % uimei)
 			if userdb == None:
-				geologs = datamodel.DBGPSPoint.all().order('date').fetch(500)
+				geologs = datamodel.DBGPSPoint.all().order('date').fetch(MAX_TRACK_FETCH)
 			else:
-				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('date').fetch(500)
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('date').fetch(MAX_TRACK_FETCH)
 
 			if geologs:
 				db.delete(geologs)
@@ -1189,7 +1236,10 @@ class Config(TemplatedPage):
 				#self.response.out.write('<html><head><link type="text/css" rel="stylesheet" href="stylesheets/main.css" /></head><body>CONFIG:<br><table>')
 				#self.response.out.write(u"<tr><th>Имя</th><th>Тип</th><th>Значение</th><th>Заводская установка</th></tr>" )
 
-				descriptions = datamodel.DBDescription().all() #.fetch(500)
+				showall = self.request.get('showall')
+
+				descriptions = datamodel.DBDescription().all() #.fetch(MAX_TRACK_FETCH)
+
 				descs={}
 				for description in descriptions:
 					descs[description.name] = description.value
@@ -1216,21 +1266,27 @@ class Config(TemplatedPage):
 					else:
 						waitconfig = {}
 
+					nconfigs = {}
 
 					for config, value in configs.items():
+						#desc = u"Нет описания"
 						desc = u"Нет описания"
 						if config in descs:
 							desc = descs[config]
+						else:
+							if not showall:
+							#if not users.is_current_user_admin():
+								continue
 
 						if config in waitconfig:
-							configs[config] = (configs[config][0], configs[config][1], configs[config][2], waitconfig[config], desc)
+							nconfigs[config] = (configs[config][0], configs[config][1], configs[config][2], waitconfig[config], desc)
 						else:
-							configs[config] = (configs[config][0], configs[config][1], configs[config][2], None, desc)
+							nconfigs[config] = (configs[config][0], configs[config][1], configs[config][2], None, desc)
 							#configs[config] = (configs[config][0], configs[config][1], configs[config][2], configs[config][1])
 
 					# Для удобства отсортируем словарь в список
 					#sconfigs = sortDict(configs)
-					sconfigs = [(key, configs[key]) for key in sorted(configs.keys())]
+					sconfigs = [(key, nconfigs[key]) for key in sorted(nconfigs.keys())]
 
 					template_values = {
 					    'configs': sconfigs,
@@ -2175,7 +2231,7 @@ class Firmware(TemplatedPage):
 						self.response.out.write("%02X" % ord(byte))
 						#crc = crc^ord(byte)
 						#crc1 = updcrc1(crc1, ord(byte))
-						crc2 = updcrc2(crc2, ord(byte))
+						crc2 = utils.crc(crc2, ord(byte))
 						by = by - 1
 					#self.response.out.write("\r\nCRC%04X\r\nENDDATA\r\n" % updcrc(0, fw[0].data))
 					self.response.out.write("\r\n")
@@ -2308,6 +2364,17 @@ class Svg1(TemplatedPage):
 		path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
 		self.response.out.write(template.render(path, template_values))
 
+class Svg3(TemplatedPage):
+	def get(self):
+		uimei = self.request.get('imei')
+
+		template_values = {}
+		template_values['imei'] = uimei
+		#self.write_template(template_values)
+		self.response.headers['Content-Type']   = 'text/html'
+		path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
+		self.response.out.write(template.render(path, template_values))
+
 class Svg2(TemplatedPage):
 	def get(self):
 		uimei = self.request.get('imei')
@@ -2322,51 +2389,61 @@ class Svg2(TemplatedPage):
 
 class BinBackup(TemplatedPage):
 	def get(self):
+		uimei = self.request.get('imei')
+		userdb = getUser(self.request)
+
 		cmd = self.request.get('cmd')
 		if cmd:
 			ukey = self.request.get('key')
 			if cmd == 'getbin':
 				self.response.headers['Content-Type'] = 'application/octet-stream'
 				#bindata = datastore.Get(datastore.Key(ukey))
-				bindata = db.get(datastore.Key(ukey))
+				bindata = db.get(db.Key(ukey))
 				self.response.out.write(bindata.data)
 				return
 			elif cmd == 'del':
-				datastore.Delete(datastore.Key(ukey))
-				self.redirect("/binbackup")
+				db.delete(db.Key(ukey))
+				self.redirect("/binbackup?imei=%s" % uimei)
 				return
 			elif cmd == 'delall':
-				dbbindata = datamodel.DBGPSBinBackup.all().order('cdate').fetch(1000)
-				for bindata in dbbindata:
-					bindata.delete()
-				self.redirect("/binbackup")
+				dbbindata = datamodel.DBGPSBinBackup.all().filter('user =', userdb).order('cdate').fetch(500)
+				#for bindata in dbbindata:
+				#	bindata.delete()
+				if dbbindata:
+					db.delete(dbbindata)
+				self.redirect("/binbackup?imei=%s" % uimei)
 				return
 
+		if userdb:
+			dbbindata = datamodel.DBGPSBinBackup.all().filter('user =', userdb).order('-cdate').fetch(200)
 
-		uimei = self.request.get('imei')
+			for bindata in dbbindata:
+				bindata.datasize = len(bindata.data)
+				bindata.sdate = fromUTC(bindata.cdate)	#.strftime("%d/%m/%Y %H:%M:%S")
+			allusers = None
+		else:
+			dbbindata = None
+			allusers = datamodel.DBUser.all().fetch(1000)
 
-		dbbindata = datamodel.DBGPSBinBackup.all().order('-cdate').fetch(1000)
-
-		for bindata in dbbindata:
-			bindata.datasize = len(bindata.data)
-
-		template_values = {}
-		template_values['imei'] = uimei
-		template_values['dbbindata'] = dbbindata
+		#template_values = {}
+		#template_values['imei'] = uimei
+		#template_values['dbbindata'] = dbbindata
 
 		self.response.headers['Content-Type']   = 'text/html'
-		path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
-		self.response.out.write(template.render(path, template_values))
+		#path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
+		#self.response.out.write(template.render(path, template_values))
+		self.write_template({'imei': uimei, 'dbbindata': dbbindata, 'userdb': userdb, 'allusers': allusers})
 
 
 application = webapp.WSGIApplication(
 	[('/', MainPage),
-	('/regid', RegId),
+	#('/regid', RegId),
 	('/sign', Guestbook),
 	('/addlog', AddLog),
 	('/users.*', UsersList),
 	('/delUser.*', DelUser),
 	('/logs.*', ViewLogs),
+	('/jsonlogs.*', JsonLogs),
 	('/dellogs.*', DelLogs),
 	('/delgeos.*', DelGeos),
 	('/del1geos.*', Del1Geos),
@@ -2391,6 +2468,7 @@ application = webapp.WSGIApplication(
 	('/gettrack.*', GetTrack),
 	('/svg1.*', Svg1),
 	('/svg2.*', Svg2),
+	('/svg3.*', Svg3),
 	('/binbackup.*', BinBackup),
 	],
 	debug=True

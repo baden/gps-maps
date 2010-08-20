@@ -40,6 +40,8 @@ html, body {
 }
 
 div.menu {
+	white-space: nowrap;
+
 	position: absolute;
 	left: -8px;
 	top: 62px;
@@ -49,6 +51,7 @@ div.menu {
 	/*height: 0px;*/
 	margin: 0 0 0 0;
 	padding: 0 0 0 0;
+	display: inline;
 }
 
 div.menu ul {
@@ -59,12 +62,14 @@ div.menu ul {
 div.menu li {
 	cursor: pointer;
 	overflow: hidden;
-	opacity:0.2;
+	opacity: 0.2;
 	border: 2px solid black;
 	width: 46px;
 	height: 32px;
 	padding-left: 0px;
 	margin-top: 4px;
+	border-radius: 8px;
+	-moz-border-radius: 8px;
 	-webkit-border-radius: 8px;
 	-webkit-transition: all 0.2s ease-in-out;
 	-moz-transition: all 1s ease-in-out;
@@ -72,10 +77,11 @@ div.menu li {
 	background: url(/svg/menu-default.svg) no-repeat;
 	background-position: 10px 0px;
 	background-color: #FFFFFF;
-	box-shadow:2px 2px 4px #000000;
-/*	-moz-box-shadow:2px 2px 4px #808080; */
-	-webkit-box-shadow:2px 2px 4px #808080;
+	box-shadow: 2px 2px 4px #000000;
+	-moz-box-shadow: 2px 2px 4px #808080;
+	-webkit-box-shadow: 2px 2px 4px #808080;
 }
+
 
 div.menu li#main {
 	background: url(/svg/menu-main.svg) 10px 0px no-repeat;
@@ -103,14 +109,18 @@ div.menu li#geos {
 	background-color: #FFFFFF;
 }
 
+
 div.menu a {
 	color: black;
 	text-decoration: none;
 	font-weight: bold;
 	font-size: 1.2em;
+	display: inline;
 }
 
+
 div.menu a div {
+	display: inline;
 	vertical-align: center;
 	width: 100%;
 	padding-left: 48px;
@@ -119,12 +129,14 @@ div.menu a div {
 	top: 50%;
 }
 
+
 div.menu li:hover {
 	width: auto;
 	min-width: 200px;
 	opacity:1.0;
 /*	-webkit-transform: scale(1.5) rotate(12deg) translate(32px,20px); */
 	-webkit-transform: scale(1.5) translate(32px,0px);
+	-moz-transform: scale(1.5) translate(32px,0px);
 }
 
 table {
@@ -174,28 +186,30 @@ a.pushLink {
     color: blue;
     background-color: #FFF0FF;
     border: 4px solid black;
-    -moz-border-radius: 10px;
+    border-radius: 10px;
     -webkit-border-radius: 10px;
-    -moz-box-shadow: 0 0 10px #004080;
+    -moz-border-radius: 10px;
     -webkit-box-shadow:0 0 10px #004080;
+    -moz-box-shadow: 0 0 10px #004080;
 }
 
 a:hover.pushLink {
     background-color: #8080FF;
 	color: white;
-    -moz-box-shadow:0 0 20px #80FFFF;
     -webkit-box-shadow:0 0 20px #80FFFF;
+    -moz-box-shadow:0 0 20px #80FFFF;
 }
 
 
 a.smallButton {
     padding: 0px 4px 0px 4px;
+    line-height:1.0em;
     font-weight: bold;
     text-decoration: none;
     border: 1px solid #FFF0FF;
     border-radius: 4px;
-    -moz-border-radius: 4px;
     -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
 	display: inline-block;
 	position: relative;
 }
@@ -211,10 +225,11 @@ a.Prev, a.Next {
 	background-color: white;
 	position: absolute;
     border: 2px solid black;
-    -moz-border-radius:10px;
-    -webkit-border-radius:10px;
-    -moz-box-shadow:0 0 10px #004080;
-    -webkit-box-shadow:0 0 10px #004080;
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+    -moz-box-shadow: 0 0 10px #004080;
+    -webkit-box-shadow: 0 0 10px #004080;
 	top: 100px;
 }
 
@@ -240,10 +255,11 @@ a.Help {
     border: 1px solid black;
     padding: 0px 8px 0px 8px;
 	text-decoration: none;
-    -moz-border-radius:16px;
-    -webkit-border-radius:16px;
-    -moz-box-shadow:4px 4px 4px #CFC0CF;
-    -webkit-box-shadow:4px 4px 4px #CFC0CF;
+    border-radius: 16px;
+    -moz-border-radius: 16px;
+    -webkit-border-radius: 16px;
+    -moz-box-shadow: 4px 4px 4px #CFC0CF;
+    -webkit-box-shadow: 4px 4px 4px #CFC0CF;
 }
 
 .MapNav {
@@ -270,6 +286,7 @@ a.Help {
 	height: 24px;
 	overflow: hidden;
 	-webkit-transition: all 0.3s ease-out;
+	-moz-transition: all 0.3s ease-out;
 }
 
 .MapNav:hover {
@@ -306,6 +323,13 @@ a.Help {
 	-webkit-border-bottom-right-radius:0px;
 	-webkit-box-shadow:0px 0px 4px #000000;
 	-webkit-transition: all 0.5s ease-out;
+
+	-moz-border-radius-topleft:8px;
+	-moz-border-radius-bottomleft:8px;
+	-moz-border-radius-topright:0px;
+	-moz-border-radius-bottomright:0px;
+	-moz-box-shadow:0px 0px 4px #000000;
+	-moz-transition: all 0.5s ease-out;
 	padding-left: 16px;
 }
 
@@ -320,11 +344,26 @@ a.Help {
 	-webkit-border-top-right-radius:0px;
 	-webkit-border-bottom-right-radius:0px;
 
+	-moz-border-radius-topleft:8px;
+	-moz-border-radius-bottomleft:8px;
+	-moz-border-radius-topright:0px;
+	-moz-border-radius-bottomright:0px;
+
 }
 
 #x_control {
 	height: 100%;
-	border: none;
+	/*border: none;*/
+
+	-webkit-border-top-left-radius:10px;
+	-webkit-border-bottom-left-radius:10px;
+	-webkit-border-top-right-radius:0px;
+	-webkit-border-bottom-right-radius:0px;
+
+	-moz-border-radius-topleft:10px;
+	-moz-border-radius-bottomleft:10px;
+	-moz-border-radius-topright:0px;
+	-moz-border-radius-bottomright:0px;
 }
 
 #control:hover {
@@ -351,5 +390,5 @@ a:hover.selector div {
 div.smalldot {
 	width: 100px;
 	-webkit-transform: scale(2.0) translate(0px,0px);
+	-moz-transform: scale(2.0) translate(0px,0px);
 }
-

@@ -1,81 +1,43 @@
 /*
 */
 
-
-//MyPath = 
 var results;
-
-var image = new google.maps.MarkerImage('images/marker1.png',
-	// This marker is 20 pixels wide by 32 pixels tall.
-	new google.maps.Size(32, 32),
-	// The origin for this image is 0,0.
-	new google.maps.Point(0,0),
-	// The anchor for this image is the base of the flagpole at 0,32.
-	new google.maps.Point(16, 16));
-
-
-var image2 = new google.maps.MarkerImage('images/marker2.png',
-//var image2 = new google.maps.MarkerImage('svg/arrow.svg',
-	new google.maps.Size(5, 5),	// This marker is 20 pixels wide by 32 pixels tall.
-	new google.maps.Point(0,0),	// The origin for this image is 0,0.
-	new google.maps.Point(3, 3));	// The anchor for this image is the base of the flagpole at 0,32.
-
-var image3 = new google.maps.MarkerImage('images/marker3.png',
-//var image3 = new google.maps.MarkerImage('svg/arrow.svg',
-	new google.maps.Size(5, 5),	// This marker is 20 pixels wide by 32 pixels tall.
-	new google.maps.Point(0,0),	// The origin for this image is 0,0.
-	new google.maps.Point(3, 3));	// The anchor for this image is the base of the flagpole at 0,32.
-
-
-var image4 = new google.maps.MarkerImage('images/marker4.png',
-//var image4 = new google.maps.MarkerImage('svg/arrow.svg',
-	new google.maps.Size(16, 16),	// This marker is 20 pixels wide by 32 pixels tall.
-	new google.maps.Point(0,0),	// The origin for this image is 0,0.
-	new google.maps.Point(8, 8));	// The anchor for this image is the base of the flagpole at 0,32.
-
-/*
-var image3 = new google.maps.MarkerImage('svg/arrow.svg',
-	new google.maps.Size(16, 16),	// This marker is 20 pixels wide by 32 pixels tall.
-	new google.maps.Point(0,0),	// The origin for this image is 0,0.
-	new google.maps.Point(8, 8));	// The anchor for this image is the base of the flagpole at 0,32.
-*/
-
-var shape = {
-//		coord: [1, 1, 1, 20, 18, 20, 18 , 1],
-	coord: [0, 16, 0, 32, 32, 32, 32 ,16, 18, 0],
-	type: 'poly'
-};
-
-var shape2 = {
-//	coord: [1, 1, 1, 20, 18, 20, 18 , 1],
-	coord: [0, 0, 0, 16, 16, 16, 16, 0],
-	type: 'poly'
-};
-
-var shape3 = {
-//	coord: [1, 1, 1, 20, 18, 20, 18 , 1],
-	coord: [0, 0, 0, 32, 32, 32, 32, 0],
-	type: 'poly'
-};
-
 var infowindow;
 
-function markerInfo(i) {
+function markerInfo(i, pos, admin) {
+//	alert('hello');
+//	alert(i);
+	var vout = results[i].vout;
+	var vin = results[i].vin;
+	var vtext = "недоступно";
+
+	if((vout!=null) && (vin!=null)){
+		if(vout > 6.0){
+			vtext = "внешнее (" + vout + "V)";
+		} else {
+			vtext = "внутреннее (" + vin + "V)";
+		}
+	}
+
 	if (infowindow) infowindow.close();
-//	infowindow = new google.maps.InfoWindow({content:name});
 	infowindow = new google.maps.InfoWindow({content:
-		'Дата: <b>' + results[i].date +
-		'</b><br />Скорость: <b>' + results[i].speed +
-		'</b><br />Направление: <b>' + results[i].course +
-		'</b><br />Долгота: <b>' + results[i].lat +
-		'</b><br />Широта: <b>' + results[i].long +
+		'<div style="background-color: #F0E8F8; font-weight: bold;">' + results[i].date + "</div>" +
+		'Скорость: <b>' + results[i].speed.toFixed(1) + " км/ч" +
+		/*'</b><br />Направление: <b>' + results[i].course.toFixed(0) + "°" +*/
+		'</b><br />Долгота: <b>' + results[i].lat.toFixed(5) +
+		'</b><br />Широта: <b>' + results[i].long.toFixed(5) +
 		'</b><br />Спутники: <b>' + results[i].sats +
-		'</b><br />Датчик 1: <b>' + results[i].in1 +
-		'</b><br />Датчик 2: <b>' + results[i].in2 +
-		'</b><br /><a class="smallButton" href="javascript:DeletePoint('+i+');" title="Удалить точку">X</a>'
+		'</b><br />Питание: <b>' + vtext +
+		/*'</b><br />Датчик 1: <b>' + results[i].in1.toFixed(3) +
+		'</b><br />Датчик 2: <b>' + results[i].in2.toFixed(3) +*/
+		(admin?('</b><br /><a class="smallButton" href="javascript:DeletePoint('+i+');" title="Удалить точку">X</a>'):''),
+		position: pos
 	});
-	infowindow.open(map, map.getMarker(i));
+//	infowindow.open(map, map.getMarker(i));
+	infowindow.open(map);
 }
+
+/*
 
 function createMarker(i, pos, admin) {
 //function createMarker(i, date, name, pos, stop) {
@@ -89,11 +51,11 @@ function createMarker(i, pos, admin) {
 //		marker = new google.maps.Marker({position: pos, map: map, icon: "", shape: shape2, index:i});
 	}
 
-	google.maps.event.addListener(marker, "mouseover", function() {
-		//marker.icon
-	});
+//	google.maps.event.addListener(marker, "mouseover", function() {
+//		//marker.icon
+//	});
 
-	google.maps.event.addListener(marker, "click", function() {markerInfo(i);});
+	google.maps.event.addListener(marker, "click", function() {markerInfo(i, pos);});
 	google.maps.event.addListener(marker, "mouseover", function() {
 		marker.setIcon(image4);
 		marker.setShape(shape3);
@@ -106,40 +68,28 @@ function createMarker(i, pos, admin) {
 		}
 		marker.setShape(shape2);
 	});
-/*
-	google.maps.event.addListener(marker, "click", function() {
-		if (infowindow) infowindow.close();
-//		infowindow = new google.maps.InfoWindow({content:name});
-		infowindow = new google.maps.InfoWindow({content:
-			'Дата: <b>' + results[i].date +
-			'</b><br />Скорость: <b>' + results[i].speed +
-			'</b><br />Направление: <b>' + results[i].course +
-			'</b><br />Долгота: <b>' + results[i].lat +
-			'</b><br />Широта: <b>' + results[i].long +
-			'</b><br />Спутники: <b>' + results[i].sats +
-			'</b><br />Датчик 1: <b>' + results[i].in1 +
-			'</b><br />Датчик 2: <b>' + results[i].in2 +
-			'</b><br /><a class="smallButton" href="javascript:DeletePoint('+i+');" title="Удалить точку">X</a>'
-		});
-		infowindow.open(map, marker);
-	});
-*/
 
-	//marker.setTitle(date)
 	marker.setTitle(results[i].date);
 //	marker.angle = results[i].course;
 
 	return marker;
 }
 
+*/
 google.maps.Map.prototype.markers = new Array();
-//google.maps.Map.prototype.arrows = new Array();
     
-google.maps.Map.prototype.addMarker = function(ismarker, i) {
-	var isarrow;
-	if(i%8 == 0) isarrow = new MyArrow(ismarker.getPosition(), results[i].course, map);
+google.maps.Map.prototype.addMarker = function(i, pos, admin) {
+//	var isarrow;
+//	if(i%8 == 0) isarrow = new MyArrow(ismarker.getPosition(), results[i].course, map);
 
-	this.markers[this.markers.length] = {marker: ismarker, arrow: isarrow, index: i};
+	var ismarker = new MyMarker(pos, results[i].course, map, i, results[i], function() {markerInfo(i, pos, admin);});
+	ismarker.setTitle(results[i].date);
+//	google.maps.event.addListener(ismarker, "mouseover", function() {markerInfo(i);});
+//	google.maps.event.addDomListener(ismarker, "click", function() {markerInfo(i);});
+
+
+//	this.markers[this.markers.length] = {marker: ismarker, arrow: isarrow, index: i};
+	this.markers[this.markers.length] = {marker: ismarker, index: i};
 };
     
 google.maps.Map.prototype.getMarkers = function() {
@@ -160,14 +110,14 @@ google.maps.Map.prototype.hideMarker = function(i) {
 	marker.setVisible(false);
 };
 
-google.maps.Map.prototype.getArrow = function(i) {
-	return this.markers[i].arrow;
-};
+//google.maps.Map.prototype.getArrow = function(i) {
+//	return this.markers[i].arrow;
+//};
 
 google.maps.Map.prototype.delMarker = function(i) {
 	if(infowindow) 	infowindow.close();
 	this.markers[i].marker.setMap(null);
-	if(this.markers[i].arrow) this.markers[i].arrow.setMap(null);
+//	if(this.markers[i].arrow) this.markers[i].arrow.setMap(null);
 	//this.arrows[i].setMap(null);
 	for(var i=i; i<this.markers.length; i++){
 		this.markers[i].index--;
@@ -182,12 +132,13 @@ google.maps.Map.prototype.clearMarkers = function() {
 	for(var i=0; i<this.markers.length; i++){
 //		this.markers[i].setMap(null);
 		this.markers[i].marker.setMap(null);
-		if(this.markers[i].arrow) this.markers[i].arrow.setMap(null);
+//		if(this.markers[i].arrow) this.markers[i].arrow.setMap(null);
 //		this.arrows[i].setMap(null);
 	}
 	this.markers = [];
-//	this.arrows = [];
 };
+
+if(0){
 
 var MyArrow_globalindex = 0;
 
@@ -333,4 +284,6 @@ MyArrow.prototype.draw = function() {
 
   //var drw = this.canvas.getContext('2d');
   //canvas = document.getElementById("mapcanvas").getContext('2d');
+}
+
 }

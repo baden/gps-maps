@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 
-
 from google.appengine.ext import db
 
-
 class DBUser(db.Model):
-	userid = db.IntegerProperty()			# Unique
+	#userid = db.IntegerProperty()			# Unique
 	imei = db.StringProperty(multiline=False)	# IMEI
 	phone = db.StringProperty(multiline=False)	# Phone number, for example: +380679332332
 	password = db.StringProperty(multiline=False)	# User password
@@ -39,6 +37,8 @@ class DBGPSPoint(db.Model):
 	speed = db.FloatProperty()
 	course = db.FloatProperty()
 	altitude = db.FloatProperty()
+	vout = db.FloatProperty()		# Напряжение внешнего питания
+	vin = db.FloatProperty()		# Напряжение внутреннего питания
 	in1 = db.FloatProperty()		# Значение на аналоговом входе 1
 	in2 = db.FloatProperty()		# Значение на агалоговом входе 2
 	#power = db.FloatProperty()		# Уровень заряда батареи (на

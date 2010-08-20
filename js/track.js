@@ -18,7 +18,7 @@ function json(){
 
 	result.textContent = 'Запрос...';
 
-	$.getJSON("/trackcounter", function (data) {
+	$.getJSON("/trackcounter?callback=?", function (data) {
 		result.textContent = "Обрабатываем...";
 		if (data.responseData.counter) {
 			result.textContent += "ok:" + data.responseData.counter;

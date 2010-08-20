@@ -41,12 +41,12 @@ def checkUser(uri, response):
 		login_url = users.create_login_url(uri)
 		username = user.nickname()
 	else:
-		response.out.write("<html><body>")
-		response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
-		response.out.write("Нажмите <a href=" + users.create_login_url(uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
-		response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
-		response.out.write("</body></html>")
-		#self.redirect(users.create_login_url(self.request.uri))
+		#response.out.write(u"<html><!--html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\"--><body>")
+		#response.out.write(u"Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
+		#response.out.write(u"Нажмите <a href=" + users.create_login_url(uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
+		#response.out.write(u"После ввода логина/пароля вы будете возврыщены на сайт системы.")
+		#response.out.write(u"</body></html>")
+		self.redirect(users.create_login_url(self.request.uri))
 		return False
 	return {
 		'login_url': login_url,
@@ -74,14 +74,22 @@ class TemplatedPage(webapp.RequestHandler):
 			#self.response.headers['Content-Type']   = 'text/xml'
 			self.response.out.write(template.render(path, values))
 		else:
-			self.response.out.write("<html><body>")
-			self.response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
-			self.response.out.write("Нажмите <a href=" + users.create_login_url(self.request.uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
-			self.response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
-			self.response.out.write("</body></html>")
-			#self.redirect(users.create_login_url(self.request.uri))
+			#self.response.out.write("<html><body>")
+			#self.response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
+			#self.response.out.write("Нажмите <a href=" + users.create_login_url(self.request.uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
+			#self.response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
+			#self.response.out.write("</body></html>")
+			self.redirect(users.create_login_url(self.request.uri))
 
 class AdminPage(TemplatedPage):
+	def get(self):
+		accounts = datamodel.DBAccounts().all()
+
+		template_values = {'accounts': accounts}
+		#template_values['now'] = datetime.now()
+		self.write_template(template_values)
+
+class AdminClosure(TemplatedPage):
 	def get(self):
 		accounts = datamodel.DBAccounts().all()
 
@@ -93,6 +101,7 @@ class AdminPage(TemplatedPage):
 application = webapp.WSGIApplication(
 	[
 	('/admin', AdminPage),
+	('/admin.closure', AdminClosure),
 	],
 	debug=True
 )

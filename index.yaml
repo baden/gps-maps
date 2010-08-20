@@ -23,6 +23,17 @@ indexes:
   - name: swid
     direction: desc
 
+- kind: DBGPSBinBackup
+  properties:
+  - name: user
+  - name: cdate
+
+- kind: DBGPSBinBackup
+  properties:
+  - name: user
+  - name: cdate
+    direction: desc
+
 - kind: DBGPSBinParts
   properties:
   - name: user
