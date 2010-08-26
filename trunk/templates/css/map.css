@@ -21,6 +21,36 @@ div.mymarker {
 	/*-webkit-transition: all 0.1s ease-out;*/
 }
 
+div.mymarker-move {
+	position: absolute;
+	width: 7px;
+	height: 7px;
+	/*border: 1px solid #F08000;*/
+	/*border-radius: 3px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;*/
+	background-image: url(images/marker-move-sml.png);
+	/*-webkit-transition: all 0.1s ease-out;*/
+}
+
+div:hover.mymarker-move {
+	background-image: url(images/marker-move-big.png);
+}
+
+
+div.mymarker-stop {
+	position: absolute;
+	width: 7px;
+	height: 7px;
+	/*border: 1px solid #F08000;*/
+	/*border-radius: 3px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;*/
+	background-image: url(images/marker-stop-sml.png);
+	/*-webkit-transition: all 0.1s ease-out;*/
+}
+
+
 div:hover.mymarker {
 	/*position: absolute;*/
 	/*width: 9px;

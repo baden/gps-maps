@@ -42,13 +42,13 @@ MyMarker.prototype.onAdd = function() {
 	else div.style['background-color'] = 'lime';
 */
 
-	div.style['background-image'] = (this.result.speed < 1.0)?'url(images/marker-stop.png)':'url(images/marker-move.png)';
-
+//	div.style['background-image'] = (this.result.speed < 1.0)?'url(images/marker-stop.png)':'url(images/marker-move.png)';
+	//div.class = 
+	div.setAttribute("class", (this.result.speed < 1.0)?"mymarker-stop":"mymarker-move");
 
 	div.setAttribute("title", this.title);
 
 	div.addEventListener('click', this.onclick, false);
-
 
 	div.addEventListener('mouseover', function(e){
 		this.marker.arrdiv.style.display = "block";
@@ -112,8 +112,8 @@ MyMarker.prototype.draw = function() {
 
 	// Resize the image's DIV to fit the indicated dimensions.
 	var div = this.div;
-	div.style.left = divpx.x - 2 + 'px';
-	div.style.top = divpx.y - 2 + 'px';
+	div.style.left = divpx.x - 3 + 'px';
+	div.style.top = divpx.y - 3 + 'px';
 
 	if(this.arrdiv){
 		var arrdiv = this.arrdiv;
