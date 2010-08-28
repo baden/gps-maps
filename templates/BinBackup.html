@@ -28,9 +28,13 @@
 	</div>
 	{% endfor %}
 
+	<p>В 200-х записях: <b>{{ total }}</b> байт.</p>
+
 	</div>
+	<a class="pushLink" href="binbackup?cmd=pack&imei={{ imei }}" title="Загружает 200 записей одним куском">Упаковать</a>
+	<a class="pushLink" href="binbackup?cmd=pack&cnt=1000&imei={{ imei }}" title="Загружает 1000 записей одним куском">Упаковать x1000</a>
 	{% if admin %}
-	<a class="pushLink" href="binbackup?cmd=delall&imei={{ imei }}" title="Удаляет 500 самых старых записей">Очистить 500 старых записей</a>
+	<a class="pushLink" href="binbackup?cmd=delall&imei={{ imei }}" title="Удаляет 500 самых старых записей">Очистить</a>
 	{% endif %}
 
 	{% else %}

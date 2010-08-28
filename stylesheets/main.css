@@ -142,17 +142,26 @@ div.menu li:hover {
 table {
 	width: 98%;
 	margin-left: 1%;
+	/*margin-left: 50px;
+	margin-right: 150px;*/
+	/*right: 150px;*/
+	/*width: 100%;*/
+	/*-webkit-box-shadow:5px 5px 15px #C0C0C0;
+	-moz-box-shadow:5px 5px 15px #C0C0C0;*/
 }
 
-table, th {
+table {
     background: #FFF0FF;
+}
+
+table, th, td {
     border: 2px solid black;
     border-collapse: collapse;
 }
 
 td {
-    border: 2px solid black;
-    border-collapse: collapse;
+    /*border: 2px solid black;*/
+    /*border-collapse: collapse;*/
 }
 
 th {
@@ -176,6 +185,7 @@ h1 {
     text-align: center;
     padding: 0.5em 0 0.2em 0;
     margin:0;
+/*	text-shadow: 3px 2px 3px #CCC;*/
 }
 
 a.pushLink {
@@ -373,19 +383,54 @@ a.Help {
 
 .selector {
 /*	font-size: 1.1em; */
+    border: none;
+}
+
+table.selector * {
+    border: none;
+}
+
+table.selector {
+	width: 60%;
+	margin-left: 20%;
+	text-align: left;
+	-webkit-box-shadow:5px 5px 15px #C0C0C0;
+	-moz-box-shadow:5px 5px 15px #C0C0C0;
+}
+
+table.selector tr {
+	-webkit-transition: all 0.2s ease-out;
+	-moz-transition: all 0.2s ease-out;
 }
 
 table.selector tr:hover {
 	background-color: #8080FF;
-	color: white;
+	/*text-shadow: 5px 5px 20px #000;*/
+	-webkit-transform: scale(1.02) translate(0px,0px);
+	-moz-transform: scale(1.02) translate(0px,0px);
+
+	-webkit-box-shadow:5px 5px 15px #C0C0C0;
+	-moz-box-shadow:5px 5px 15px #C0C0C0;
+
 }
 
-a.selector {
+table.selector a {
 	text-decoration: none;
 }
 
-a:hover.selector div {
+table.selector a:hover {
+	color: white;
 }
+
+table.selector a div {
+	padding: 5px 5px 5px 5px;
+/*	-webkit-transition: all 0.3s ease-out;
+	-moz-transition: all 0.3s ease-out;*/
+}
+
+/*table.selector a div:hover {
+	padding: 16px 6px 16px 6px;
+}*/
 
 div.smalldot {
 	width: 100px;

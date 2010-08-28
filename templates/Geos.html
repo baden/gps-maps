@@ -66,17 +66,18 @@
 
     <h1>Выберите систему:</h1>
     <table class="selector">
+    <!--table-->
         <thead>
         	<tr>
         	</tr>
         </thead>
 	        {% for user in users %}
             <tr>
-		<td>
+		<!--td>
 		{{ forloop.counter }}
-		</td>
+		</td-->
 		<td>
-		<a class="selector" style="" href="/geos?imei={{ user.imei }}"><div style="width: 100%;">{{ user.imei }}: {{ user.desc }}</div></a>
+		<a href="/geos?imei={{ user.imei }}"><div style="width: 100%;">{{ user.imei }}: {{ user.desc }}</div></a>
 		</td>
             </tr>
 		{% endfor %}

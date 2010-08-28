@@ -63,3 +63,39 @@ div:hover.mymarker {
 	-moz-transform: scale(2.0) translate(-0px,-0px);*/
 }
 
+div#tools {
+	position: absolute;
+	width: 16px;
+	height: 16px;
+	top: 8px;
+	right: 130px;
+	border: 1px solid #000000;
+	border-radius: 3px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	box-shadow:1px 1px 3px #808080;
+	-moz-box-shadow:1px 1px 3px #808080;
+	-webkit-box-shadow:1px 1px 3px #808080;
+
+	cursor: pointer;
+	/*-webkit-transition: all 0.2s ease-in-out;
+	-moz-transition: all 0.2s ease-in-out;
+	-o-transition: all 0.2s ease-in-out;*/
+	background-image: url(svg/lock.svg);
+	/*opacity:0.5;*/
+}
+
+div#tools.lockon {
+	background-color: green;
+}
+
+div:hover#tools {
+	/*opacity:1.0;*/
+	/*-webkit-transform: scale(2.0) translate(0px,4px);
+	-moz-transform: scale(2.0) translate(0px,4px);*/
+	background-color: #FFFFFF;
+}
+
+div:hover#tools.lockon {
+	background-color: lime;
+}

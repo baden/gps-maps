@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application_name }} Просмотр записей в глобальном логе {% endblock %}
+
+{% block head %}
+  <!--meta http-equiv="refresh" content="10"-->
+  <style type="text/css">{% include "css/logs.css" %}</style>
+
+  <script type="text/javascript" src="js/track.js"></script>
+
+	<script type="text/javascript" language="JavaScript">
+
+
+	//var loglastkey = {{ loglastkey }};
+	var loglastkey = '{{ gpslogs.0.key }}';
+	//setTimeout(lastPoints, 200);
+/*
+	var time = 0;
+
+	function getUpdate() {
+		//json();
+		//result = document.getElementById('result2');	// = 'json';
+		//result.textContent = 'Тик: ' + time;
+		//time++;
+
+		var start = new Date().getTime()
+		result = document.getElementById('result2');	// = 'json';
+
+		result.textContent = 'Запрос...';
+
+		$.getJSON("/trackcounter?callback=?", function (data) {
+			result.textContent = "Обрабатываем...";
+			if (data.responseData.counter) {
+				result.textContent += "ok:" + data.responseData.counter;
+				var time = new Date().getTime() - start;
+				result.textContent += " Выполнено за: " + time/1000 + " секунд";
+			}
+			setTimeout(getUpdate, 5000);
+		});
+	
+	}
+*/
+
+
+	function addline(datetime, logvalue, logkey) {
+		//var logtable = $('#logtable tbody tr:first');
+		//var logtable = $('#logtable tbody tr:first');
+		var delkey = '';
+		{% if admin %}
+		delkey = '<td title="Удалить сообщение"><a class="smallButton" href="/logs2?cmd=delmsg&ukey={{ ukey }}&key='+logkey+'">X</a></td>'
+		{% endif %}
+
+		var row = '<tr><td>' + datetime +'</td><td style="text-align: left; padding-left: 10px;">'+logvalue+'</td>'+delkey+'</tr>';
+		if($('#logtable tbody tr').length > 0)
+			$('#logtable tbody tr:first').before(row);
+		else
+			$('#logtable tbody').append(row);;
+
+	}
+
+	function checkNew() {
+		{% if admin %}
+		//var start = new Date().getTime()
+		//debuglog = document.getElementById('debuglog');
+		//debuglog.innerHTML += 'Запрос...';
+		{% endif %}
+
+		$.getJSON("/jsonlogs?userkey={{userkey}}&lastlogkey="+loglastkey+"&callback=?", function (data) {
+			{% if admin %}
+			//debuglog.innerHTML += "обрабатываем...";
+			{% endif %}
+
+			if (data.responseData.logs) {
+				{% if admin %}
+				//debuglog.innerHTML += "получено:" + data.responseData.logs.length + "...";
+				{% endif %}
+				if(data.responseData.logs.length >0){
+					for (var i=data.responseData.logs.length-1; i >= 0 ; i--) {
+						addline(data.responseData.logs[i].date, data.responseData.logs[i].text, data.responseData.logs[i].key);
+					}
+					loglastkey = data.responseData.logs[0].key;
+				}
+				{% if admin %}
+				//var time = new Date().getTime() - start;
+				//debuglog.innerHTML += "выполнено за: " + time/1000 + " секунд<br />";
+				{% endif %}
+			}
+			setTimeout(checkNew, 10000);
+		});
+	}
+
+	{% if imei %}
+	function initialize() {
+		setTimeout(checkNew, 10000);
+
+		//setInterval(getUpdate, 1000);
+		//setTimeout(getUpdate, 1000);
+		//alert('aa');
+		//logtable = document.getElementById('logtable');
+//		addline('1', '2');
+//		addline('3', '4');
+
+		
+		//alert(logtable);
+	}
+	{% endif %}
+
+	</script>
+
+{% endblock %}
+
+{% block javainit %}
+	{% if imei %}
+		initialize();
+	{% endif %}
+{% endblock %}
+
+{% block body %}
+
+	{% if imei %}
+
+    <h1>Записи в логе</h1>
+	{{ userdb.imei }}: <b>{{ userdb.desc }}</b>
+	<a class="smallButton" href="/logs2?ukey={{ ukey }}" title="Обновить"><img valign="middle" src="/svg/button-update.svg" /></a>
+	<!--a class="smallButton" href="#" onclick="checkNew(); return false" title="Обновить"><img valign="middle" src="/svg/button-update.svg" /></a-->
+
+	<!--input type="button" value="Получить сообщения" onclick="javascript:checkNew();" /-->
+
+	{% if single %}
+	{% else %}
+	<a class="smallButton" href="/logs2" title="Выбрать другую">S</a> 
+	{% endif %}
+	{{ urlprev }}{{ urlnext }}
+    <table id="logtable">
+        <thead>
+        	<tr>
+        		<!--th>ID</th-->
+        		<!--th>Система</th-->
+			<th style="width: 180px;">Дата и время лога</th>
+			<th style="text-align: left; padding-left: 10px;">Строка лога</th>
+			{% if admin %}
+			<th style="width: 48px;" title="Удалить сообщение">X</th>
+			{% endif %}
+		</tr>
+	</thead>
+	<tbody>
+        {% for gpslog in gpslogs %}
+            <tr>
+            	<!--td>{{ gpslog.key.id }}</td-->
+		<!--td>
+			{{ gpslog.desc }}
+			<a class="smallButton" href="logs?imei={{ gpslog.imei }}" title="filter">f</a>
+			<a class="smallButton" href="logs?imei={{ gpslog.imei }}&exclude=yes" title="Исключить">x</a>
+		</td-->
+				<td>{{ gpslog.ldate|date:"d/m/Y H:i:s" }}</td>
+				<td style="text-align: left; padding-left: 10px;">{{ gpslog.text }}</td>
+				{% if admin %}
+				<td title="Удалить сообщение"><a class="smallButton" href="/logs2?cmd=delmsg&ukey={{ ukey }}&key={{ gpslog.key }}">X</a></td>
+				{% endif %}
+			</tr>
+	{% endfor %}
+	</tbody>
+    </table>
+	<a class="pushLink" href="dellogs?imei={{ imei }}" title="Удаляет 100 самых старых записей">Очистить логи сервера</a>
+
+	<br />    
+	<output id="debuglog"></output>
+
+	{% else %}
+
+    <h1>Выберите систему:</h1>
+    <table class="selector">
+        <thead>
+        	<tr>
+        	</tr>
+        </thead>
+	        {% for user in account.users %}
+            <tr>
+		<!--td>
+		{{ forloop.counter }}
+		</td-->
+		<td>
+		<!--a href="/logs2?imei={{ user.imei }}"><div style="width: 100%;">{{ user.imei }}: {{ user.desc }}</div></a-->
+		<a href="/logs2?ukey={{ user.key }}"><div style="width: 100%;">{{ user.imei }}: {{ user.desc }}</div></a>
+		</td>
+            </tr>
+		{% endfor %}
+    </table>
+		Бла-бла-бла: "{{ now }}"
+	{% endif %}
+{% endblock %}
+
+{% block final %}
+{% endblock %}

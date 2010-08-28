@@ -70,7 +70,6 @@
 		var supportsCanvas = false;
 		var mapcanvas;
 
-
 		(function () {
 			{% if imei %}
 			userimei = {{ imei }}
@@ -107,7 +106,6 @@
 			//alert(flightPlanCoordinates[i]);
 		}
 		{% endif %}
-
 
 
 		jQuery(function($){
@@ -474,7 +472,6 @@
 
 	}
 
-
 	var beaches = [
 	  ['Bondi Beach', 48.408206, 35.048925, 4],
 	  ['Coogee Beach', 48.409206, 35.049925, 5],
@@ -625,8 +622,23 @@
 //		var path = poly.getPath();
 //		path.insertAt(pathCoordinates.length, new google.maps.LatLng(obj1x, obj1y));
 		google.maps.event.addListener(map, "idle", function(){Repair();});
+
+		{% if admin %}
+		$('#tools').click(function(){
+			if(unlock==false){
+				$(this).addClass("lockon");
+				unlock = true;
+			} else {
+				$(this).removeClass("lockon");
+				unlock = false;
+			}
+		});
+		{% endif %}
+
+
 //		setTimeout(loadPoints, 200);
 		setTimeout(lastPoints, 200);
+
 		
 
 //		map.controls[google.maps.ControlPosition.TOP_RIGHT].push(homeControlDiv);
@@ -753,6 +765,7 @@
 			x_control.href = "javascript:show_control();";
 			x_control.innerHTML = "&lt;";
 		}
+
 	</script>
 
 <!--script type="text/javascript" src="http://www.google.com/jsapi"></script>
@@ -884,6 +897,9 @@
 	<input style="display:none;" type="checkbox" title="Показывать рекометдацию трека от Google" id="navi" onchange="datePoints();"/><label style="display:none;" for="navi" title="Показывать рекометдацию трека от Google">Нави</label>
 	<div id="progress" style="">Загрузка, ждите...</div>
 	</div>
+	{% if admin %}
+	<div id="tools"></div>
+	{% endif %}
 
 {% endblock %}
 

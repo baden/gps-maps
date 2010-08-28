@@ -1,6 +1,7 @@
 /*
 */
 
+var unlock = false;
 var results;
 var infowindow;
 
@@ -13,9 +14,9 @@ function markerInfo(i, pos, admin) {
 
 	if((vout!=null) && (vin!=null)){
 		if(vout > 6.0){
-			vtext = "внешнее (" + vout + "V)";
+			vtext = "основное (" + vout + "V)";
 		} else {
-			vtext = "внутреннее (" + vin + "V)";
+			vtext = "резервное (" + vin + "V)";
 		}
 	}
 
@@ -30,7 +31,7 @@ function markerInfo(i, pos, admin) {
 		'</b><br />Питание: <b>' + vtext +
 		/*'</b><br />Датчик 1: <b>' + results[i].in1.toFixed(3) +
 		'</b><br />Датчик 2: <b>' + results[i].in2.toFixed(3) +*/
-		(admin?('</b><br /><a class="smallButton" href="javascript:DeletePoint('+i+');" title="Удалить точку">X</a>'):''),
+		(unlock?('</b><br /><a class="smallButton" href="javascript:DeletePoint('+i+');" title="Удалить точку">X</a>'):''),
 		position: pos
 	});
 //	infowindow.open(map, map.getMarker(i));
