@@ -175,11 +175,11 @@
         </thead>
 	        {% for user in users %}
             <tr>
-		<td>
+		<!--td>
 		{{ forloop.counter }}
-		</td>
+		</td-->
 		<td>
-		<a class="selector" style="" href="/logs?imei={{ user.imei }}"><div style="width: 100%;">{{ user.imei }}: {{ user.desc }}</div></a>
+		<a href="/logs?imei={{ user.imei }}"><div style="width: 100%;">{{ user.imei }}: {{ user.desc }}</div></a>
 		</td>
             </tr>
 		{% endfor %}

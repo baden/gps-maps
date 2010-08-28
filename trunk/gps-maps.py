@@ -22,7 +22,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 #from google.appengine.tools import bulkloader
 
 # Must set this env var *before* importing any part of Django.
-#os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 #TIME_ZONE = 'America/Los_Angeles'  # i.e., Mountain View
 
 from google.appengine.ext.webapp import template
@@ -104,13 +104,17 @@ def checkUser(uri, response):
 
 class TemplatedPage(webapp.RequestHandler):
 	def __init__(self):
-		logging.info(" TemplatedPage-init")
+		#self.uimei = self.request.get('imei')
+		#logging.info(" TemplatedPage-init")
 		self.user = users.get_current_user()
+
 		accounts = datamodel.DBAccounts().all().filter('user =', self.user).fetch(1)
+		#key_name = "FWBOOT%04X"
+
 		if accounts:
 			self.account = accounts[0]
 		else:
-			self.account = datamodel.DBAccounts()
+			self.account = datamodel.DBAccounts(key_name = "acc_%s" % self.user.user_id())
 			self.account.user = self.user
 			self.account.name = u"Имя не задано"
 			self.account.systems = []
@@ -125,7 +129,6 @@ class TemplatedPage(webapp.RequestHandler):
 		else:
 			self.single = False
 
-
 	def write_template(self, values, alturl=None):
 		if self.user:
 			#url = users.create_logout_url(self.request.uri)
@@ -137,6 +140,7 @@ class TemplatedPage(webapp.RequestHandler):
 			values['account'] = self.account
 			values['single'] = self.single
 			values['users'] = self.users
+			#if 'imei' not in values: values['imei'] = self.uimei
 
 			if alturl:
 				path = os.path.join(os.path.dirname(__file__), 'templates', alturl)
@@ -151,6 +155,64 @@ class TemplatedPage(webapp.RequestHandler):
 			#self.response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
 			#self.response.out.write("</body></html>")
 			self.redirect(users.create_login_url(self.request.uri))
+
+
+class TemplatedPage2(webapp.RequestHandler):
+	def __init__(self):
+		#self.uimei = self.request.get('imei')
+		#logging.info(" TemplatedPage-init")
+		self.user = users.get_current_user()
+
+		self.account = datamodel.DBAccounts().gql("WHERE user = :1", self.user).get()
+		if not self.account:
+			self.account = datamodel.DBAccounts(key_name = "acc_%s" % self.user.user_id())
+			self.account.user = self.user
+			self.account.name = u"Имя не задано"
+			self.account.systems = []
+			self.account.put()
+		"""
+		self.users = []
+		for account in self.account.systems:
+			self.users.append(db.get(db.Key(account)))
+
+		if len(self.users) == 1:
+			self.single = True
+		else:
+			self.single = False
+		"""
+		if len(self.account.systems) == 1:
+			self.single = True
+		else:
+			self.single = False
+
+	def write_template(self, values, alturl=None):
+		if self.user:
+			#url = users.create_logout_url(self.request.uri)
+			login_url = users.create_login_url(self.request.uri)
+			values['login_url'] = login_url
+			values['username'] = self.user.nickname()
+			values['admin'] = users.is_current_user_admin()
+			values['server_name'] = SERVER_NAME
+			values['account'] = self.account
+			values['single'] = self.single
+			#values['users'] = self.users
+			#values['ausers'] = ausers
+			#if 'imei' not in values: values['imei'] = self.uimei
+
+			if alturl:
+				path = os.path.join(os.path.dirname(__file__), 'templates', alturl)
+			else:
+				path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
+			#self.response.headers['Content-Type']   = 'text/xml'
+			self.response.out.write(template.render(path, values))
+		else:
+			#self.response.out.write("<html><body>")
+			#self.response.out.write("Для работы с системой необходимо выполнить вход под своим Google-аккаунтом.<br>")
+			#self.response.out.write("Нажмите <a href=" + users.create_login_url(self.request.uri) + ">[ выполнить вход ]</a> для того чтобы перейти на сайт Google для ввода логина/пароля.<br>")
+			#self.response.out.write("После ввода логина/пароля вы будете возврыщены на сайт системы.")
+			#self.response.out.write("</body></html>")
+			self.redirect(users.create_login_url(self.request.uri))
+
 
 class MainPage(TemplatedPage):
 	def get(self):
@@ -184,13 +246,18 @@ class Guestbook(webapp.RequestHandler):
 		self.redirect('/')
 
 def getUser(request, create=False):
-	uimei = request.get('imei')
 #	logging.debug(uimei)
-#	ukey = request.get('ukey')
+	ukey = request.get('ukey')
+	if ukey:
+		#userdb = datamodel.DBUser().get_by_key_name(ukey)
+		userdb = db.get(db.Key(ukey))
+		logging.info("GET by key: %s -> %s" % (ukey, userdb))
+		return userdb
 #	uid = request.get('uid')
 #	if uid:
 #		userdb = DBUser().get_by_id(long(uid))
 		#self.response.out.write('Get by id (%d)\r\n' % userid)
+	uimei = request.get('imei')
 	if uimei:
 		userdbq = datamodel.DBUser().all().filter('imei =', uimei).fetch(1)
 		#userdbq = datamodel.DBUser().all().filter('imei =', uimei).get()
@@ -522,8 +589,8 @@ class ViewLogs(TemplatedPage):
 			#	userimeis[gpslog.user.key()] = gpslog.user.imei
 			#gpslog.desc = userdescs[gpslog.user.key()]
 			#gpslog.imei = userimeis[gpslog.user.key()]
-			gpslog.desc = gpslog.user.desc
-			gpslog.imei = gpslog.user.imei
+			#gpslog.desc = gpslog.user.desc
+			#gpslog.imei = gpslog.user.imei
 			#geolog.date = fromUTC(geolog.date) #.astimezone(utc)
 
 			#try:
@@ -552,6 +619,156 @@ class ViewLogs(TemplatedPage):
 
 		#path = os.path.join(os.path.dirname(__file__), 'logs.html')
 		#self.response.out.write(template.render(path, template_values))
+
+
+		logs = ':'
+		if userdb:
+			for vlogs in userdb.logs:
+				logs += '<p>' + vlogs.text + '</p>'
+		"""
+		a_ViewLogs = datamodel.DBUser().all().fetch(10)
+		for viewlog in a_ViewLogs:
+			logs += '<br/>' + viewlog.imei
+			for vlogs in viewlog.logs:
+				logs += '<p>' + vlogs.text + '</p>'
+			pass
+		template_values['ldebug'] = a_ViewLogs
+		"""
+		template_values['ldebug_logs'] = logs
+
+		self.write_template(template_values)
+
+		#try:
+		#	self.response.out.write(template.render(path, template_values))
+		#except:
+		#	self.response.out.write("<html><body>Database error</body></html>")
+		#self.response.out.write(template.generate(path, template_values))
+		#self.generate()
+
+
+class ViewLogs2(TemplatedPage2):
+	def get(self):
+		userdb = getUser(self.request, create=False)
+		if userdb == None:
+			template_values = {}
+			#os.environ['TZ'] = 'America/Los_Angeles'
+			#template_values['now'] = datetime.now()
+			self.write_template(template_values)
+			return
+
+		ukey = str(userdb.key())
+
+		datemark = self.request.get('date')
+		prevmark = self.request.get('prev')
+		uimei = self.request.get('imei')
+		cmd = self.request.get('cmd')
+
+		if cmd:
+			if cmd=="delmsg":
+				key = self.request.get('key')
+				db.get(db.Key(key)).delete()
+
+			self.redirect('/logs2?ukey=%s' % ukey)
+			
+		#if userdb == None:
+		#	if len(self.account.systems)==1:
+		#		userdb = db.get(db.Key(self.account.systems[0]))
+		#		uimei = userdb.imei
+
+		if prevmark:
+			if prevmark == '0':
+				urlprev = '<a class="Prev" href="logs2?ukey=%s">First</a>' % ukey
+			else:
+				urlprev = '<a class="Prev" href="logs2?ukey=%s&date=%s&prev=0">Prev</a>' % (ukey, prevmark)
+		else:
+			urlprev = ''
+
+		if datemark:
+			#gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date').fetch(MAXLOGS+1)
+			gpslogs = userdb.logs.filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date').fetch(MAXLOGS+1)
+		else:
+			#gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
+			gpslogs = userdb.logs.order('-date').fetch(MAXLOGS+1)
+		gpslogs_count = len(gpslogs)
+		if gpslogs_count == MAXLOGS+1:
+			if datemark:
+				urlnext = '<a class="Next" href="logs2?ukey=%s&date=%s&prev=%s">Next</a> ' % (ukey, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"), datemark)
+			else:
+				urlnext = '<a class="Next" href="logs2?ukey=%s&date=%s&prev=0">Next</a>' % (ukey, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"))
+			gpslogs.pop()
+		else:
+			urlnext = 'Next'
+
+		#gpslogs = []
+		#for gpslog in gpslogs_query:
+			#gpslogs.append(gpslog)
+		#slogs.extend(gpslogs_query.fetch(10))
+		#gpslogs.extend(gpslogs_query.fetch(10))
+		#gpslogs_count = gpslogs_query.count()
+		#gpslogs_count = len(gpslogs)
+
+		#userdescs = {}
+		#userimeis = {}
+
+		for gpslog in gpslogs:
+			#gpslog.date = gpslog.date.replace(microsecond=0).replace(second=0)
+			gpslog.sdate = fromUTC(gpslog.date).strftime("%d/%m/%Y %H:%M:%S")
+			#if gpslog.user.key() not in userdescs:
+			#	userdescs[gpslog.user.key()] = gpslog.user.desc
+			#	userimeis[gpslog.user.key()] = gpslog.user.imei
+			#gpslog.desc = userdescs[gpslog.user.key()]
+			#gpslog.imei = userimeis[gpslog.user.key()]
+			#gpslog.desc = gpslog.user.desc
+			#gpslog.imei = gpslog.user.imei
+			#geolog.date = fromUTC(geolog.date) #.astimezone(utc)
+
+			#try:
+			#	uuser = gpslog.user
+			#	gpslog.imei = uuser.imei
+			#except:
+			#	gpslog.imei = 'deleted' 
+			#if not gpslog.user:
+			#    gpslog.user.imei = "deleted"
+
+		template_values = {}
+		template_values['gpslogs'] = gpslogs
+		template_values['urlnext'] = urlnext
+		template_values['urlprev'] = urlprev
+		template_values['userdb'] = userdb
+		if userdb:
+			template_values['userkey'] = str(userdb.key())
+		else:
+			template_values['userkey'] = "None"
+		#template_values['imei'] = uimei
+		template_values['imei'] = userdb.imei
+		template_values['ukey'] = ukey
+		#template_values['loglastkey'] = get_loglastkey()
+		#template_values['loglastkey']
+
+		cacheuser = CacheUser()
+		template_values['cacheuser'] = cacheuser
+
+		#path = os.path.join(os.path.dirname(__file__), 'logs.html')
+		#self.response.out.write(template.render(path, template_values))
+
+
+		logs = ':'
+		if userdb:
+			for vlogs in userdb.logs:
+				logs += '<p>' + vlogs.text + '</p>'
+		"""
+		a_ViewLogs = datamodel.DBUser().all().fetch(10)
+		for viewlog in a_ViewLogs:
+			logs += '<br/>' + viewlog.imei
+			for vlogs in viewlog.logs:
+				logs += '<p>' + vlogs.text + '</p>'
+			pass
+		template_values['ldebug'] = a_ViewLogs
+		"""
+		template_values['ldebug_logs'] = logs
+
+		
+
 		self.write_template(template_values)
 
 		#try:
@@ -2393,6 +2610,7 @@ class BinBackup(TemplatedPage):
 		userdb = getUser(self.request)
 
 		cmd = self.request.get('cmd')
+		total = 0
 		if cmd:
 			ukey = self.request.get('key')
 			if cmd == 'getbin':
@@ -2413,17 +2631,44 @@ class BinBackup(TemplatedPage):
 					db.delete(dbbindata)
 				self.redirect("/binbackup?imei=%s" % uimei)
 				return
+			elif cmd == 'pack':
+				self.response.headers['Content-Type'] = 'application/octet-stream'
+				pdata = ''
+				cnt = self.request.get('cnt')
+				if cnt:
+					dbbindata = datamodel.DBGPSBinBackup.all().filter('user =', userdb).order('-cdate').fetch(int(cnt))
+				else:
+					dbbindata = datamodel.DBGPSBinBackup.all().filter('user =', userdb).order('-cdate').fetch(200)
+				for bindata in dbbindata:
+					bindata.datasize = len(bindata.data)
+					pdata += bindata.data[:-2]
+				crc = 0
+				for byte in pdata:
+					crc = utils.crc(crc, ord(byte))
+				pdata += chr(crc & 0xFF)
+				pdata += chr((crc>>8) & 0xFF)
+				"""
+				crc = ord(pdata[-1])*256 + ord(pdata[-2])
+				pdata = pdata[:-2]
+				_log += '\n==\tData size: %d' % len(pdata)
+
+				"""
+				self.response.out.write(pdata)
+				return
 
 		if userdb:
 			dbbindata = datamodel.DBGPSBinBackup.all().filter('user =', userdb).order('-cdate').fetch(200)
 
 			for bindata in dbbindata:
 				bindata.datasize = len(bindata.data)
+				total += bindata.datasize - 2
 				bindata.sdate = fromUTC(bindata.cdate)	#.strftime("%d/%m/%Y %H:%M:%S")
+			total += 2
 			allusers = None
 		else:
 			dbbindata = None
-			allusers = datamodel.DBUser.all().fetch(1000)
+			allusers = datamodel.DBUser.all().fetch(100)
+
 
 		#template_values = {}
 		#template_values['imei'] = uimei
@@ -2432,7 +2677,13 @@ class BinBackup(TemplatedPage):
 		self.response.headers['Content-Type']   = 'text/html'
 		#path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
 		#self.response.out.write(template.render(path, template_values))
-		self.write_template({'imei': uimei, 'dbbindata': dbbindata, 'userdb': userdb, 'allusers': allusers})
+		self.write_template({
+			'imei': uimei,
+			'dbbindata': dbbindata,
+			'total': total,
+			'userdb': userdb,
+			'allusers': allusers
+		})
 
 
 application = webapp.WSGIApplication(
@@ -2442,6 +2693,7 @@ application = webapp.WSGIApplication(
 	('/addlog', AddLog),
 	('/users.*', UsersList),
 	('/delUser.*', DelUser),
+	('/logs2.*', ViewLogs2),
 	('/logs.*', ViewLogs),
 	('/jsonlogs.*', JsonLogs),
 	('/dellogs.*', DelLogs),

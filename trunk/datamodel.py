@@ -2,6 +2,8 @@
 
 from google.appengine.ext import db
 
+from local import fromUTC
+
 class DBUser(db.Model):
 	#userid = db.IntegerProperty()			# Unique
 	imei = db.StringProperty(multiline=False)	# IMEI
@@ -15,11 +17,21 @@ class DBAccounts(db.Expando):
 	name = db.StringProperty(multiline=False)	# Отображаемое имя
 	systems = db.StringListProperty()		# Перечеть наблюдаемых систем (их keys)
 	#systems = db.ListProperty(db.Blob)		# Перечеть наблюдаемых систем
+	@property
+	def users(self):
+		lusers = []
+		for account in self.systems:
+			lusers.append(db.get(db.Key(account)))
+		return lusers
 
 class GPSLogs(db.Model):
-	user = db.ReferenceProperty(DBUser)
+	user = db.ReferenceProperty(DBUser, collection_name='logs')
 	text = db.StringProperty(multiline=True)
 	date = db.DateTimeProperty(auto_now_add=True)
+	@property
+	def ldate(self):
+		#return fromUTC(self.date).strftime("%d/%m/%Y %H:%M:%S")
+		return fromUTC(self.date)
 
 class Greeting(db.Model):
 	author = db.UserProperty()
@@ -27,7 +39,7 @@ class Greeting(db.Model):
 	date = db.DateTimeProperty(auto_now_add=True)
 
 class DBGPSPoint(db.Model):
-	user = db.ReferenceProperty(DBUser)
+	user = db.ReferenceProperty(DBUser, collection_name='geos')
 	cdate = db.DateTimeProperty(auto_now_add=True)
 	date = db.DateTimeProperty()
 	latitude = db.FloatProperty()
@@ -58,9 +70,8 @@ class DBGPSPoint2(db.Model):
 	in2 = db.FloatProperty(name='l')		# Значение на агалоговом входе 2
 	#power = db.FloatProperty()		# Уровень заряда батареи (на
 
-
 class DBGPSBin(db.Model):
-	user = db.ReferenceProperty(DBUser)
+	user = db.ReferenceProperty(DBUser, collection_name='gpsbins')
 	cdate = db.DateTimeProperty(auto_now_add=True)
 	dataid = db.IntegerProperty()
 	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
@@ -72,7 +83,7 @@ class DBGPSBinParts(db.Model):
 	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
 
 class DBGPSBinBackup(db.Model):
-	user = db.ReferenceProperty(DBUser)
+	user = db.ReferenceProperty(DBUser, collection_name='gpsbackups')
 	cdate = db.DateTimeProperty(auto_now_add=True)
 	dataid = db.IntegerProperty()
 	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
@@ -89,17 +100,16 @@ class DBFirmware(db.Model):
 # Конфигурация систем
 # Содержит динамически наполняемым контентом
 class DBConfig(db.Model):
+	user = db.ReferenceProperty(DBUser, collection_name='configs')
 	cdate = db.DateTimeProperty(auto_now_add=True)	# Дата размещения конфигурации
-	user = db.ReferenceProperty(DBUser)
 	config = db.BlobProperty()
 	#strconfig = db.StringProperty()
 
 class DBNewConfig(db.Model):
+	user = db.ReferenceProperty(DBUser, collection_name='newconfigs')
 	cdate = db.DateTimeProperty(auto_now_add=True)	# Дата размещения конфигурации
-	user = db.ReferenceProperty(DBUser)
 	config = db.BlobProperty()
 	#strconfig = db.StringProperty()
-
 
 class DBDescription(db.Model):
 	name = db.StringProperty(multiline=False)	# имя параметра
