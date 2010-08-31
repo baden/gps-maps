@@ -4,13 +4,16 @@
 	По умолчанию размер не выходящий за линию трека
 	При наезде курсором несколько увеличивается в размере
 */
+
+var arrdiv = null;
+
 function MyMarker(point, angle, map, i, result, onclick)
 {
         this.point = point;
         this.angle = angle;
         this.map = map;
         this.div = null;
-        this.arrdiv = null;
+//        this.arrdiv = null;
         this.onclick = onclick;
         this.i = i;
 	this.title = null;
@@ -51,24 +54,48 @@ MyMarker.prototype.onAdd = function() {
 	div.addEventListener('click', this.onclick, false);
 
 	div.addEventListener('mouseover', function(e){
-		this.marker.arrdiv.style.display = "block";
+		arrdiv = document.getElementById("arrowdiv");
+		if(arrdiv == null){
+			arrdiv = document.createElement('div');
+			arrdiv.setAttribute("id", "arrowdiv");
+			arrdiv.setAttribute("class", "arrowdiv");
+			panes.overlayMouseTarget.appendChild(arrdiv);
+		}
+		arrdiv.setAttribute("style", "-webkit-transform: rotate(" + this.marker.angle + "deg);z-index:-1;");
+
+		var overlayProjection = this.marker.getProjection();
+
+		// Retrieve the southwest and northeast coordinates of this overlay
+		// in latlngs and convert them to pixels coordinates.
+		// We'll use these coordinates to resize the DIV.
+		//var divpx = overlayProjection.fromLatLngToDivPixel(this.marker.div.point);
+
+		arrdiv.style.left = parseInt(this.marker.div.style.left) - 13 + 'px';
+		arrdiv.style.top = parseInt(this.marker.div.style.top) - 13 + 'px';
+
+		/*this.marker.arrdiv.style.display = "block";*/
+
 		//this.marker.div.style['background-image'] = 'url(images/marker-select.png)'
 		//this.marker.div.style.width = 16;
 		//this.marker.div.style.height = 16;
 	}, false);
 
 	div.addEventListener('mouseout', function(e){
-		if(this.marker.i % 8) this.marker.arrdiv.style.display = "none";
+		arrdiv = document.getElementById("arrowdiv");
+		if(arrdiv) arrdiv.style.display = "none";
+		/*if(this.marker.i % 8) this.marker.arrdiv.style.display = "none";*/
 	}, false);
 
+	if(0){
 	var arrdiv = document.createElement('div');
 	arrdiv.setAttribute("class", "arrowdiv");
 	arrdiv.setAttribute("style", "-webkit-transform: rotate(" + this.angle + "deg);z-index:-1;");
 
 	if(this.i % 8) arrdiv.style.display = "none";
+	}
 
 	this.div = div;
-	this.arrdiv = arrdiv;
+	//this.arrdiv = arrdiv;
 
 	// We add an overlay to a map via one of the map's panes.
 	// We'll add this overlay to the overlayImage pane.
@@ -76,7 +103,7 @@ MyMarker.prototype.onAdd = function() {
 	this.panes = panes;
 //	panes.overlayLayer.appendChild(div);
 //  	panes.overlayLayer.appendChild(arrdiv);
-	panes.overlayMouseTarget.appendChild(arrdiv);
+	/*panes.overlayMouseTarget.appendChild(arrdiv);*/
 	panes.overlayMouseTarget.appendChild(div);
 //	panes.floatPane.appendChild(div);
 
@@ -91,10 +118,12 @@ MyMarker.prototype.setTitle = function(title) {
 MyMarker.prototype.onRemove = function() {
 	this.div.parentNode.removeChild(this.div);
 	this.div = null;
+/*
 	if(this.arrdiv){
 		this.arrdiv.parentNode.removeChild(this.arrdiv);
 		this.arrdiv = null;
 	}
+*/
 }
 
 MyMarker.prototype.draw = function() {
@@ -114,11 +143,11 @@ MyMarker.prototype.draw = function() {
 	var div = this.div;
 	div.style.left = divpx.x - 3 + 'px';
 	div.style.top = divpx.y - 3 + 'px';
-
+/*
 	if(this.arrdiv){
 		var arrdiv = this.arrdiv;
 		arrdiv.style.left = divpx.x - 16 + 'px';
 		arrdiv.style.top = divpx.y - 16 + 'px';
 	}
-
+*/
 }

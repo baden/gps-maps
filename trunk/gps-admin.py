@@ -5,7 +5,7 @@ import logging
 import os
 #import zlib
 #import math
-#import random
+import utils
 
 #from datetime import date
 #from datetime import datetime
@@ -69,6 +69,11 @@ class TemplatedPage(webapp.RequestHandler):
 			#values['admin'] = (username == ADMIN_USERNAME)
 			values['admin'] = users.is_current_user_admin()
 			values['server_name'] = SERVER_NAME
+
+			data = '313233343536373839'
+			crc = 0
+			for byte in data: crc = utils.crc(crc, ord(byte))
+			values['crc'] = "0x%04X" % crc
 
 			path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
 			#self.response.headers['Content-Type']   = 'text/xml'

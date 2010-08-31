@@ -47,7 +47,7 @@
 		//var logtable = $('#logtable tbody tr:first');
 		var delkey = '';
 		{% if admin %}
-		delkey = '<td title="Удалить сообщение"><a class="smallButton" href="/logs2?cmd=delmsg&ukey={{ ukey }}&key='+logkey+'">X</a></td>'
+		delkey = '<td title="Удалить сообщение"><a class="smallButton" href="/logs?cmd=delmsg&imei={{ imei }}&key='+logkey+'">X</a></td>'
 		{% endif %}
 
 		var row = '<tr><td>' + datetime +'</td><td style="text-align: left; padding-left: 10px;">'+logvalue+'</td>'+delkey+'</tr>';
@@ -89,9 +89,10 @@
 		});
 	}
 
-	{% if imei %}
 	function initialize() {
 		setTimeout(checkNew, 10000);
+
+
 
 		//setInterval(getUpdate, 1000);
 		//setTimeout(getUpdate, 1000);
@@ -103,16 +104,14 @@
 		
 		//alert(logtable);
 	}
-	{% endif %}
+
 
 	</script>
 
 {% endblock %}
 
 {% block javainit %}
-	{% if imei %}
 		initialize();
-	{% endif %}
 {% endblock %}
 
 {% block body %}
@@ -121,14 +120,14 @@
 
     <h1>Записи в логе</h1>
 	{{ userdb.imei }}: <b>{{ userdb.desc }}</b>
-	<a class="smallButton" href="/logs2?ukey={{ ukey }}" title="Обновить"><img valign="middle" src="/svg/button-update.svg" /></a>
+	<a class="smallButton" href="/logs?imei={{ imei }}" title="Обновить"><img valign="middle" src="/svg/button-update.svg" /></a>
 	<!--a class="smallButton" href="#" onclick="checkNew(); return false" title="Обновить"><img valign="middle" src="/svg/button-update.svg" /></a-->
 
 	<!--input type="button" value="Получить сообщения" onclick="javascript:checkNew();" /-->
 
 	{% if single %}
 	{% else %}
-	<a class="smallButton" href="/logs2" title="Выбрать другую">S</a> 
+	<a class="smallButton" href="/logs" title="Выбрать другую">S</a> 
 	{% endif %}
 	{{ urlprev }}{{ urlnext }}
     <table id="logtable">
@@ -152,10 +151,10 @@
 			<a class="smallButton" href="logs?imei={{ gpslog.imei }}" title="filter">f</a>
 			<a class="smallButton" href="logs?imei={{ gpslog.imei }}&exclude=yes" title="Исключить">x</a>
 		</td-->
-				<td>{{ gpslog.ldate|date:"d/m/Y H:i:s" }}</td>
+				<td>{{ gpslog.sdate }}</td>
 				<td style="text-align: left; padding-left: 10px;">{{ gpslog.text }}</td>
 				{% if admin %}
-				<td title="Удалить сообщение"><a class="smallButton" href="/logs2?cmd=delmsg&ukey={{ ukey }}&key={{ gpslog.key }}">X</a></td>
+				<td title="Удалить сообщение"><a class="smallButton" href="/logs?cmd=delmsg&imei={{ imei }}&key={{ gpslog.key }}">X</a></td>
 				{% endif %}
 			</tr>
 	{% endfor %}
@@ -174,19 +173,18 @@
         	<tr>
         	</tr>
         </thead>
-	        {% for user in account.users %}
+	        {% for user in users %}
             <tr>
 		<!--td>
 		{{ forloop.counter }}
 		</td-->
 		<td>
-		<!--a href="/logs2?imei={{ user.imei }}"><div style="width: 100%;">{{ user.imei }}: {{ user.desc }}</div></a-->
-		<a href="/logs2?ukey={{ user.key }}"><div style="width: 100%;">{{ user.imei }}: {{ user.desc }}</div></a>
+		<a href="/logs?imei={{ user.imei }}"><div style="width: 100%;">{{ user.imei }}: {{ user.desc }}</div></a>
 		</td>
             </tr>
 		{% endfor %}
     </table>
-		Бла-бла-бла: "{{ now }}"
+
 	{% endif %}
 {% endblock %}
 
