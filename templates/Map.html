@@ -69,12 +69,16 @@
 		var userimei;
 		var supportsCanvas = false;
 		var mapcanvas;
+		var points = 500;
 
 		(function () {
-			{% if imei %}
-			userimei = {{ imei }}
+			{% if ukey %}
+			userimei = '{{ userdb.imei }}'
+			ukey = '{{ ukey }}'
 			{% else %}
-			userimei = {{ users.0.imei }}
+			userimei = '{{ userdb.imei }}'
+			ukey = '{{ userdb.key }}'
+			//userimei = {{ users.0.imei }}
 			{% endif %}
 		})();
 
@@ -144,14 +148,14 @@
 			//$("#progress").html("Загружено...");
 
 			$('#seefirst').click(function() {
-				loadPoints("geosjson?imei=" + userimei + "&first=500&callback=?");
+				loadPoints("geosjson?ukey=" + ukey + "&first=" + points + "&callback=?");
 			});
 
 
 			$('#seeprev').click(function() {
 				var dateto = datemin.replace(/[\/: ]/g,"");
 			
-				loadPoints("geosjson?imei=" + userimei + "&last=500&dateto=" + dateto + "&callback=?");
+				loadPoints("geosjson?ukey=" + ukey + "&last="+points+"&dateto=" + dateto + "&callback=?");
 //				loadPoints("geosjson?imei=" + userimei + "&last=500&callback=?");
 				//loadPoints("geosjson?imei=" + userimei + "&last=500&callback=?");
 			});
@@ -159,16 +163,16 @@
 			$('#seenext').click(function() {
 				var datefrom = datemax.replace(/[\/: ]/g,"");
 
-				loadPoints("geosjson?imei=" + userimei + "&first=500&datefrom=" + datefrom + "&callback=?");
+				loadPoints("geosjson?ukey=" + ukey + "&first="+points+"&datefrom=" + datefrom + "&callback=?");
 			});
 
 			$('#seelast').click(function() {
-				loadPoints("geosjson?imei=" + userimei + "&last=500&callback=?");
+				loadPoints("geosjson?ukey=" + ukey + "&last="+points+"&callback=?");
 			});
 
 			window.addEventListener('keydown', function (e) {
 				if (e.keyCode == 32) { // space				
-					loadPoints("geosjson?imei=" + userimei + "&last=500&callback=?");
+					loadPoints("geosjson?ukey=" + ukey + "&last="+points+"&callback=?");
 				}
 			}, false);
 
@@ -341,7 +345,7 @@
 
 					{% if admin %}
 					document.getElementById('dellink').href =
-						"delgeos?imei=" + userimei +
+						"delgeos?ukey=" + ukey +
 						"&datefrom=" + datemin.replace(/[\/\: ]/g,"") +
 						"&dateto=" + datemax.replace(/[\/\: ]/g,"");
 					{% endif %}
@@ -352,7 +356,7 @@
 		}
 
 		function lastPoints() {
-			loadPoints("geosjson?imei=" + userimei + "&last=500&callback=?");
+			loadPoints("geosjson?ukey=" + ukey + "&last="+points+"&callback=?");
 		}
 
 		function datePoints() {
@@ -363,8 +367,8 @@
 			var dateto = document.getElementById('datepickerto').value.replace(/[\/]/g,"") +
 				document.getElementById('timeto').value.replace(/[\:]/g,"") + "59";
 			
-			//loadPoints("geosjson?imei=" + userimei + "&first=500&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
-			loadPoints("geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
+			//loadPoints("geosjson?ukey=" + ukey + "&first=500&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
+			loadPoints("geosjson?ukey=" + ukey + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?");
 			//var url = "geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
 
 		}
@@ -372,7 +376,7 @@
 			var datefrom = document.getElementById('datepickerfrom').value.replace(/[\/]/g,"") +
 				document.getElementById('timefrom').value.replace(/[\:]/g,"") + "00";
 			
-			loadPoints("geosjson?imei=" + userimei + "&first=500&datefrom=" + datefrom + "&callback=?");
+			loadPoints("geosjson?ukey=" + ukey + "&first="+points+"&datefrom=" + datefrom + "&callback=?");
 			//var url = "geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
 
 		}
@@ -380,7 +384,7 @@
 			var dateto = document.getElementById('datepickerto').value.replace(/[\/]/g,"") +
 				document.getElementById('timeto').value.replace(/[\:]/g,"") + "59";
 			
-			loadPoints("geosjson?imei=" + userimei + "&last=500&dateto=" + dateto + "&callback=?");
+			loadPoints("geosjson?ukey=" + ukey + "&last="+points+"&dateto=" + dateto + "&callback=?");
 			//var url = "geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
 
 		}
@@ -402,7 +406,7 @@
 
 			//alert(datefrom1 + '\n\r' + datefrom);
 			
-			loadPoints("geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&callback=?");
+			loadPoints("geosjson?ukey=" + ukey + "&datefrom=" + datefrom + "&callback=?");
 			//var url = "geosjson?imei=" + userimei + "&datefrom=" + datefrom + "&dateto=" + dateto + "&callback=?";
 
 		}
@@ -429,7 +433,7 @@
 		// from the edge of the map
 		controlDiv.style.padding = '5px';
 
-	        {% for user in users %}
+	        {% for user in self.account.users %}
 
 		// Set CSS for the control border
 		var controlUI = document.createElement('div');
@@ -440,7 +444,7 @@
 		// Set CSS for the control interior
 		var controlText = document.createElement('div');
 		controlText.setAttribute('class', 'MapNavText');
-		controlText.innerHTML = '<a style="text-decoration: none;" href="map?imei={{ user.imei }}" title="{{ user.imei }}"><img align="top" src="/svg/user-1.svg" />{{ user.desc }}</a>';
+		controlText.innerHTML = '<a style="text-decoration: none;" href="map?ukey={{ user.key }}" title="{{ user.imei }}"><img align="top" src="/svg/user-1.svg" />{{ user.desc }}</a>';
 		controlUI.appendChild(controlText);
 
 		{% endfor %}
@@ -839,8 +843,8 @@
 
 	<div style="top: -4px; left:50%; position: absolute;">
 		<div class="sm-button" id="seefirst" title="Самые старые">&lt;&lt;</div>
-		<div class="sm-button" id="seeprev" title="Предыдущие 500">&lt;</div>
-		<div class="sm-button" id="seenext" title="Следующие 500">&gt;</div>
+		<div class="sm-button" id="seeprev" title="Предыдущие">&lt;</div>
+		<div class="sm-button" id="seenext" title="Следующие">&gt;</div>
 		<div class="sm-button" id="seelast" title="Последние известные координаты (пробел)">&gt;&gt;</div>
 	</div>
 

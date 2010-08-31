@@ -163,13 +163,8 @@ class TemplatedPage2(webapp.RequestHandler):
 		#logging.info(" TemplatedPage-init")
 		self.user = users.get_current_user()
 
-		self.account = datamodel.DBAccounts().gql("WHERE user = :1", self.user).get()
-		if not self.account:
-			self.account = datamodel.DBAccounts(key_name = "acc_%s" % self.user.user_id())
-			self.account.user = self.user
-			self.account.name = u"Имя не задано"
-			self.account.systems = []
-			self.account.put()
+		self._account = None
+
 		"""
 		self.users = []
 		for account in self.account.systems:
@@ -180,10 +175,27 @@ class TemplatedPage2(webapp.RequestHandler):
 		else:
 			self.single = False
 		"""
+	def account(self):
+		if self._account:
+			return self._account
+
+		self._account = datamodel.DBAccounts().gql("WHERE user = :1", self.user).get()
+		if not self._account:
+			self._account = datamodel.DBAccounts(key_name = "acc_%s" % self.user.user_id())
+			self._account.user = self.user
+			self._account.name = u"Имя не задано"
+			self._account.systems = []
+			self._account.put()
+
+		return self._account
+
+	"""
+	def single(self):
 		if len(self.account.systems) == 1:
 			self.single = True
 		else:
 			self.single = False
+	"""
 
 	def write_template(self, values, alturl=None):
 		if self.user:
@@ -194,7 +206,8 @@ class TemplatedPage2(webapp.RequestHandler):
 			values['admin'] = users.is_current_user_admin()
 			values['server_name'] = SERVER_NAME
 			values['account'] = self.account
-			values['single'] = self.single
+			#values['single'] = self.single
+			values['self'] = self
 			#values['users'] = self.users
 			#values['ausers'] = ausers
 			#if 'imei' not in values: values['imei'] = self.uimei
@@ -400,7 +413,7 @@ class UsersList(TemplatedPage):
 		#self.response.out.write(template.render(path, template_values))
 		self.write_template(template_values)
 
-MAXLOGS = 40
+MAXLOGS = 30
 
 class CacheUser:
 	def hello(self):
@@ -409,7 +422,7 @@ class CacheUser:
 class JsonLogs(webapp.RequestHandler):
 	def get(self):
 		#userdb = getUser(self.request, create=False)
-		userkey = self.request.get('userkey')
+		ukey = self.request.get('ukey')
 		lastlogkey = self.request.get('lastlogkey')
 		if lastlogkey:
 			last_key = db.Key(lastlogkey)
@@ -422,11 +435,11 @@ class JsonLogs(webapp.RequestHandler):
 		#gpslogsq = datamodel.GPSLogs.all().filter('key >', lastlogkey).filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
 
 		#if lastlogkey and get_loglastkey(str(userdb.key())) == last_key:
-		if lastlogkey and get_loglastkey(userkey) == last_key:
+		if lastlogkey and get_loglastkey(ukey) == last_key:
 			logging.info("No logs changes.")
 			gpslogsq = []
 		else:
-			userdb = db.get(db.Key(userkey))
+			userdb = db.get(db.Key(ukey))
 			gpslogsq = datamodel.GPSLogs.all().filter('user =', userdb).order('-date')
 
 		gpslogs = []
@@ -477,7 +490,7 @@ class JsonLogs(webapp.RequestHandler):
 		nejson = json.dumps(jsonresp)
 		self.response.out.write(callback + "(" + nejson + ")\r")
 
-class ViewLogs(TemplatedPage):
+class ViewLogs2(TemplatedPage):
 	def get(self):
 		#gpslogs_query = datamodel.GPSLogs.all().order('-date').fetch(MAXLOGS+1)
 		#gpslogs_query = db.GqlQuery("SELECT * FROM GPSLogs ORDER BY date DESC LIMIT 20")
@@ -646,7 +659,7 @@ class ViewLogs(TemplatedPage):
 		#self.generate()
 
 
-class ViewLogs2(TemplatedPage2):
+class ViewLogs(TemplatedPage2):
 	def get(self):
 		userdb = getUser(self.request, create=False)
 		if userdb == None:
@@ -658,9 +671,9 @@ class ViewLogs2(TemplatedPage2):
 
 		ukey = str(userdb.key())
 
-		datemark = self.request.get('date')
-		prevmark = self.request.get('prev')
-		uimei = self.request.get('imei')
+		#datemark = self.request.get('date')
+		#prevmark = self.request.get('prev')
+		#uimei = self.request.get('imei')
 		cmd = self.request.get('cmd')
 
 		if cmd:
@@ -669,47 +682,15 @@ class ViewLogs2(TemplatedPage2):
 				db.get(db.Key(key)).delete()
 
 			self.redirect('/logs2?ukey=%s' % ukey)
-			
-		#if userdb == None:
-		#	if len(self.account.systems)==1:
-		#		userdb = db.get(db.Key(self.account.systems[0]))
-		#		uimei = userdb.imei
 
-		if prevmark:
-			if prevmark == '0':
-				urlprev = '<a class="Prev" href="logs2?ukey=%s">First</a>' % ukey
-			else:
-				urlprev = '<a class="Prev" href="logs2?ukey=%s&date=%s&prev=0">Prev</a>' % (ukey, prevmark)
-		else:
-			urlprev = ''
+		q = userdb.logs.order('-date')
+		cursor = self.request.get('cursor')
+		if cursor:
+			q.with_cursor(cursor)
 
-		if datemark:
-			#gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date').fetch(MAXLOGS+1)
-			gpslogs = userdb.logs.filter('date <=', toUTC(datetime.strptime(datemark, "%Y%m%d%H%M%S"))).order('-date').fetch(MAXLOGS+1)
-		else:
-			#gpslogs = datamodel.GPSLogs.all().filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
-			gpslogs = userdb.logs.order('-date').fetch(MAXLOGS+1)
-		gpslogs_count = len(gpslogs)
-		if gpslogs_count == MAXLOGS+1:
-			if datemark:
-				urlnext = '<a class="Next" href="logs2?ukey=%s&date=%s&prev=%s">Next</a> ' % (ukey, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"), datemark)
-			else:
-				urlnext = '<a class="Next" href="logs2?ukey=%s&date=%s&prev=0">Next</a>' % (ukey, fromUTC(gpslogs[-1].date).strftime("%Y%m%d%H%M%S"))
-			gpslogs.pop()
-		else:
-			urlnext = 'Next'
-
-		#gpslogs = []
-		#for gpslog in gpslogs_query:
-			#gpslogs.append(gpslog)
-		#slogs.extend(gpslogs_query.fetch(10))
-		#gpslogs.extend(gpslogs_query.fetch(10))
-		#gpslogs_count = gpslogs_query.count()
-		#gpslogs_count = len(gpslogs)
-
-		#userdescs = {}
-		#userimeis = {}
-
+		#gpslogs = userdb.logs.order('-date').fetch(MAXLOGS+1)
+		logs = q.fetch(MAXLOGS+1)
+		"""
 		for gpslog in gpslogs:
 			#gpslog.date = gpslog.date.replace(microsecond=0).replace(second=0)
 			gpslog.sdate = fromUTC(gpslog.date).strftime("%d/%m/%Y %H:%M:%S")
@@ -729,19 +710,15 @@ class ViewLogs2(TemplatedPage2):
 			#	gpslog.imei = 'deleted' 
 			#if not gpslog.user:
 			#    gpslog.user.imei = "deleted"
-
+		"""
 		template_values = {}
-		template_values['gpslogs'] = gpslogs
-		template_values['urlnext'] = urlnext
-		template_values['urlprev'] = urlprev
+		template_values['logs'] = logs
 		template_values['userdb'] = userdb
-		if userdb:
-			template_values['userkey'] = str(userdb.key())
-		else:
-			template_values['userkey'] = "None"
+		#template_values['userkey'] = str(userdb.key())
 		#template_values['imei'] = uimei
-		template_values['imei'] = userdb.imei
+		#template_values['imei'] = userdb.imei
 		template_values['ukey'] = ukey
+		template_values['ncursor'] = q.cursor()
 		#template_values['loglastkey'] = get_loglastkey()
 		#template_values['loglastkey']
 
@@ -750,23 +727,13 @@ class ViewLogs2(TemplatedPage2):
 
 		#path = os.path.join(os.path.dirname(__file__), 'logs.html')
 		#self.response.out.write(template.render(path, template_values))
-
-
+		"""
 		logs = ':'
 		if userdb:
 			for vlogs in userdb.logs:
 				logs += '<p>' + vlogs.text + '</p>'
-		"""
-		a_ViewLogs = datamodel.DBUser().all().fetch(10)
-		for viewlog in a_ViewLogs:
-			logs += '<br/>' + viewlog.imei
-			for vlogs in viewlog.logs:
-				logs += '<p>' + vlogs.text + '</p>'
-			pass
-		template_values['ldebug'] = a_ViewLogs
-		"""
 		template_values['ldebug_logs'] = logs
-
+		"""
 		
 
 		self.write_template(template_values)
@@ -924,10 +891,58 @@ class Pacific_tzinfo(tzinfo):
 #pacific_time = utc_time.astimezone(Pacific_tzinfo())
 '''
 
-
-class Geos(TemplatedPage):
+class Geos(TemplatedPage2):
 	def get(self):
-		uimei = self.request.get('imei')
+		userdb = getUser(self.request, create=False)
+		if userdb == None:
+			template_values = {}
+			self.write_template(template_values)
+			return
+
+		ukey = str(userdb.key())
+
+		cursor = self.request.get('cursor')
+		#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('-date').fetch(MAXLOGS+1)
+		q = userdb.geos.order('-date')
+
+		if cursor:
+		    q.with_cursor(cursor)
+
+		geologs = q.fetch(MAXLOGS+1)
+		#geologs = q.fetch(10)
+		#geologs = userdb.geos.order('-date').fetch(MAXLOGS+1)
+
+		#geologs = datamodel.DBGPSPoint.all().order('-date').fetch(100)
+		"""
+		for geolog in geologs:
+			#try:
+			#	uuser = geolog.user
+			#	geolog.imei = uuser.imei
+			#except:
+			#	geolog.imei = 'deleted'
+			#geolog.sdate = geolog.cdate.strftime("%d/%m/%Y %H:%M")
+			geolog.date = fromUTC(geolog.date) #.astimezone(utc)
+			#if geolog.vin == None:
+			#	geolog.vin = 0.0
+			#if geolog.vout == None:
+			#	geolog.vout = 0.0
+		"""
+		#path = os.path.join(os.path.dirname(__file__), 'geos.html')
+		#self.response.out.write(template.render(path, template_values))
+		template_values = {}
+		template_values['geologs'] = geologs
+		#template_values['imei'] = userdb.imei
+		template_values['ukey'] = ukey
+		template_values['userdb'] = userdb
+		template_values['ncursor'] = q.cursor()
+
+		#self.write_template({'geologs': geologs, 'imei': uimei, 'userdb': userdb})
+		self.write_template(template_values)
+
+
+class Geos2(TemplatedPage):
+	def get(self):
+		#uimei = self.request.get('imei')
 		userdb = getUser(self.request)
 
 		if userdb == None:
@@ -957,7 +972,7 @@ class Geos(TemplatedPage):
 
 		#path = os.path.join(os.path.dirname(__file__), 'geos.html')
 		#self.response.out.write(template.render(path, template_values))
-		self.write_template({'geologs': geologs, 'imei': uimei, 'userdb': userdb})
+		self.write_template({'geologs': geologs, 'userdb': userdb})
 
 class GetTrack(webapp.RequestHandler):
 	def get(self):
@@ -967,8 +982,10 @@ class GetTrack(webapp.RequestHandler):
 
 		if userdb == None:
 			geologs = datamodel.DBGPSPoint.all().order('-date').fetch(MAX_TRACK_FETCH)
+			#geologs = datamodel.DBGPSPoint.all().order('-date').fetch(10)
 		else:
 			geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('-date').fetch(MAX_TRACK_FETCH)
+			#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('-date').fetch(10)
 		points = []
 		for geolog in geologs:
 			points.append({
@@ -1046,18 +1063,24 @@ class GeosJSON(webapp.RequestHandler):
 		if first:
 			#logging.info("GeosJSON first: %s" % first)
 			if datefrom_s:
-				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).order('date').fetch(int(first))
+				#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).order('date').fetch(int(first))
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).order('date').fetch(4)
 			else:
-				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('date').fetch(int(first))
+				#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('date').fetch(int(first))
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('date').fetch(4)
 				pass
 		else:
 			last = self.request.get('last')
 			if last:
 				#logging.info("GeosJSON last: %s" % last)
-				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date <=', dateto).order('-date').fetch(int(last))
+				#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date <=', dateto).order('-date').fetch(int(last))
+				geologs = userdb.geos.filter('date <=', dateto).order('-date').fetch(int(last))
 			else:
-				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(MAX_TRACK_FETCH)
-
+				#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(MAX_TRACK_FETCH)
+				#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(4)
+				geologs = userdb.geos.filter('date <=', dateto).order('-date').fetch(MAX_TRACK_FETCH)
+				
+		#geologs = {}
 		#self.response.out.write("// User imei: %s\r// Date from: %s\r// Date to: %s\r" % (userdb.imei, datefrom, dateto))
 
 #.filter('date <=', datetime.strptime(datemark, "%Y%m%d%H%M%S%f"))
@@ -1458,8 +1481,10 @@ class Config(TemplatedPage):
 				descriptions = datamodel.DBDescription().all() #.fetch(MAX_TRACK_FETCH)
 
 				descs={}
+				fdescs={}
 				for description in descriptions:
 					descs[description.name] = description.value
+					fdescs[description.name] = description
 					pass
 
 				newconfig = datamodel.DBConfig().all().filter('user = ', userdb).fetch(1)
@@ -1488,17 +1513,19 @@ class Config(TemplatedPage):
 					for config, value in configs.items():
 						#desc = u"Нет описания"
 						desc = u"Нет описания"
+						fdesc = None
 						if config in descs:
 							desc = descs[config]
+							fdesc = fdescs[config]
 						else:
 							if not showall:
 							#if not users.is_current_user_admin():
 								continue
 
 						if config in waitconfig:
-							nconfigs[config] = (configs[config][0], configs[config][1], configs[config][2], waitconfig[config], desc)
+							nconfigs[config] = (configs[config][0], configs[config][1], configs[config][2], waitconfig[config], desc, fdesc)
 						else:
-							nconfigs[config] = (configs[config][0], configs[config][1], configs[config][2], None, desc)
+							nconfigs[config] = (configs[config][0], configs[config][1], configs[config][2], None, desc, fdesc)
 							#configs[config] = (configs[config][0], configs[config][1], configs[config][2], configs[config][1])
 
 					# Для удобства отсортируем словарь в список
@@ -2202,7 +2229,28 @@ class GetBinGeos(webapp.RequestHandler):
 			self.response.headers['Content-Type'] = 'text/plain'
 			self.response.out.write('NODATA\r\n')
 
-class Map(TemplatedPage):
+class Map(TemplatedPage2):
+	def get(self):
+		#uimei = self.request.get('imei')
+
+		#allusers = datamodel.DBUser.all().fetch(100)
+		userdb = getUser(self.request)
+		if userdb == None:
+			userdb = self.account().users[0]
+			pass
+
+		template_values = {}
+		template_values['map'] = True
+		template_values['userdb'] = userdb
+		#template_values['users'] = allusers
+		#template_values['imei'] = uimei
+		template_values['now'] = datetime.now()
+
+		#path = os.path.join(os.path.dirname(__file__), 'map.html')
+		#self.response.out.write(template.render(path, template_values))
+		self.write_template(template_values)
+
+class Map2(TemplatedPage):
 	def get(self):
 		uimei = self.request.get('imei')
 
@@ -2701,6 +2749,7 @@ application = webapp.WSGIApplication(
 	('/del1geos.*', Del1Geos),
 	('/lastpos.*', LastPos),
 	('/geosjson', GeosJSON),
+	('/geos2.*', Geos2),
 	('/geos.*', Geos),
 	('/stylesheets.*', CSSfiles),
 	('/config.*', Config),

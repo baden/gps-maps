@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application_name }} Просмотр записей в GEO-логе {% endblock %}
+
+{% block head %}
+  <!--meta http-equiv="refresh" content="10"-->
+  <style type="text/css">{% include "css/geos.css" %}</style>
+{% endblock %}
+
+{% block body %}
+	{% if imei %}
+
+	{{ urlprev }}{{ urlnext }}
+    <h1>Записи в GEO-логе</h1>
+	{{ userdb.imei }}: <b>{{ userdb.desc }}</b>
+	<a class="smallButton" href="/geos?imei={{ imei }}" title="Обновить"><img valign="middle" src="/svg/button-update.svg" /></a>
+	{% if single %}
+	{% else %}
+	<a class="smallButton" href="/geos" title="Выбрать другую">S</a> 
+	{% endif %}
+	<a class="smallButton" href="map?imei={{ imei }}" title="Посмотреть на карте">M</a>
+    <table>
+        <thead>
+        	<tr style="display: table-row;">
+        		<!--th>ID</th-->
+        		<!--th>Система</th-->
+			<th>Дата и время</th>
+			<th>Долгота<br /><i>Град</i></th>
+			<th>Широта<br /><i>Град</i></th>
+			<th>Спут.</th>
+			<th>Скорость<br /><i>км/ч</i></th>
+			<th>Напр-ние<br /><i>Град</i></th>
+			<!--th>Высота<br /><i>м</i></th-->
+			<th>Питание<br /><i>В</i></th>
+			<th>Аккумул.<br /><i>В</i></th>
+			<!--th>Вход 1<br><i>%</i></th>
+			<th>Вход 2<br><i>%</i></th-->
+		</tr>
+	</thead>
+        {% for geolog in geologs %}
+            <tr>
+            	<!--td>{{ geolog.key.id }}</td-->
+            	<!--td>{{ geolog.user.desc }}<a class="smallButton" href="geos?imei={{ geolog.user.imei }}" title="filter">f</a></td-->
+				<td>{{ geolog.date|date:"d/m/y G:i:s" }}</td>
+				<td>{{ geolog.latitude|floatformat:5 }}</td>
+				<td>{{ geolog.longitude|floatformat:5 }}</td>
+				<td>{{ geolog.sats }}</td>
+				<td>{{ geolog.speed|floatformat:1 }}</td>
+				<td>{{ geolog.course|floatformat:0 }}</td>
+				<!--td>{{ geolog.altitude|floatformat:1 }}</td-->
+				<td>{{ geolog.vout|floatformat:1 }}</td>
+				<td>{{ geolog.vin|floatformat:2 }}</td>
+				<!--td>{{ geolog.in1|floatformat:2 }}</td>
+				<td>{{ geolog.in2|floatformat:2 }}</td-->
+			</tr>
+	{% endfor %}
+    </table>
+	{% if admin %}
+	<a class="pushLink" href="geos?format=nmea" title="Получить лог в NMEA-формате">Получить NMEA</a>
+	<a class="pushLink" href="gettrack?imei={{ imei }}" title="Получить лог в RAW-формате">Получить RAW</a>
+	{% endif %}
+
+	<div style="float:right; margin-right:20px;"></span><a class="pushLink" href="delgeos?imei={{ imei }}" title="Удаляет 500 самых старых записей для выбранной системы">Очистить GPS-логи</a></div>
+
+	{% else %}
+
+    <h1>Выберите систему:</h1>
+    <table class="selector">
+    <!--table-->
+        <thead>
+        	<tr>
+        	</tr>
+        </thead>
+	        {% for user in users %}
+            <tr>
+		<!--td>
+		{{ forloop.counter }}
+		</td-->
+		<td>
+		<a href="/geos?imei={{ user.imei }}"><div style="width: 100%;">{{ user.imei }}: {{ user.desc }}</div></a>
+		</td>
+            </tr>
+		{% endfor %}
+    </table>
+
+	{% endif %}
+    
+{% endblock %}
+
+{% block final %}
+{% endblock %}

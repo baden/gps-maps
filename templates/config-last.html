@@ -101,8 +101,12 @@ function SetDescription(name)
 				<a class="smallButton" title="Показать все" href="/config?cmd=last&imei={{ imei }}&showall=yes">...<a>
 				{% endif %}
 			</th>
-			<!--th>Мин</th>
-			<th>Макс</th-->
+			{% if admin %}
+			<th title="Минимальное значение параметра.">Мин</th>
+			<th title="Максимальное значение параметра">Макс</th>
+			<th title="Коэфициент преобразования значения в человеческий вид">Коеф</th>
+			<th title="Скрывает этот параметр от 'неадминистраторов'">Скрыть</th>
+			{% endif %}
 		</tr>
 		{% for config in configs %}
 		<tr>
@@ -118,6 +122,13 @@ function SetDescription(name)
 				<div style="display: inline-block;" id="{{ config.0 }}_descr" align="left">{{ config.1.4 }}</div>
 				{% if admin %}<a class="smallButton" href="javascript:SetDescription('{{ config.0 }}')" title="Изменить описание">...</a>{% endif %}
 			</td>
+			{% if admin %}
+			<td>{{ config.1.5.mini }}</td>
+			<td>{{ config.1.5.maxi }}</td>
+			<td>{{ config.1.5.coef }}</td>
+			<td>{{ config.1.5.private }}</td>
+			{% endif %}
+
 		</tr>
 		{% endfor %}
 	</table>

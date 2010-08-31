@@ -48,12 +48,16 @@ class DBGPSPoint(db.Model):
 	fix = db.IntegerProperty()
 	speed = db.FloatProperty()
 	course = db.FloatProperty()
-	altitude = db.FloatProperty()
-	vout = db.FloatProperty()		# Напряжение внешнего питания
-	vin = db.FloatProperty()		# Напряжение внутреннего питания
-	in1 = db.FloatProperty()		# Значение на аналоговом входе 1
-	in2 = db.FloatProperty()		# Значение на агалоговом входе 2
+	altitude = db.FloatProperty(default=0.0)
+	vout = db.FloatProperty(default=0.0)	# Напряжение внешнего питания
+	vin = db.FloatProperty(default=0.0)	# Напряжение внутреннего питания
+	in1 = db.FloatProperty(default=0.0)	# Значение на аналоговом входе 1
+	in2 = db.FloatProperty(default=0.0)	# Значение на агалоговом входе 2
 	#power = db.FloatProperty()		# Уровень заряда батареи (на
+	@property
+	def ldate(self):
+		#return fromUTC(self.date).strftime("%d/%m/%Y %H:%M:%S")
+		return fromUTC(self.date)
 
 class DBGPSPoint2(db.Model):
 	user = db.ReferenceProperty(DBUser, name='a')
@@ -118,3 +122,4 @@ class DBDescription(db.Model):
 	coef = db.FloatProperty(default=1.0)		# Коэффициент преобразования для человеческого представления
 	mini = db.IntegerProperty(default=0)		# Минимальное значение для типа INT
 	maxi = db.IntegerProperty(default=32767)	# Максимальное значение для типа INT
+	private = db.BooleanProperty(default=False)
