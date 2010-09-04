@@ -173,7 +173,20 @@
 			window.addEventListener('keydown', function (e) {
 				if (e.keyCode == 32) { // space				
 					loadPoints("geosjson?ukey=" + ukey + "&last="+points+"&callback=?");
-				}
+				} else if(e.keyCode == 192){
+					//alert('q');
+					//$("body").style['-webkit-transition'] = 'all 0.3s ease-out';
+					document.body.setAttribute('style', '-webkit-transition:all 2.0s ease-out;');
+					var all = $("*");
+					for(var el in all){
+						//all[el].css('background-color', 'blue');
+						//all[el].style['background-color'] = 'blue';//'#' + Math.random();
+						//all[el].setAttribute('style', '-webkit-transform: rotate(2deg);');
+						if(all[el].style){
+							all[el].style['-webkit-transform'] = 'rotate('+(Math.random()*20-10.0)+'deg)';
+						}
+					}
+				} //else { alert(e.keyCode); }
 			}, false);
 
 			

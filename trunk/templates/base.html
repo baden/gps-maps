@@ -28,7 +28,7 @@
 		<div id="Widget">
 			{% if not map %}
 			<div style="position:absolute; right: 10px; top: 10px; z-index:1000;">
-				Вы вошли как: <b>{{ username }}</b>
+				<span title="Вы вошли как {{ username }}"><b>{{ username }}</b></span>
 			        <a class="smallButton" href="{{ login_url }}" title="Войти под другим именем">X</a>
 			</div>
 			{% endif %}
@@ -38,12 +38,12 @@
 
 		<div class="menu">
 			<ul>
-				<li id="main"><a href="/"><div>Главная</div></a></li>
-				<li id="config"><a href="/config"><div>Конфигурация</div></a></li>
+				<li id="menu-main"><a href="/"><div>Главная</div></a></li>
+				<li id="menu-config"><a href="/config"><div>Конфигурация</div></a></li>
 				{% if not true.users %}
-				<li id="map"><a href="/map"><div>Карта</div></a></li>
-				<li id="log"><a href="/logs"><div>События</div></a></li>
-				<li id="geos"><a href="/geos"><div>События GPS</div></a></li>
+				<li id="menu-map"><a href="/map"><div>Карта</div></a></li>
+				<li id="menu-logs"><a href="/logs"><div>События</div></a></li>
+				<li id="menu-geos"><a href="/geos"><div>События GPS</div></a></li>
 				{% endif %}
 			</ul>
 		</div>

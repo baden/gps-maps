@@ -77,33 +77,33 @@ div.menu li {
 	background: url(/svg/menu-default.svg) no-repeat;
 	background-position: 10px 0px;
 	background-color: #FFFFFF;
-	box-shadow: 2px 2px 4px #000000;
+	box-shadow: 2px 2px 4px #808080;
 	-moz-box-shadow: 2px 2px 4px #808080;
 	-webkit-box-shadow: 2px 2px 4px #808080;
 }
 
 
-div.menu li#main {
+div.menu li#menu-main {
 	background: url(/svg/menu-main.svg) 10px 0px no-repeat;
 	background-color: #FFFFFF;
 }
 
-div.menu li#map {
+div.menu li#menu-map {
 	background: url(/svg/menu-map.svg) 10px 0px no-repeat;
 	background-color: #FFFFFF;
 }
 
-div.menu li#config {
+div.menu li#menu-config {
 	background: url(/svg/menu-config.svg) 10px 0px  no-repeat;
 	background-color: #FFFFFF;
 }
 
-div.menu li#log {
+div.menu li#menu-logs {
 	background: url(/svg/menu-log.svg) 10px 0px no-repeat;
 	background-color: #FFFFFF;
 }
 
-div.menu li#geos {
+div.menu li#menu-geos {
 	background: url(/svg/menu-geos.svg) no-repeat;
 	background-position: 10px 0px;
 	background-color: #FFFFFF;
@@ -273,12 +273,12 @@ a.Prev, a.Next {
 }
 
 a.Prev {
-	left: 16px;
+	right: 16px;
 	/*top: 42px;*/
 }
 
 a.Next {
-	right: 16px;
+	left: 16px;
 	/*top: 42px;*/
 }
 

@@ -1,0 +1,59 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" 
+  "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+	<head>
+		<title>Event Handler for DIV</title>
+<script type="text/javascript">
+	
+function addHandler(node, evt, func) {
+    if (node.addEventListener) {
+        node.addEventListener(evt, func, false); 
+    } else {
+        node.attachEvent('on' + evt, func);     
+    }
+};
+ 
+function isParent(child, parent) {
+    if (!child || !parent) {
+        return false;
+    }
+    while (true) {
+        if (child == parent) {
+            return true;
+        }
+        if (child.parentElement) {
+            child = child.parentElement;
+        } else if (child.parentNode) {
+            child = child.parentNode;
+        } else {
+            return false;
+        }
+    }
+}
+
+var preperedText = "<div style='position: absolute; width: 300px; background: #ccc;'><h1>Cool Popup</h1>\
+<p>Here the sample Text (<b>in paragraph</b>)\
+with <i>some</i> <u>styling</u> and picture above<br/>\
+<img src='Astronaut.gif' title='Picture'></p></div>";
+
+function zaatachim(container) {
+	var injection = document.getElementById(container);
+	injection.innerHTML = preperedText;
+	addHandler(injection, 'mouseout', function(e) {
+	    var target = e.relatedTarget || e.toElement;
+	    if(!isParent(target, injection)) {
+	       	injection.innerHTML = '';
+	    }
+	});
+}
+</script>
+	</head>
+<body>
+<div id="container"></div>
+<a href="#miracle" title="make magik" onmouseover="zaatachim('container'); return false;"> 
+	Make Mouse Over Me, <br/>
+	Come On!
+</a>
+
+</body>
+</html>

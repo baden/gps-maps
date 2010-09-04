@@ -9,6 +9,7 @@ from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.api.labs import taskqueue
+from google.appengine.api import urlfetch
 
 from datetime import date, timedelta, datetime
 
@@ -119,6 +120,9 @@ def SaveGPSPointFromBin(pdata, result):
 	vout = float(ord(pdata[21])) / 10.0;
 	vin = float(ord(pdata[22])) / 50.0;
 
+	fsource = ord(pdata[26]);	# Причина фиксации координаты
+
+
 	#_log += '\n Date: %s' % datestamp.strftime("%d/%m/%Y %H:%M:%S")
 	#_log += '\n Latitude: %.5f' % latitude
 	#_log += '\n Longitude: %.5f' % longitude
@@ -128,7 +132,8 @@ def SaveGPSPointFromBin(pdata, result):
 	#_log += '\n Altitude: %.5f' % altitude
 	#logging.info('[%s]' % datestamp.strftime("%d/%m/%Y %H:%M:%S"))
 
-	gpspoint = datamodel.DBGPSPoint()
+	#gpspoint = datamodel.DBGPSPoint()
+	gpspoint = datamodel.DBGPSPoint(key_name = "gps_%s_%s" % (result.user.imei, datestamp.strftime("%Y%m%d%H%M%S")))
 	gpspoint.user = result.user
 	gpspoint.date = datestamp
 	gpspoint.latitude = latitude
@@ -142,6 +147,7 @@ def SaveGPSPointFromBin(pdata, result):
 	gpspoint.vin = vin
 	gpspoint.in1 = in1
 	gpspoint.in2 = in2
+	gpspoint.fsource = fsource
 
 	return gpspoint
 	#gpspoint.put()
@@ -154,8 +160,8 @@ class BinGps(webapp.RequestHandler):
 	def post(self):
 		_log = "\n== BINGPS ["
 		self.response.headers['Content-Type'] = 'application/octet-stream'
-		self.response.out.write('BINGPS: OK\r\n')
-		userdb = utils.GetOrCreateUserByIMEI(self.request.get('imei'))
+		uimei = self.request.get('imei')
+		userdb = utils.GetOrCreateUserByIMEI(uimei)
 
 		sdataid = self.request.get('dataid')
 		if sdataid:
@@ -165,14 +171,13 @@ class BinGps(webapp.RequestHandler):
 
 		pdata = self.request.body
 
+		_log += '\n==\tData ID: %d' % dataid
+
 		_log += '\nSaving to backup'
 		newbinb = datamodel.DBGPSBinBackup()
 		newbinb.user = userdb
 		newbinb.dataid = dataid
 		newbinb.data = pdata
-		newbinb.put()
-
-		_log += '\n==\tData ID: %d' % dataid
 
 		crc = ord(pdata[-1])*256 + ord(pdata[-2])
 		pdata = pdata[:-2]
@@ -182,20 +187,29 @@ class BinGps(webapp.RequestHandler):
 		for byte in pdata:
 			crc2 = utils.crc(crc2, ord(byte))
 
+
 		if crc!=crc2:
 			_log += '\n==\tWarning! Calculated CRC: 0x%04X but system say CRC: 0x%04X. (Now error ignored.)' % (crc2, crc)
 			_log += '\n==\t\tData (HEX):'
 			for data in pdata:
 				_log += ' %02X' % ord(data)
+
+			newbinb.crcok = False
+			newbinb.put()
+			logging.info(_log)
+			self.response.out.write('BINGPS: CRCERROR\r\n')
+			return
 		else:
-				_log += '\n==\tCRC OK %04X' % crc
+			_log += '\n==\tCRC OK %04X' % crc
+
+		newbinb.crcok = True
+		newbinb.put()
 
 		newbin = datamodel.DBGPSBin()
 		newbin.user = userdb
 		newbin.dataid = dataid
 		newbin.data = pdata #db.Text(pdata)
 		newbin.put()
-
 
 		#logging.info("==> Bin data: %s" % repr(pdata))
 		#parts = pdata.split('\xFF')
@@ -212,7 +226,31 @@ class BinGps(webapp.RequestHandler):
 		if newconfigs:
 			self.response.out.write('CONFIGUP\r\n')
 
+		self.response.out.write('BINGPS: OK\r\n')
+
 		logging.info(_log)
+		return
+
+		#_log = "\nUrl-fetch redirect: "
+		logging.info("\nUrl-fetch redirect: ")
+		#url = "http://212.110.139.65/"
+		#url = "http://gps-maps.appspot.com/gpstestbin?imei=%s" % uimei
+		host = "gps-maps.appspot.com"	#http://gps-maps.appspot.com
+		host = "74.125.39.141"	#http://gps-maps.appspot.com
+		url = "http://%s/gpstestbin?imei=%s" % (host, uimei)
+		#url = "http://localhost/gpstestbin?imei=%s" % uimei
+		result = urlfetch.fetch(
+			url,
+			payload = pdata,
+			method = urlfetch.POST,
+			headers={'Content-Type': 'application/octet-stream'}
+		)
+		if result.status_code == 200:
+			pass
+			logging.info('Url fetch: Ok.')
+		else:
+			logging.info('Url fetch: Fail.')
+
 
 class BinGpsParse(webapp.RequestHandler):
 	def get(self):

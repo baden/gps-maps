@@ -1,0 +1,14 @@
+// Я думаю что он очень прост в использовании, поэтому покажу только один пример
+
+var map = new google.maps.Map(document.getElementById("map"), {
+    zoom: 1,
+    center: new google.maps.LatLng(0, 0),
+    mapTypeId: google.maps.MapTypeId.HYBRID
+});
+var myMarkerManager = new MarkerManager(map);
+var kiev = myMarkerManager.createMarker(new google.maps.LatLng(50.440951, 30.527181)); // добавлю маркер Киева
+myMarkerManager.addMarkers([kiev,kiev]); // всего уже три маркера в одной точке
+var markers = myMarkerManager.getMarkers(new google.maps.LatLng(50.440951, 30.527181)); // нашел все три
+myMarkerManager.removeMarker(markers[0]); // удяляю первый
+myMarkerManager.clearMarkers(); // удаляю все
+

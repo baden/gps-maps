@@ -1,1 +1,22 @@
-#Menu a div#menu-config {% include "css/menu-select.css" %}
+li#menu-config {% include "css/menu-select.css" %}
+
+div.cico {
+	width: 24px;
+	height: 24px;
+	/*border: 1px solid black;*/
+	text-align: center;
+	padding: 0 0 0 0;
+	margin: 0 0 0 0;
+	display: inline-block;
+	-webkit-transition: all 0.3s ease-out;
+	-moz-transition: all 0.3s ease-out;
+	/*background-image: url(svg/cars/object1.svg);*/
+}
+
+div:hover.cico {
+/*	-webkit-transform: rotate(360deg) scale(1.5);
+	-moz-transform: rotate(360deg);*/
+	-webkit-transform: scale(1.5);
+	-moz-transform: scale(1.5);
+}
+

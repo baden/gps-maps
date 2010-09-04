@@ -8,8 +8,8 @@
 
 {% block body %}
   {% if ukey %}
-	<a class="Prev" href="/geos?ukey={{ ukey }}">&lt;&lt; В начало</a>
-	<a class="Next" href="/geos?ukey={{ ukey }}&cursor={{ ncursor }}">Дальше &gt;&gt;</a>
+	<a class="Next" href="/geos?ukey={{ ukey }}&cursor={{ ncursor }}">&lt;&lt; Раньше</a>
+	<a class="Prev" href="/geos?ukey={{ ukey }}">Последние &gt;&gt;</a>
 	<h1>Записи в GEO-логе</h1>
 	<div class="systitle">{{ userdb.imei }}: <b>{{ userdb.desc }}</b></div>
 	<a class="smallButton" href="/geos?ukey={{ ukey }}" title="Обновить"><img src="/svg/button-update.svg" /></a>
@@ -32,13 +32,16 @@
 			<th>Аккумул.<br /><i>В</i></th>
 			<!--th>Вход 1<br><i>%</i></th>
 			<th>Вход 2<br><i>%</i></th-->
+			{% if admin %}
+			<th>Примечание.<br /><i>Итсочник</i></th>
+			{% endif %}
 		</tr>
 	</thead>
         {% for geolog in geologs %}
             <tr>
 		<td>{{ geolog.ldate|date:"d/m/Y H:i:s" }}</td>
-		<td>{{ geolog.latitude|floatformat:5 }}</td>
-		<td>{{ geolog.longitude|floatformat:5 }}</td>
+		<td>{{ geolog.latitude|floatformat:6 }}</td>
+		<td>{{ geolog.longitude|floatformat:6 }}</td>
 		<td>{{ geolog.sats }}</td>
 		<td>{{ geolog.speed|floatformat:1 }}</td>
 		<td>{{ geolog.course|floatformat:0 }}</td>
@@ -47,6 +50,9 @@
 		<td>{{ geolog.vin|floatformat:2 }}</td>
 		<!--td>{{ geolog.in1|floatformat:2 }}</td>
 		<td>{{ geolog.in2|floatformat:2 }}</td-->
+		{% if admin %}
+		<td>{{ geolog.fsourced }}</td>
+		{% endif %}
 	    </tr>
 	{% endfor %}
     </table>
@@ -61,10 +67,6 @@
     <h1>Выберите систему:</h1>
     <table class="selector">
     <!--table-->
-        <thead>
-        	<tr>
-        	</tr>
-        </thead>
 	        {% for user in self.account.users %}
             <tr>
 		<!--td>

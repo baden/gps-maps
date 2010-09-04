@@ -21,16 +21,26 @@
 
         {% for bindata in dbbindata %}
 	<div class="bblock">
-		<div>{{ bindata.sdate|date:"d/m/y G:i:s" }}</div>
+		<div class="{% if bindata.crcok %}crcok{% else %}crcfail{% endif %}">{{ bindata.sdate|date:"d/m/y G:i:s" }}</div>
 		{{ bindata.datasize }} bytes
-		 <a class="smallButton" href="binbackup?cmd=getbin&key={{ bindata.key }}" title="Загрузить данные в сыром виде">B</a>
-		 {% if admin %}<a class="smallButton" href="binbackup?imei={{ imei }}&cmd=del&key={{ bindata.key }}" title="Удалить эти данные">X</a>{% endif %}
+		{% if bindata.needfix %}
+		 <a class="smallButton" style="background-color: red;" href="binbackup?cmd=fixcrc&key={{ bindata.key }}&imei={{ imei }}" title="Починить CRC">F</a>
+		{% endif %}
+		{% if bindata.wronglen %}
+		 <a class="smallButton" style="background-color: #FF00FF;" href="binbackup?cmd=fixlen&key={{ bindata.key }}&imei={{ imei }}" title="Ошибочная длина">L</a>
+		{% endif %}
+		{% if bindata.postbug %}
+		 <a class="smallButton" style="background-color: #C0C000;" href="binbackup?cmd=fixpost&key={{ bindata.key }}&imei={{ imei }}" title="POST-баг">P</a>
+		{% endif %}
+		 <a class="smallButton" href="binbackup?cmd=getbin&key={{ bindata.key }}&imei={{ imei }}" title="Загрузить данные в сыром виде">B</a>
+		 {% if admin %}<a class="smallButton" href="binbackup?imei={{ imei }}&cmd=del&key={{ bindata.key }}&imei={{ imei }}" title="Удалить эти данные">X</a>{% endif %}
 	</div>
 	{% endfor %}
 
 	<p>В 200-х записях: <b>{{ total }}</b> байт.</p>
 
 	</div>
+	<a class="pushLink" href="binbackup?cmd=pack&filter=today&imei={{ imei }}" title="Загружает сегодняшние записей одним куском">Упаковать сегодняшние</a>
 	<a class="pushLink" href="binbackup?cmd=pack&imei={{ imei }}" title="Загружает 200 записей одним куском">Упаковать</a>
 	<a class="pushLink" href="binbackup?cmd=pack&cnt=1000&imei={{ imei }}" title="Загружает 1000 записей одним куском">Упаковать x1000</a>
 	{% if admin %}

@@ -68,9 +68,9 @@ function ChangeParam(me)
 					var imei = document.getElementById('addsys_imei').value;
 					//var phone = document.getElementById('addsys_phone').value;
 					//$.getJSON("/config?cmd=addsys&imei=" + imei + "&phone=" + phone, function (data) {
-					$.getJSON("/config?cmd=addsys&imei=" + imei, function (data) {
+					$.getJSON("/config?cmd=addsys&imei=" + imei + "&callback=?", function (data) {
 						//window.location = "/config";
-						$(this).dialog('close');
+						//$(this).dialog('close');
 						result = data.responseData.result;
 						if(result == "not found"){
 							alert("Система не найдена. возможно система ни разу не выходила на связь с сервером.");
@@ -80,6 +80,20 @@ function ChangeParam(me)
 					});
 					$(this).dialog('close');
 				},
+				'Отменить': function() {
+					$(this).dialog('close');
+				}
+			}
+		});
+		$("#dialog-cico").dialog({
+			width: 400,
+			height: 200,
+			modal: true,
+			autoOpen: false,
+			buttons: {
+				/*'Выбрать.': function() {
+					$(this).dialog('close');
+				},*/
 				'Отменить': function() {
 					$(this).dialog('close');
 				}
@@ -115,12 +129,26 @@ function ChangeParam(me)
 		//alert('aa');
 	}
 
+	$(document).ready(function(){
+		//#clickme
+		$('.cico').bind('click', function(){
+			//$('img').css({'background-color': 'green'});
+			//alert(this.id);
+			$("#cico-name").html($(this).attr('imei'));
+			$("#dialog-cico").dialog('open');
+		})
+	});
+
 </script>
 
 {% endblock %}
 
 {% block body %}
 	<h1>Наблюдаемые системы:</h1>
+	{% if admin %}
+	<input type="button" id="clickme" value="Click me" />
+	<div id="decore">aaa</div>
+	{% endif %}
 	<table>
 		<tr>
 			<th>IMEI</th>
@@ -135,6 +163,7 @@ function ChangeParam(me)
 			<td>{{ user.imei }}</td>
 			<td>{{ user.phone }}</td>
 			<td style="text-align: left;">
+				<div class="cico" id="cico_{{ user.imei }}" imei="{{ user.imei }}"><img src="svg/cars/object1.svg" /></div>
 				<div style="display: inline-block;" id="desc_{{ user.imei }}">{{ user.desc }}</div>
 				<a class="smallButton" href="javascript:SetDescription('{{ user.imei }}')" title="Изменить описание">...</a>
 			</td>
@@ -148,8 +177,11 @@ function ChangeParam(me)
 
 	</table>
 
-	<a class="pushLink" href="javascript:addsys();">Добавить систему</a><br />
+	{% if admin %}
+	Path: {{ path }}
+	{% endif %}
 
+	<a class="pushLink" href="javascript:addsys();">Добавить систему</a><br />
 
 	<div id="dialog-modal" title="Внимание!!!" style="font-size: 1.5em;">
 		<p>Вы действительно хотите отказаться от слежения за системой?</p>
@@ -162,6 +194,21 @@ function ChangeParam(me)
 			<br /><br />
             		<div><textarea id="addsys_imei" name="imei" rows="1" style="width:98%;"></textarea></div>
 			<br />
+			<!--label>Или номер SIM-карты в формате +380xxxxxxxxx</label>
+			<br /><br />
+            		<div><textarea id="addsys_phone" name="phone" rows="1" style="width:98%;"></textarea></div-->
+		</form>
+	</div>
+
+	<div id="dialog-cico" title="Выбор значка">
+		<form style="font-size: 1.5em;">
+			<div style="position: absolute; top: 32%; white-space: nowrap; -webkit-transform: rotate(-15deg); -moz-transform: rotate(-15deg); font-size: 2.4em; z-index: -1; color: grey; text-decoration: blink;">Функция в разработке</div>
+			<label>Выберите логотип для объекта <div id="cico-name"></div></label><br />
+			<div class="cico"><img src="svg/cars/object1.svg" /></div>
+			<div class="cico"><img src="svg/cars/object2.svg" /></div>
+			<div class="cico"><img src="svg/cars/object3.svg" /></div>
+			<div class="cico"><img src="svg/cars/object4.svg" /></div>
+			<div class="cico"><img src="svg/cars/object5.svg" /></div>
 			<!--label>Или номер SIM-карты в формате +380xxxxxxxxx</label>
 			<br /><br />
             		<div><textarea id="addsys_phone" name="phone" rows="1" style="width:98%;"></textarea></div-->

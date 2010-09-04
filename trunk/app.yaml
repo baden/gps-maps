@@ -87,6 +87,10 @@ handlers:
 - url: /bingps.*
   script: gps-bingps.py
 
+- url: /carsico/.*
+  script: gps-carsico.py
+
+
 - url: /.*
   script: gps-maps.py
 
@@ -97,3 +101,24 @@ admin_console:
 
 derived_file_type:
 - python_precompiled
+
+#skip_files:
+#- ^(.*/)?app\.yaml
+#- ^(.*/)?app\.yml
+#- ^(.*/)?index\.yaml
+#- ^(.*/)?index\.yml
+#- ^(.*/)?#.*#
+#- ^(.*/)?.*~
+#- ^(.*/)?.*\.py[co]
+#- ^(.*/)?.*/RCS/.*
+#- ^(.*/)?\..*
+#- ^(.*/)?utils/.*
+#- ^(.*/)?\js/ideas/.*
+#- ^(.*/)?\.settings/.*
+#- ^(.*/)?\.svn/.*
+
+#error_handlers:
+#  - file: default_error.html
+#
+#  - error_code: over_quota
+#    file: over_quota.html
