@@ -11,12 +11,13 @@ class DBUser(db.Model):
 	password = db.StringProperty(multiline=False)	# User password
 	date = db.DateTimeProperty(auto_now_add=True)	# Registration date
 	desc = db.StringProperty(multiline=False)	# Описание
+	#icon = db.
 
 class DBAccounts(db.Expando):
 	user = db.UserProperty()			# Пользователь
 	name = db.StringProperty(multiline=False)	# Отображаемое имя
-	systems = db.StringListProperty()		# Перечеть наблюдаемых систем (их keys)
-	#systems = db.ListProperty(db.Blob)		# Перечеть наблюдаемых систем
+	systems = db.StringListProperty()		# Перечень наблюдаемых систем (их keys)
+	#systems = db.ListProperty(db.Blob)		# Перечень наблюдаемых систем
 	@property
 	def users(self):
 		lusers = []
@@ -38,6 +39,21 @@ class Greeting(db.Model):
 	content = db.StringProperty(multiline=True)
 	date = db.DateTimeProperty(auto_now_add=True)
 
+FSOURCE = {
+	0: "-",
+	1: "SUDDENSTOP",
+	2: "STOPACC",
+	3: "TIMESTOPACC",
+	4: "SLOW",
+	5: "TIMEMOVE",
+	6: "START",
+	7: "TIMESTOP",
+	8: "ANGLE",
+	9: "DELTALAT",
+	10: "DELTALONG",
+	11: "DELTA",
+}
+
 class DBGPSPoint(db.Model):
 	user = db.ReferenceProperty(DBUser, collection_name='geos')
 	cdate = db.DateTimeProperty(auto_now_add=True)
@@ -53,11 +69,15 @@ class DBGPSPoint(db.Model):
 	vin = db.FloatProperty(default=0.0)	# Напряжение внутреннего питания
 	in1 = db.FloatProperty(default=0.0)	# Значение на аналоговом входе 1
 	in2 = db.FloatProperty(default=0.0)	# Значение на агалоговом входе 2
+	fsource = db.IntegerProperty(default=0)	# Дополнительная информация о точке
 	#power = db.FloatProperty()		# Уровень заряда батареи (на
 	@property
 	def ldate(self):
 		#return fromUTC(self.date).strftime("%d/%m/%Y %H:%M:%S")
 		return fromUTC(self.date)
+	@property
+	def fsourced(self):
+		return FSOURCE[self.fsource] #self.fsource
 
 class DBGPSPoint2(db.Model):
 	user = db.ReferenceProperty(DBUser, name='a')
@@ -90,6 +110,7 @@ class DBGPSBinBackup(db.Model):
 	user = db.ReferenceProperty(DBUser, collection_name='gpsbackups')
 	cdate = db.DateTimeProperty(auto_now_add=True)
 	dataid = db.IntegerProperty()
+	crcok = db.BooleanProperty(default=False)
 	data = db.BlobProperty()		# Пакет данных (размер ориентировочно до 64кбайт)
 
 class DBFirmware(db.Model):
@@ -123,3 +144,7 @@ class DBDescription(db.Model):
 	mini = db.IntegerProperty(default=0)		# Минимальное значение для типа INT
 	maxi = db.IntegerProperty(default=32767)	# Максимальное значение для типа INT
 	private = db.BooleanProperty(default=False)
+
+class CarPhoto(db.Model):
+	title = db.StringProperty()
+	full_size_image = db.BlobProperty()

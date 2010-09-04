@@ -1,0 +1,103 @@
+var TT= {}
+
+TT.value= function( data ){
+    return function( ){
+        return data
+    }
+}
+
+TT.pipe= function( list ){
+    if( !list ) list= []
+    var len= list.length
+    return function( data ){
+        for( var i= 0; i < len; ++i ) data= list[ i ]( data )
+        return data
+    }
+}
+
+TT.concater= function( list ){
+    var len= list.length
+    if( list === 1 ) return list[0]
+    return function( data ){
+        var res= []
+        for( var i= 0; i < len; ++i )
+            res[i]= list[ i ]( data )
+        return res.join( '' )
+    }
+}
+
+TT.template= new function( ){
+    var searcher= /(.*?)(\{|\}|$)/g
+    return function( str, filter ){
+        if( !filter ) filter= TT.pipe()
+        var parts= []
+        String( str ).replace
+        (    searcher
+        ,    function( str, val, term ){
+                if( !str ) return
+                parts.push
+                (     ( term === '}' )
+                    ?    function( data ){
+                            data= data[ val ]
+                            switch( typeof data ){
+                                case 'undefined': return '{' + val + '}'
+                                case 'function': return data()
+                                default: return filter( data )
+                            }
+                        }
+                    :    TT.value( val )
+                )
+            }
+        )
+        return TT.concater( parts )
+    }
+}
+
+TT.uri= function( tpl ){
+    return TT.template( tpl, TT.uri.encoder() )
+}
+TT.uri.encoder= TT.value( encodeURIComponent )
+TT.uri.decoder= TT.value( decodeURIComponent )
+
+TT.html= function( tpl ){
+    return TT.template( tpl, TT.html.encoder() )
+}
+TT.html.encoder= new function( ){
+    var parent= document.createElement('div')
+    var child= parent.appendChild( document.createTextNode( '' ) )
+    return TT.value( function( data ){
+        child.nodeValue= data
+        return parent.innerHTML.split( '"' ).join( '&quot;' ).split( "'" ).join( '&apos;' )
+    })
+}
+TT.html.decoder= new function( ){
+    var parent= document.createElement('div')
+    return TT.value( function( data ){
+        parent.innerHTML= data
+        return parent.firstChild.nodeValue
+    })
+}
+
+TT.dom= function( tpl ){
+    return TT.pipe([ TT.html( tpl ), TT.dom.parser() ])
+}
+TT.dom.parser= new function(){
+    var parent= document.createElement( 'div' )
+    return TT.value( function( html ){
+        parent.innerHTML= html
+        var childs= parent.childNodes
+        if( childs.length === 1 ) return childs[0]
+        var fragment= document.createDocumentFragment()
+        while( childs[0] ) fragment.appendChild( childs[0] )
+        return fragment
+    })
+}
+TT.dom.serializer= new function(){
+    var parent= document.createElement( 'div' )
+    var child= parent.appendChild( document.createTextNode( '' ) )
+    return TT.value( function( node ){
+        parent.replaceChild( node.cloneNode( true ), parent.firstChild )
+        return parent.innerHTML
+    })
+}
+

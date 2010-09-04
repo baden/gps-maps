@@ -88,8 +88,8 @@
 
   {% if ukey %}
 
-	<a class="Prev" href="/logs?ukey={{ ukey }}">&lt;&lt; В начало</a>
-	<a class="Next" href="/logs?ukey={{ ukey }}&cursor={{ ncursor }}">Дальше &gt;&gt;</a>
+	<a class="Next" href="/logs?ukey={{ ukey }}&cursor={{ ncursor }}">&lt;&lt; Раньше</a>
+	<a class="Prev" href="/logs?ukey={{ ukey }}">Последние &gt;&gt;</a>
 	<h1>Записи в логе</h1>
 	<div class="systitle">{{ userdb.imei }}: <b>{{ userdb.desc }}</b></div>
 	<a class="smallButton" href="/logs?ukey={{ ukey }}" title="Обновить"><img src="/svg/button-update.svg" /></a>

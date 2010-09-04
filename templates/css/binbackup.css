@@ -30,8 +30,16 @@ div:hover.bblock {
 
 
 div.bblock div {
-	background-color: #E0E0D0;
 	line-height:0.8em;
 	padding: 0;
 	margin: 0;
+}
+
+
+div.bblock div.crcok {
+	background-color: #80FF80;
+}
+
+div.bblock div.crcfail {
+	background-color: #FF8080;
 }

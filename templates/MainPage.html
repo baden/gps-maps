@@ -107,6 +107,28 @@ $("#menu-main").hover(function () {
 			MakeBinRequest('bingeos?imei=123456789012&enc=utf8&dataid=' + dataid.toString(16).toUpperCase(), data);
 			dataid++;
 		}
+
+		$(document).ready(function(){
+			//#clickme
+			$('#getdoc').bind('mouseover', function(){
+				$('#getadobe').stop(true, true).fadeIn("slow");
+				//$('#getadobe').show();
+			})
+			
+			$('#getdoc').bind('mouseout', function(){
+				//$('#getadobe').delay(5000).hide();
+				$('#getadobe').stop(true, true).delay(5000).fadeOut("slow");
+			})
+			$('#getadobe').mouseover(function(){
+				//alert('aa');
+				$('#getadobe').stop(true, true);
+			});
+			$('#getadobe').mouseout(function(){
+				//alert('aa');
+				$('#getadobe').stop(true, true).delay(5000).fadeOut("slow");
+			});
+		});
+
 	</script>
 {% endblock %}
 
@@ -124,6 +146,14 @@ $("#menu-main").hover(function () {
 	<!--div>CRC1 = {{ crc1 }} {{ my }}</div-->
 
 	<!--a class="pushLink" href="system?cmd=add">Добавить систему</a-->
+	<h1>Общая информация</h1>
+	<a id="getdoc" class="ilink" href="static/bin-protocol-v3.pdf">
+		<img src="/images/PDF.png" width="32" height="32" valign="middle" alt="PDF">
+		<span>Описание протокола</span>
+	</a>
+	<div id="getadobe" style="position: absolute; bottom:4px; right:5px; display:none;"><a class="ilink" href="http://www.adobe.com/go/EN_US-H-GET-READER">
+		<img src="http://www.adobe.com/images/shared/download_buttons/get_adobe_reader.png" width="158" height="39" alt="Get Adobe Reader">
+	</a></div>
 	<h1>SMS-команды управления</h1>
 	<table>
 		<tr>

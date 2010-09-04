@@ -5,7 +5,8 @@
 	При наезде курсором несколько увеличивается в размере
 */
 
-var arrdiv = null;
+//var
+//window.arrdiv = null;
 
 function MyMarker(point, angle, map, i, result, onclick)
 {
@@ -150,4 +151,5 @@ MyMarker.prototype.draw = function() {
 		arrdiv.style.top = divpx.y - 16 + 'px';
 	}
 */
+//	console.log('MyMarker.protorype.draw:' + this.i);
 }

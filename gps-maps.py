@@ -28,6 +28,8 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 from google.appengine.ext.webapp import template
 from google.appengine.api import memcache
 
+
+
 #import models
 import datamodel
 import utils
@@ -208,6 +210,7 @@ class TemplatedPage2(webapp.RequestHandler):
 			values['account'] = self.account
 			#values['single'] = self.single
 			values['self'] = self
+			values['user'] = self.user
 			#values['users'] = self.users
 			#values['ausers'] = ausers
 			#if 'imei' not in values: values['imei'] = self.uimei
@@ -927,6 +930,50 @@ class Geos(TemplatedPage2):
 			#if geolog.vout == None:
 			#	geolog.vout = 0.0
 		"""
+
+		"""
+		for geolog in geologs:
+			lat = geolog.latitude
+			deg = int(lat)
+			lat = (lat-deg)*60.0
+			min = int(lat)
+			lat = (lat-min)*60.0
+			sec = int(lat)
+			lat = (lat-sec)*60.0
+			part = int(lat)
+			geolog.latitudeams = '%02dº%02d\'%02d\'\'%02d' % (deg, min, sec, part)
+
+			lat = geolog.latitude
+			if lat<0: lat = -lat;
+			deg = int(lat)
+			lat = (lat-deg)*60.0
+			geolog.latitudegps = '%02d%07.4f' % (deg, lat)
+			if geolog.latitude>=0: geolog.latitudegps += 'N'
+			else: geolog.latitudegps += 'S'
+
+			lat = geolog.longitude
+			deg = int(lat)
+			lat = (lat-deg)*60.0
+			min = int(lat)
+			lat = (lat-min)*60.0
+			sec = int(lat)
+			lat = (lat-sec)*60.0
+			part = int(lat)
+			geolog.longitudeams = '%03dº%02d\'%02d\'\'%02d' % (deg, min, sec, part)
+
+			lat = geolog.longitude
+			if lat<0: lat = -lat;
+			deg = int(lat)
+			lat = (lat-deg)*60.0
+			geolog.longitudegps = '%03d%07.4f' % (deg, lat)
+			if geolog.longitude>=0: geolog.longitudegps += 'E'
+			else: geolog.longitudegps += 'W'
+
+		#<td title="({{ geolog.latitudeams }}) ({{ geolog.latitudegps }})">{{ geolog.latitude|floatformat:6 }}</td>
+		#<td title="({{ geolog.longitudeams }}) ({{ geolog.longitudegps }})">{{ geolog.longitude|floatformat:6 }}</td>
+		"""
+
+
 		#path = os.path.join(os.path.dirname(__file__), 'geos.html')
 		#self.response.out.write(template.render(path, template_values))
 		template_values = {}
@@ -1030,18 +1077,69 @@ class GeosJSON(webapp.RequestHandler):
 		#start_time = datetime.now()
 		#logging.info("GeosJSON start (%s)" % start_time.strftime("%H:%M:%S"))
 
-		userdb = getUser(self.request)
-
-		if userdb == None:
-			logging.info("User not found.")
-			pass
-
-		#dif_time = datetime.now() - start_time
-		#logging.info("GeosJSON user ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
+		callback = self.request.get('callback')
 
 		self.response.headers['Content-Type']   = 'text/javascript; charset=utf-8'
 
-		callback = self.request.get('callback')
+		userdb = getUser(self.request)
+		if userdb == None:
+			uaccount = self.request.get('account')
+			user = None
+			if uaccount:
+				user = users.User(uaccount)
+				if not user:
+					logging.info("User not found.")
+			else:
+				logging.info("Not defined 'account'.")
+
+			account = datamodel.DBAccounts().gql("WHERE user = :1", user).get()
+			results = []
+			if account:
+				for system in account.users:
+					item = {
+						"imei": system.imei,
+						"desc": system.desc,
+						"phone": system.phone,
+					}
+					geolog = system.geos.order('-date').get()
+					if geolog:
+						item["lastpos"] = {
+							"date": fromUTC(geolog.date).strftime("%d/%m/%Y %H:%M:%S"),
+							#"localdate": geolog.date.strftime("%d/%m/%Y %H:%M:%S"),
+							#"day": geolog.date.strftime("%m/%d/%Y %H:%M"),
+							"lat": geolog.latitude,
+							"long": geolog.longitude,
+							"sats": geolog.sats,
+							"fix": geolog.fix,
+							"speed": geolog.speed,
+							"course": geolog.course,
+							"alt": geolog.altitude,
+							"in1": geolog.in1,
+							"in2": geolog.in2,
+							"vin": geolog.vin,
+							"vout": geolog.vout,
+						}
+					else:
+						item["lastpos"] = None
+
+					results.append(item)
+			else:
+				logging.info("Account not found.")
+
+			jsonresp = {
+				"responseData": {
+					"results": results, 
+					"count": len(account.users),
+					"config": 0,
+					"username": user.nickname(),
+				}
+			}
+			nejson = json.dumps(jsonresp)
+			self.response.out.write(callback + "(" + nejson + ")\r")
+			return
+
+		#dif_time = datetime.now() - start_time
+		#logging.info("GeosJSON user ready (+%.4fsec)" % (dif_time.seconds + float(dif_time.microseconds)/1000000.0))
 
 		datefrom_s = self.request.get('datefrom')
 		if datefrom_s:
@@ -1063,11 +1161,11 @@ class GeosJSON(webapp.RequestHandler):
 		if first:
 			#logging.info("GeosJSON first: %s" % first)
 			if datefrom_s:
-				#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).order('date').fetch(int(first))
-				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).order('date').fetch(4)
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).order('date').fetch(int(first))
+				#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).order('date').fetch(4)
 			else:
-				#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('date').fetch(int(first))
-				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('date').fetch(4)
+				geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('date').fetch(int(first))
+				#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).order('date').fetch(4)
 				pass
 		else:
 			last = self.request.get('last')
@@ -1078,7 +1176,11 @@ class GeosJSON(webapp.RequestHandler):
 			else:
 				#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(MAX_TRACK_FETCH)
 				#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).filter('date <=', dateto).order('-date').fetch(4)
-				geologs = userdb.geos.filter('date <=', dateto).order('-date').fetch(MAX_TRACK_FETCH)
+				if datefrom_s:
+					#geologs = datamodel.DBGPSPoint.all().filter('user =', userdb).filter('date >=', datefrom).order('date').fetch(int(first))
+					geologs = userdb.geos.filter('date <=', dateto).filter('date >=', datefrom).order('-date').fetch(MAX_TRACK_FETCH)
+				else:
+					geologs = userdb.geos.filter('date <=', dateto).order('-date').fetch(MAX_TRACK_FETCH)
 				
 		#geologs = {}
 		#self.response.out.write("// User imei: %s\r// Date from: %s\r// Date to: %s\r" % (userdb.imei, datefrom, dateto))
@@ -1164,6 +1266,7 @@ class GeosJSON(webapp.RequestHandler):
 				"in2": geolog.in2,
 				"vin": geolog.vin,
 				"vout": geolog.vout,
+				"fsourced": geolog.fsourced,
 				}
 			#try:
 			#	uuser = geolog.user
@@ -1245,8 +1348,8 @@ class DelGeos(webapp.RequestHandler):
 			logging.info("Delete %d items" % len(geologs))
 			if geologs:
 				db.delete(geologs)
-			if uimei:
-				self.redirect("/maps?imei=%s" % uimei)
+			if userdb:
+				self.redirect("/maps?ukey=%s" % userdb.key())
 			else:
 				self.redirect("/maps")
 		else:
@@ -1258,8 +1361,8 @@ class DelGeos(webapp.RequestHandler):
 
 			if geologs:
 				db.delete(geologs)
-			if uimei:
-				self.redirect("/geos?imei=%s" % uimei)
+			if userdb:
+				self.redirect("/geos?ukey=%s" % userdb.key())
 			else:
 				self.redirect("/geos")
 
@@ -1462,8 +1565,13 @@ class Config(TemplatedPage):
 			#for account in self.account.systems:
 			#	allusers.append(db.get(db.Key(account)))
 
+			#path = os.path.join(os.path.dirname(__file__), 'svg', 'cars')
+			#flist = os.listdir('/')
+
 			template_values = {
 				'now': datetime.now(),
+				#'path': path,
+				#'flist': flist,
 			}
 
 			#path = os.path.join(os.path.dirname(__file__), 'templates/config.html')
@@ -2250,6 +2358,25 @@ class Map(TemplatedPage2):
 		#self.response.out.write(template.render(path, template_values))
 		self.write_template(template_values)
 
+class Map1(TemplatedPage2):
+	def get(self):
+		#uimei = self.request.get('imei')
+
+		#allusers = datamodel.DBUser.all().fetch(100)
+		userdb = getUser(self.request)
+		#if userdb == None:
+		#	userdb = self.account().users[0]
+		#	pass
+
+		template_values = {}
+		template_values['map'] = True
+		template_values['userdb'] = userdb
+		template_values['now'] = datetime.now()
+
+		#path = os.path.join(os.path.dirname(__file__), 'map.html')
+		#self.response.out.write(template.render(path, template_values))
+		self.write_template(template_values)
+
 class Map2(TemplatedPage):
 	def get(self):
 		uimei = self.request.get('imei')
@@ -2665,7 +2792,47 @@ class BinBackup(TemplatedPage):
 				self.response.headers['Content-Type'] = 'application/octet-stream'
 				#bindata = datastore.Get(datastore.Key(ukey))
 				bindata = db.get(db.Key(ukey))
-				self.response.out.write(bindata.data)
+				pdata = bindata.data
+				if ((len(pdata)-2) & 31) != 0:
+					while (len(pdata) & 31)!=0:
+						pdata += chr(0)
+				if (len(pdata) & 31)==0:
+					crc = 0
+					for byte in pdata:
+						crc = utils.crc(crc, ord(byte))
+					pdata += chr(crc & 0xFF)
+					pdata += chr((crc>>8) & 0xFF)
+
+				self.response.out.write(pdata)
+				return
+			elif cmd == 'fixcrc':
+				bindata = db.get(db.Key(ukey))
+				pdata = bindata.data
+				if ((len(pdata)-2) & 31) != 0:
+					while (len(pdata) & 31)!=0: pdata += chr(0)
+				if (len(pdata) & 31)==0:
+					crc = 0
+					for byte in pdata:
+						crc = utils.crc(crc, ord(byte))
+					pdata += chr(crc & 0xFF)
+					pdata += chr((crc>>8) & 0xFF)
+					bindata.data = pdata
+					bindata.put()
+				self.redirect("/binbackup?imei=%s" % uimei)
+				return
+			elif cmd == 'fixlen':
+				bindata = db.get(db.Key(ukey))
+				pdata = bindata.data
+				while (len(pdata) & 31)!=0: pdata += chr(0)
+					
+				crc = 0
+				for byte in pdata:
+					crc = utils.crc(crc, ord(byte))
+				pdata += chr(crc & 0xFF)
+				pdata += chr((crc>>8) & 0xFF)
+				bindata.data = pdata
+				bindata.put()
+				self.redirect("/binbackup?imei=%s" % uimei)
 				return
 			elif cmd == 'del':
 				db.delete(db.Key(ukey))
@@ -2682,14 +2849,34 @@ class BinBackup(TemplatedPage):
 			elif cmd == 'pack':
 				self.response.headers['Content-Type'] = 'application/octet-stream'
 				pdata = ''
+				cfilter = self.request.get('filter')
 				cnt = self.request.get('cnt')
-				if cnt:
-					dbbindata = datamodel.DBGPSBinBackup.all().filter('user =', userdb).order('-cdate').fetch(int(cnt))
+				count = 200
+				if cnt: count = int(cnt)
+				today = date.today()
+				logging.info("Today: %s" % today)
+
+				#dbbindata = datamodel.DBGPSBinBackup.all().filter('user =', userdb).order('-cdate').fetch(count)
+				if cfilter:
+					dbbindata = userdb.gpsbackups.filter('cdate >=', today).order('-cdate').fetch(count)
 				else:
-					dbbindata = datamodel.DBGPSBinBackup.all().filter('user =', userdb).order('-cdate').fetch(200)
+					dbbindata = userdb.gpsbackups.order('-cdate').fetch(count)
 				for bindata in dbbindata:
-					bindata.datasize = len(bindata.data)
-					pdata += bindata.data[:-2]
+					npdata = bindata.data
+					#bindata.datasize = len(npdata)
+					if npdata[0] == 'P':	# POST-bug
+						continue
+
+					if (len(npdata) & 31)==0:
+						pdata += npdata
+					else:
+						if ((len(npdata)-2) & 31) == 0:
+							pdata += npdata[:-2]
+						else:
+							while (len(npdata) & 31)!=0: npdata += chr(0)
+							pdata += npdata
+
+
 				crc = 0
 				for byte in pdata:
 					crc = utils.crc(crc, ord(byte))
@@ -2709,7 +2896,24 @@ class BinBackup(TemplatedPage):
 
 			for bindata in dbbindata:
 				bindata.datasize = len(bindata.data)
-				total += bindata.datasize - 2
+				if (bindata.datasize & 31)==0:
+					bindata.needfix = True
+					bindata.wronglen = False
+					total += bindata.datasize
+				else:
+					bindata.needfix = False
+					total += bindata.datasize - 2
+
+					if ((bindata.datasize-2) & 31)!=0:
+						bindata.wronglen = True
+					else:
+						bindata.wronglen = False
+
+				if bindata.data[0] == 'P':
+					bindata.postbug = True
+				else:
+					bindata.postbug = False
+
 				bindata.sdate = fromUTC(bindata.cdate)	#.strftime("%d/%m/%Y %H:%M:%S")
 			total += 2
 			allusers = None
@@ -2733,10 +2937,22 @@ class BinBackup(TemplatedPage):
 			'allusers': allusers
 		})
 
+class GpsTestBin(webapp.RequestHandler):
+	def get(self):
+		log = "\n=== === == GpsTestBin:\n"
+		uimei = self.request.get('imei')
+		pdata = self.request.body
+		log += "    IMEI: %s\n" % uimei
+		log += "    DATASIZE: %d\n" % len(pdata)
+		logging.info(log)
+		self.response.headers['Content-Type']   = 'text/plain'
+		self.response.out.write("OK")
+
 
 application = webapp.WSGIApplication(
 	[('/', MainPage),
 	#('/regid', RegId),
+	('/gpstestbin.*', GpsTestBin),
 	('/sign', Guestbook),
 	('/addlog', AddLog),
 	('/users.*', UsersList),
@@ -2759,6 +2975,7 @@ application = webapp.WSGIApplication(
 	('/bingeos.*', BinGeos),
 	('/parsebingeos.*', ParseBinGeos),
 	('/getbin.*', GetBinGeos),
+	('/map1.*', Map1),
 	('/map.*', Map),
 	('/raw', RawData),
 	('/testdb.*', TestDB),

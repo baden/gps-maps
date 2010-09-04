@@ -1,4 +1,4 @@
-#Menu a div#menu-maps {% include "css/menu-select.css" %}
+li#menu-map {% include "css/menu-select.css" %}
 
 div.arrowdiv {
 	position: absolute;

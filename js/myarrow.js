@@ -21,6 +21,12 @@ function markerInfo(i, pos, admin) {
 	}
 
 	if (infowindow) infowindow.close();
+
+	adminstr = '';
+	if (unlock) {
+		adminstr += '</b><br />Причина: <b>' + results[i].fsourced;
+		adminstr += '</b><br /><a class="smallButton" href="javascript:DeletePoint('+i+');" title="Удалить точку">X</a>';
+	}
 	infowindow = new google.maps.InfoWindow({content:
 		'<div style="background-color: #F0E8F8; font-weight: bold;">' + results[i].date + "</div>" +
 		'Скорость: <b>' + results[i].speed.toFixed(1) + " км/ч" +
@@ -31,7 +37,7 @@ function markerInfo(i, pos, admin) {
 		'</b><br />Питание: <b>' + vtext +
 		/*'</b><br />Датчик 1: <b>' + results[i].in1.toFixed(3) +
 		'</b><br />Датчик 2: <b>' + results[i].in2.toFixed(3) +*/
-		(unlock?('</b><br /><a class="smallButton" href="javascript:DeletePoint('+i+');" title="Удалить точку">X</a>'):''),
+		adminstr,
 		position: pos
 	});
 //	infowindow.open(map, map.getMarker(i));

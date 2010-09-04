@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   height="24"
+   width="24"
+   version="1.1"
+   id="svg2"
+   inkscape:version="0.48.0 r9654"
+   sodipodi:docname="object1.svg">
+  <metadata
+     id="metadata14">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs12" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1600"
+     inkscape:window-height="1151"
+     id="namedview10"
+     showgrid="true"
+     inkscape:zoom="38.708333"
+     inkscape:cx="12"
+     inkscape:cy="12"
+     inkscape:window-x="-4"
+     inkscape:window-y="-4"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg2"
+     showguides="true"
+     inkscape:guide-bbox="true">
+    <inkscape:grid
+       type="xygrid"
+       id="grid2991"
+       empspacing="2"
+       visible="true"
+       enabled="true"
+       snapvisiblegridlinesonly="true"
+       spacingx="0.5px"
+       spacingy="0.5px"
+       color="#828412"
+       opacity="0.14901961"
+       empcolor="#0000ff"
+       empopacity="0.35294118" />
+    <sodipodi:guide
+       orientation="1,0"
+       position="16,0"
+       id="guide2993" />
+    <sodipodi:guide
+       orientation="0,1"
+       position="0,16"
+       id="guide2995" />
+  </sodipodi:namedview>
+  <path
+     sodipodi:type="arc"
+     style="fill:#dddddd;fill-opacity:1;stroke:none"
+     id="back"
+     sodipodi:cx="16"
+     sodipodi:cy="16"
+     sodipodi:rx="14.5"
+     sodipodi:ry="14.5"
+     d="m 30.5,16 a 14.5,14.5 0 1 1 -29,0 14.5,14.5 0 1 1 29,0 z"
+     transform="matrix(0.82758621,0,0,0.82758623,-1.2413793,-1.2413793)"
+     inkscape:label="#path2987-0" />
+  <path
+     sodipodi:type="arc"
+     style="fill:none;stroke:#000000;stroke-width:4.57894754;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+     id="path2987"
+     sodipodi:cx="16"
+     sodipodi:cy="16"
+     sodipodi:rx="14.5"
+     sodipodi:ry="14.5"
+     d="m 30.5,16 a 14.5,14.5 0 1 1 -29,0 14.5,14.5 0 1 1 29,0 z"
+     transform="matrix(0.65517242,0,0,0.65517241,1.5172413,1.5172414)" />
+  <text
+     xml:space="preserve"
+     style="font-size:16.67533302px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+     x="5.6495237"
+     y="19.559172"
+     id="text2989"
+     sodipodi:linespacing="125%"
+     transform="scale(1.1505395,0.86915747)"><tspan
+       sodipodi:role="line"
+       id="tspan2991"
+       x="5.6495237"
+       y="19.559172"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial Bold">1</tspan></text>
+</svg>
