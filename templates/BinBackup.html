@@ -20,7 +20,7 @@
 	<div style="margin-left:50px;">
 
         {% for bindata in dbbindata %}
-	<div class="bblock">
+	<div class="bblock" title="{{ bindata.key }}">
 		<div class="{% if bindata.crcok %}crcok{% else %}crcfail{% endif %}">{{ bindata.sdate|date:"d/m/y G:i:s" }}</div>
 		{{ bindata.datasize }} bytes
 		{% if bindata.needfix %}

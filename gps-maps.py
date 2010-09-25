@@ -109,6 +109,10 @@ class TemplatedPage(webapp.RequestHandler):
 		#self.uimei = self.request.get('imei')
 		#logging.info(" TemplatedPage-init")
 		self.user = users.get_current_user()
+		if self.user == None:
+			self.accounts = None
+			self.users = []
+			return
 
 		accounts = datamodel.DBAccounts().all().filter('user =', self.user).fetch(1)
 		#key_name = "FWBOOT%04X"
@@ -180,6 +184,10 @@ class TemplatedPage2(webapp.RequestHandler):
 	def account(self):
 		if self._account:
 			return self._account
+
+		if self.user == None:
+			self._account = None
+			return None
 
 		self._account = datamodel.DBAccounts().gql("WHERE user = :1", self.user).get()
 		if not self._account:
@@ -2344,8 +2352,10 @@ class Map(TemplatedPage2):
 		#allusers = datamodel.DBUser.all().fetch(100)
 		userdb = getUser(self.request)
 		if userdb == None:
-			userdb = self.account().users[0]
-			pass
+			if self.account() != None:
+				userdb = self.account().users[0]
+			else:
+				userdb = None
 
 		template_values = {}
 		template_values['map'] = True
@@ -2745,6 +2755,7 @@ class SetUserDescription(webapp.RequestHandler):
 		self.response.out.write(callback + "(" + nejson + ")\r")
 
 
+
 class Svg1(TemplatedPage):
 	def get(self):
 		uimei = self.request.get('imei')
@@ -2851,32 +2862,47 @@ class BinBackup(TemplatedPage):
 				pdata = ''
 				cfilter = self.request.get('filter')
 				cnt = self.request.get('cnt')
-				count = 200
+				count = 500
 				if cnt: count = int(cnt)
 				today = date.today()
-				logging.info("Today: %s" % today)
+				#logging.info("Today: %s" % today)
+				aftercdate = self.request.get('after')
+
+				#if aftercdate and aftercdate!="None":
+				#	logging.info("From date: %s" % aftercdate)
+				#	logging.info("From date: %s" % datetime.strptime(aftercdate, "%Y%m%d%H%M%S"))
 
 				#dbbindata = datamodel.DBGPSBinBackup.all().filter('user =', userdb).order('-cdate').fetch(count)
 				if cfilter:
 					dbbindata = userdb.gpsbackups.filter('cdate >=', today).order('-cdate').fetch(count)
 				else:
-					dbbindata = userdb.gpsbackups.order('-cdate').fetch(count)
-				for bindata in dbbindata:
-					npdata = bindata.data
-					#bindata.datasize = len(npdata)
-					if npdata[0] == 'P':	# POST-bug
-						continue
-
-					if (len(npdata) & 31)==0:
-						pdata += npdata
+					if aftercdate and aftercdate!="None":
+						dbbindata = userdb.gpsbackups.filter("cdate >", datetime.strptime(aftercdate, "%Y%m%d%H%M%S") + timedelta(seconds = 1)).order('-cdate').fetch(count)
 					else:
-						if ((len(npdata)-2) & 31) == 0:
-							pdata += npdata[:-2]
-						else:
-							while (len(npdata) & 31)!=0: npdata += chr(0)
+						dbbindata = userdb.gpsbackups.order('-cdate').fetch(count)
+
+				for bindata in dbbindata:
+					if bindata.crcok:
+						npdata = bindata.data
+						#bindata.datasize = len(npdata)
+						if npdata[0] == 'P':	# POST-bug
+							continue
+
+						if (len(npdata) & 31)==0:
 							pdata += npdata
+						else:
+							if ((len(npdata)-2) & 31) == 0:
+								pdata += npdata[:-2]
+							else:
+								while (len(npdata) & 31)!=0: npdata += chr(0)
+								pdata += npdata
 
+				logging.info("Packets: %d" % len(dbbindata))
+				if len(pdata) == 0:
+					self.response.headers["BinData"] = "None"
+					return
 
+				self.response.headers["BinData"] = "Present"
 				crc = 0
 				for byte in pdata:
 					crc = utils.crc(crc, ord(byte))
@@ -2888,6 +2914,10 @@ class BinBackup(TemplatedPage):
 				_log += '\n==\tData size: %d' % len(pdata)
 
 				"""
+
+				if len(dbbindata) > 0:
+					self.response.headers["lastcdate"] = "%s" % dbbindata[0].cdate.strftime("%Y%m%d%H%M%S")
+
 				self.response.out.write(pdata)
 				return
 
@@ -2926,7 +2956,7 @@ class BinBackup(TemplatedPage):
 		#template_values['imei'] = uimei
 		#template_values['dbbindata'] = dbbindata
 
-		self.response.headers['Content-Type']   = 'text/html'
+		self.response.headers['Content-Type'] = 'text/html'
 		#path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
 		#self.response.out.write(template.render(path, template_values))
 		self.write_template({
@@ -2948,6 +2978,17 @@ class GpsTestBin(webapp.RequestHandler):
 		self.response.headers['Content-Type']   = 'text/plain'
 		self.response.out.write("OK")
 
+
+class ExtJS(TemplatedPage):
+	def get(self):
+		uimei = self.request.get('imei')
+
+		template_values = {}
+		template_values['imei'] = uimei
+		#self.write_template(template_values)
+		self.response.headers['Content-Type']   = 'text/html'
+		path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
+		self.response.out.write(template.render(path, template_values))
 
 application = webapp.WSGIApplication(
 	[('/', MainPage),
@@ -2988,6 +3029,7 @@ application = webapp.WSGIApplication(
 	('/svg2.*', Svg2),
 	('/svg3.*', Svg3),
 	('/binbackup.*', BinBackup),
+	('/extjs.*', ExtJS),
 	],
 	debug=True
 )

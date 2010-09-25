@@ -8,13 +8,15 @@ import socket
 
 HOST = "127.0.0.1"
 PORT = 80
+
 #HOST = "gps-maps.appspot.com"
 #PORT = 80
+
 #HOST = "212.110.139.65"
 #PORT = 8015
 
-SYS = 2
-IMAGE = "binbackup (1000)"
+SYS = 4
+IMAGE = "binbackup"
 IMEI = ("0", "356895035376246", "356895035358996", "353358016204856", "356895035359317")
 #IMEI = ("0", "35689503537624601", "35689503535899601", "35335801620485601")	#Fake
 
@@ -42,7 +44,7 @@ def senddatav2(id):
 	s.send(body)
 	print("Wait answer...\n");
 	while 1:
-		s.settimeout(5.0);
+		s.settimeout(20.0);
 		try:
 			received = s.recv(1024)
 		except:
@@ -59,28 +61,6 @@ def senddatav2(id):
 			#if received.startswith("B"): break
 	s.close()
 	print("OK\n")
-
-def senddata(id):
-	body = open("gps3/binbackup (0)", "rb").read()
-
-	#body = "\xFF\xF2\x20\x13\x06\x11\x29\x2D\x10\x10\x24\x22\x26\x24\x12\x03\x04\x04\x11\x04\xAE\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x22"
-	#body = "\xFF\xF2\x20\xF0\xF0\xF0\x29\x2D\x10\x10\x24\x22\x26\x24\x12\x03\x04\x04\x11\x04\xAE\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x22"
-	
-	headers = {"Content-type": "application/octet-stream",
-		"Content-Length": "%d" % len(body)}
-
-	#conn = httplib.HTTPConnection("127.0.0.1:80")
-	#conn = httplib.HTTPConnection("127.0.0.1:8080")
-	#conn = httplib.HTTPConnection("gps-maps.appspot.com:80")
-	conn = httplib.HTTPConnection("212.110.139.65:8015")
-
-	conn.set_debuglevel(1)
-	conn.request("POST", "/bingps?imei=353358016204856&dataid=%d" % id, body, headers)
-	response = conn.getresponse()
-	print response.status, response.reason
-	data = response.read()
-	conn.close()
-	print data
 
 def main():
 	print('--------------------------------------------------------------------')
