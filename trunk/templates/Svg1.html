@@ -1,22 +1,81 @@
-
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
-<html lang="en-US" xml:lang="en-US" xmlns="http://www.w3.org/1999/xhtml">
-
+<!DOCTYPE html>
+<html>
 <head>
+	<title>HTML5 and SVG Tryit</title>
+	<meta charset="UTF-8"> 
+	<!--script src="file.js"></script-->
+	<!--link rel="stylesheet" href="file.css"-->
+	<script type="text/javascript">
 
-<title>Tryit Editor v1.4</title>
-
+	function supportsLocalStorage() {
+	  return ('localStorage' in window) && window['localStorage'] !== null;
+	}
+	function saveGameState() {
+	    if (!supportsLocalStorage()) { return false; }
+		alert(localStorage["gsm-map.game.in.progress"]);
+	    //localStorage["gsm-map.game.in.progress"] = 'ok';
+/*	    for (var i = 0; i < kNumPieces; i++) {
+		localStorage["halma.piece." + i + ".row"] = gPieces[i].row;
+		localStorage["halma.piece." + i + ".column"] = gPieces[i].column;
+	    }
+	    localStorage["halma.selectedpiece"] = gSelectedPieceIndex;
+	    localStorage["halma.selectedpiecehasmoved"] gSelectedPieceHasMoved;
+	    localStorage["halma.movecount"] = gMoveCount;
+*/
+/*	openDatabase('documents', '1.0', 'Local document storage', 5*1024*1024, function (db) {
+	  db.changeVersion('', '1.0', function (t) {
+	    t.executeSql('CREATE TABLE docids (id, name)');
+	  });
+	});
+	    return true;
+*/
+	}
+	</script>
 </head>
-
-
 
 <body>
 
+<input type="button" value="clickme" onclick="javascript:saveGameState();"/>
+
+<p>SVG in img
+<img style="-webkit-transform: rotate(30deg);width:16px;height:16px;" src="svg/arrow.svg" />
+<img style="-webkit-transform: rotate(-30deg);width:16px;height:16px;" src="svg/arrow.svg" />
+</p>
+
+<p>SVG in OBJECT
 <object style="-webkit-transform: rotate(30deg);width:16px;height:16px;" data="svg/arrow.svg" type="image/svg+xml" codebase="http://www.adobe.com/svg/viewer/install/"></object>
 <object style="-webkit-transform: rotate(150deg);width:16px;height:16px;" data="svg/arrow.svg" type="image/svg+xml" codebase="http://www.adobe.com/svg/viewer/install/"></object>
+</p>
 
+<p>SVG inline
+<svg xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" width="16" height="16" version="1.1">
+  <g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter"
+       d="M 8,15 8,1" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter"
+       d="M 3,7 8,1 13,7" />
+  </g>
+</svg>
+</p>
+
+<p>SVG inline with defs
+<div style="display:inline-block;background-color: #cccccc;border-radius: 5px;-webkit-transform:rotate(30deg);"> Такой вот Див </div>
+<input id="aa" type="range" min=0 max=2 />
+<!--img src="svg/test0002.svg" /-->
+<svg xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" width="16" height="16" version="1.1">
+  <g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter"
+       d="M 8,15 8,1" />
+    <path
+	stroke="#00FFFF"
+       style="fill:none;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter"
+       d="M 3,7 8,1 13,7" />
+  </g>
+</svg>
+</p>
 
 </body>
 
