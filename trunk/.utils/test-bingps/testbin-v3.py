@@ -6,22 +6,22 @@ import httplib
 
 import socket
 
-HOST = "127.0.0.1"
-PORT = 80
-
-#HOST = "gps-maps.appspot.com"
+#HOST = "127.0.0.1"
 #PORT = 80
+
+HOST = "gps-maps.appspot.com"
+PORT = 80
 
 #HOST = "212.110.139.65"
 #PORT = 8015
 
-SYS = 4
+SYS = 5
 IMAGE = "binbackup"
-IMEI = ("0", "356895035376246", "356895035358996", "353358016204856", "356895035359317")
+IMEI = ("0", "356895035376246", "356895035358996", "353358016204856", "356895035359317", "353358019726996")
 #IMEI = ("0", "35689503537624601", "35689503535899601", "35335801620485601")	#Fake
 
 def senddatav2(id):
-	if SYS>4:
+	if SYS>5:
 		print("Support SYS=[1,3]. fail")
 		return
 	
