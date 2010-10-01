@@ -95,6 +95,8 @@ handlers:
 - url: /carsico/.*
   script: gps-carsico.py
 
+- url: /benchmark.*
+  script: benchmark.py
 
 - url: /.*
   script: gps-maps.py
