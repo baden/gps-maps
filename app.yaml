@@ -6,6 +6,11 @@ default_expiration: "1d"
 #default_expiration: "60s"
 
 handlers:
+
+- url: /e5299a3f17ebbcce23d7a8c9.html
+  static_files: e5299a3f17ebbcce23d7a8c9.html
+  upload: e5299a3f17ebbcce23d7a8c9.html
+
 - url: /stylesheets
   static_dir: stylesheets
 
