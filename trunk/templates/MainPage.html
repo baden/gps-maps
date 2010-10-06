@@ -222,6 +222,11 @@ $("#menu-main").hover(function () {
 
 	{% if admin %}
 	<a class="pushLink" href="/admin">Админка</a><br />
+	<p>
+		<span class="label">Короткий URL:</span>
+		<a class="info" href="http://goo.gl/w3oR" title="goo.gl/w3oR">goo.gl/w3oR</a>
+	</p>
+	<img id="qr" src="http://chart.apis.google.com/chart?cht=qr&amp;chs=100x100&amp;choe=UTF-8&amp;chld=H%7C0&amp;chl=http://goo.gl/w3oR" alt="QR code">
 	{{ accounts }}
 	{% endif %}
 
