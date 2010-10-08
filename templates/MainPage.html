@@ -108,6 +108,8 @@ $("#menu-main").hover(function () {
 			dataid++;
 		}
 
+		var whorls = new Object();
+
 		$(document).ready(function(){
 			//#clickme
 			$('#getdoc').bind('mouseover', function(){
@@ -127,6 +129,16 @@ $("#menu-main").hover(function () {
 				//alert('aa');
 				$('#getadobe').stop(true, true).delay(5000).fadeOut("slow");
 			});
+
+
+			try { 
+				whorls['timezone'] = new Date().getTimezoneOffset();
+				$("#timezone").html(whorls['timezone'] + " (" + whorls['timezone']/60 + " часа)");
+			} catch(ex) {
+				whorls['timezone'] = "permission denied";
+			}
+			
+
 		});
 
 	</script>
@@ -222,6 +234,7 @@ $("#menu-main").hover(function () {
 
 	{% if admin %}
 	<a class="pushLink" href="/admin">Админка</a><br />
+	Time zone: <div id="timezone" style="display: inline; text-decoration: underline;"></div>
 	<p>
 		<span class="label">Короткий URL:</span>
 		<a class="info" href="http://goo.gl/w3oR" title="goo.gl/w3oR">goo.gl/w3oR</a>

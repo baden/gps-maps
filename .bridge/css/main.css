@@ -1,0 +1,22 @@
+table {
+	background: #FFF0FF;
+}
+
+tr:hover {
+	background: #FFF00F;
+}
+
+caption, th, td {
+	text-align: center;
+	font-weight: normal;
+}
+
+a.filterLink {
+	/*border: 2px solid #FFF0FF;*/
+	text-decoration: none;
+}
+
+a:hover.filterLink {
+	/*border: 2px solid black;*/
+	-webkit-box-shadow:0 0px 6px #000000;
+}
