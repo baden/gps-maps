@@ -2922,7 +2922,15 @@ class BinBackup(TemplatedPage):
 				return
 
 		if userdb:
-			dbbindata = datamodel.DBGPSBinBackup.all().filter('user =', userdb).order('-cdate').fetch(200)
+
+			#dbbindata = datamodel.DBGPSBinBackup.all().filter('user =', userdb).order('-cdate').fetch(200)
+			q = userdb.gpsbackups.order('-cdate')
+
+			cursor = self.request.get('cursor')
+			if cursor:
+				q.with_cursor(cursor)
+
+			dbbindata = q.fetch(2)
 
 			for bindata in dbbindata:
 				bindata.datasize = len(bindata.data)
@@ -2947,10 +2955,21 @@ class BinBackup(TemplatedPage):
 				bindata.sdate = fromUTC(bindata.cdate)	#.strftime("%d/%m/%Y %H:%M:%S")
 			total += 2
 			allusers = None
+
+			self.response.headers['Content-Type'] = 'text/html'
+			self.write_template({
+				'imei': uimei,
+				'dbbindata': dbbindata,
+				'ncursor': q.cursor(),
+				'total': total,
+				'userdb': userdb,
+				'allusers': allusers
+			})
+			return
+
 		else:
 			dbbindata = None
 			allusers = datamodel.DBUser.all().fetch(100)
-
 
 		#template_values = {}
 		#template_values['imei'] = uimei
