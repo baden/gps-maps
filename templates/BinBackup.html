@@ -35,13 +35,13 @@
 		{% endif %}
 		 <a class="smallButton" href="binbackup?cmd=getbin&key={{ bindata.key }}&imei={{ imei }}" title="Загрузить данные в сыром виде">B</a>
 		{% if admin %}
-		 <a class="smallButton" href="binbackup?imei={{ imei }}&cmd=parce&key={{ bindata.key }}" title="Повторно обработать пакет">W</a>
+		 <a class="smallButton" href="binbackup?imei={{ imei }}&cmd=parce&key={{ bindata.key }}&cursor={{ cursor }}" title="Повторно обработать пакет">W</a>
 		 <!--<a class="smallButton" href="binbackup?imei={{ imei }}&cmd=del&key={{ bindata.key }}&imei={{ imei }}" title="Удалить эти данные">X</a>-->
 		{% endif %}
 	</div>
 	{% endfor %}
 
-	<p>В 200-х записях: <b>{{ total }}</b> байт.</p>
+	<p>В показанных записях: <b>{{ total }}</b> байт.</p>
 
 	</div>
 	<a class="pushLink" href="binbackup?cmd=pack&filter=today&imei={{ imei }}" title="Загружает сегодняшние записей одним куском">Упаковать сегодняшние</a>

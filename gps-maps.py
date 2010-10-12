@@ -2920,6 +2920,40 @@ class BinBackup(TemplatedPage):
 
 				self.response.out.write(pdata)
 				return
+			elif cmd == 'parce':
+				bindata = db.get(db.Key(ukey))
+				pdata = bindata.data[:-2]
+				#pdata = pdata[:-2]
+				"""
+				if ((len(pdata)-2) & 31) != 0:
+					while (len(pdata) & 31)!=0:
+						pdata += chr(0)
+				if (len(pdata) & 31)==0:
+					crc = 0
+					for byte in pdata:
+						crc = utils.crc(crc, ord(byte))
+					pdata += chr(crc & 0xFF)
+					pdata += chr((crc>>8) & 0xFF)
+				"""
+				dataid = 0
+
+				newbin = datamodel.DBGPSBin()
+				newbin.user = userdb
+				newbin.dataid = dataid
+				newbin.data = pdata #db.Text(pdata)
+				newbin.put()
+
+				url = "/bingps/parse?dataid=%s&key=%s" % (dataid, newbin.key())
+				#taskqueue.add(url = url % self.key().id(), method="GET", countdown=countdown)
+				countdown=0
+				taskqueue.add(url = url, method="GET", countdown=countdown)
+
+				cursor = self.request.get('cursor')
+				if cursor:
+					self.redirect("/binbackup?imei=%s&cursor=%s" % (uimei, cursor))
+				else:
+					self.redirect("/binbackup?imei=%s" % uimei)
+
 
 		if userdb:
 
@@ -2930,7 +2964,7 @@ class BinBackup(TemplatedPage):
 			if cursor:
 				q.with_cursor(cursor)
 
-			dbbindata = q.fetch(2)
+			dbbindata = q.fetch(100)
 
 			for bindata in dbbindata:
 				bindata.datasize = len(bindata.data)
@@ -2960,6 +2994,7 @@ class BinBackup(TemplatedPage):
 			self.write_template({
 				'imei': uimei,
 				'dbbindata': dbbindata,
+				'cursor': cursor,
 				'ncursor': q.cursor(),
 				'total': total,
 				'userdb': userdb,
