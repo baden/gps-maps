@@ -12,6 +12,7 @@
 	{% if imei %}
 
     <h1>Архив бинарных данных:</h1>
+	<a class="Next" href="/binbackup?imei={{ imei }}&cursor={{ ncursor }}">&lt;&lt; Раньше</a>
 	{{ userdb.imei }}: <b>{{ userdb.desc }}</b>
 	<a class="smallButton" href="/binbackup" title="Выбрать другую">S</a> 
 
@@ -33,7 +34,10 @@
 		 <a class="smallButton" style="background-color: #C0C000;" href="binbackup?cmd=fixpost&key={{ bindata.key }}&imei={{ imei }}" title="POST-баг">P</a>
 		{% endif %}
 		 <a class="smallButton" href="binbackup?cmd=getbin&key={{ bindata.key }}&imei={{ imei }}" title="Загрузить данные в сыром виде">B</a>
-		 {% if admin %}<a class="smallButton" href="binbackup?imei={{ imei }}&cmd=del&key={{ bindata.key }}&imei={{ imei }}" title="Удалить эти данные">X</a>{% endif %}
+		{% if admin %}
+		 <a class="smallButton" href="binbackup?imei={{ imei }}&cmd=parce&key={{ bindata.key }}" title="Повторно обработать пакет">W</a>
+		 <!--<a class="smallButton" href="binbackup?imei={{ imei }}&cmd=del&key={{ bindata.key }}&imei={{ imei }}" title="Удалить эти данные">X</a>-->
+		{% endif %}
 	</div>
 	{% endfor %}
 
