@@ -18,7 +18,9 @@ class Benchmark(webapp.RequestHandler):
 
 class PutData(webapp.RequestHandler):
 	def get(self):
-		logging.info("   ===> Bencmark: put-data")
+		#logging.info("   ===> Bencmark: put-data")
+		cnt = self.request.get('cnt')
+		logging.info("   ===> Bencmark: put-data (%d)" % cnt)
 		self.redirect("/benchmark")
 
 application = webapp.WSGIApplication(

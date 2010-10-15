@@ -109,6 +109,9 @@ admin_console:
 derived_file_type:
 - python_precompiled
 
+builtins:
+- datastore_admin: on
+
 #skip_files:
 #- ^(.*/)?app\.yaml
 #- ^(.*/)?app\.yml
