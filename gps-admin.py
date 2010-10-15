@@ -102,10 +102,18 @@ class AdminClosure(TemplatedPage):
 		#template_values['now'] = datetime.now()
 		self.write_template(template_values)
 
+class AdminData(TemplatedPage):
+	def get(self):
+		accounts = datamodel.DBAccounts().all()
+
+		template_values = {'accounts': accounts}
+		#template_values['now'] = datetime.now()
+		self.write_template(template_values)
 
 application = webapp.WSGIApplication(
 	[
 	('/admin', AdminPage),
+	('/admin.data', AdminData),
 	('/admin.closure', AdminClosure),
 	],
 	debug=True
