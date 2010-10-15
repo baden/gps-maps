@@ -110,6 +110,7 @@ derived_file_type:
 - python_precompiled
 
 builtins:
+- remote_api: on
 - datastore_admin: on
 
 #skip_files:

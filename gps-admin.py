@@ -9,7 +9,7 @@ import utils
 
 #from datetime import date
 #from datetime import datetime
-#from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime
 
 #from django.utils import simplejson as json
 from google.appengine.api import users
@@ -32,6 +32,8 @@ import datamodel
 #ADMIN_USERNAME = 'baden.i.ua'
 
 SERVER_NAME = os.environ['SERVER_NAME']
+
+OLDDATA = timedelta(30)
 
 def checkUser(uri, response):
 	user = users.get_current_user()
@@ -106,14 +108,31 @@ class AdminData(TemplatedPage):
 	def get(self):
 		accounts = datamodel.DBAccounts().all()
 
+		geologs = datamodel.DBGPSPoint.all().order('date').fetch(1)
+		if geologs:
+			lastlog = geologs[0]
+		else:
+			lastlog = None
+			
+		now = datetime.now()
+		geologs_count = datamodel.DBGPSPoint.all(keys_only=True).filter("date <", datetime.now() - OLDDATA).order('date').count(5000)
+		#q = userdb.geos.order('-date')
+
 		template_values = {'accounts': accounts}
-		#template_values['now'] = datetime.now()
+		template_values['lastlog'] = lastlog
+		template_values['oldcnt'] = geologs_count
 		self.write_template(template_values)
+
+class AdminFlushOld(webapp.RequestHandler):
+	def get(self):
+		db.delete(datamodel.DBGPSPoint.all(keys_only=True).filter("date <", datetime.now() - OLDDATA).order('date').fetch(100))
+		self.redirect('/admin.data')
 
 application = webapp.WSGIApplication(
 	[
 	('/admin', AdminPage),
 	('/admin.data', AdminData),
+	('/admin.flushold', AdminFlushOld),
 	('/admin.closure', AdminClosure),
 	],
 	debug=True
