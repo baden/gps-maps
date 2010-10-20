@@ -80,8 +80,8 @@ class DBGPSPoint(db.Model):
 		return FSOURCE[self.fsource] #self.fsource
 
 class DBGPSPoint2(db.Model):
-	user = db.ReferenceProperty(DBUser, name='a')
-	cdate = db.DateTimeProperty(auto_now_add=True, name='b')
+	user = db.ReferenceProperty(DBUser)
+	#cdate = db.DateTimeProperty(auto_now_add=True, name='b')
 	date = db.DateTimeProperty(name='c')
 	latitude = db.FloatProperty(name='d')
 	longitude = db.FloatProperty(name='e')
@@ -89,9 +89,12 @@ class DBGPSPoint2(db.Model):
 	fix = db.IntegerProperty(name='g')
 	speed = db.FloatProperty(name='h')
 	course = db.FloatProperty(name='i')
-	altitude = db.FloatProperty(name='j')
-	in1 = db.FloatProperty(name='k')		# Значение на аналоговом входе 1
-	in2 = db.FloatProperty(name='l')		# Значение на агалоговом входе 2
+	altitude = db.FloatProperty(name='j',default=0.0)
+	vout = db.FloatProperty(name='m',default=0.0)	# Напряжение внешнего питания
+	vin = db.FloatProperty(name='n',default=0.0)	# Напряжение внутреннего питания
+	in1 = db.FloatProperty(name='k',default=0.0)		# Значение на аналоговом входе 1
+	in2 = db.FloatProperty(name='l',default=0.0)		# Значение на агалоговом входе 2
+	fsource = db.IntegerProperty(name='o',default=0)	# Дополнительная информация о точке
 	#power = db.FloatProperty()		# Уровень заряда батареи (на
 
 class DBGPSBin(db.Model):
