@@ -133,7 +133,8 @@ def SaveGPSPointFromBin(pdata, result):
 	#logging.info('[%s]' % datestamp.strftime("%d/%m/%Y %H:%M:%S"))
 
 	#gpspoint = datamodel.DBGPSPoint()
-	gpspoint = datamodel.DBGPSPoint(key_name = "gps_%s_%s" % (result.user.imei, datestamp.strftime("%Y%m%d%H%M%S")))
+	#gpspoint = datamodel.DBGPSPoint(key_name = "gps_%s_%s" % (result.user.imei, datestamp.strftime("%Y%m%d%H%M%S")))
+	gpspoint = datamodel.DBGPSPoint()
 	gpspoint.user = result.user
 	gpspoint.date = datestamp
 	gpspoint.latitude = latitude
