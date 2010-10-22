@@ -322,7 +322,7 @@ class BinGpsParse(webapp.RequestHandler):
 					_log += '\npat%d is corrupted' % position
 				position = position+1
 
-			_log += '\n==\tSave points: %d' % len(points)
+			_log += '\n==\tSave points: %d\r\n' % len(points)
 			"""
 			_log += '\nPurge future (break) cut-part...'
 			futparts = datamodel.DBGPSBinParts().all().filter('user =', result.user).filter('dataid >=', result.dataid).fetch(10)
@@ -356,8 +356,14 @@ class BinGpsParse(webapp.RequestHandler):
 				_log += '\nSaving cutting part.'
 				part2.put()
 			"""
+
+
 			if len(points) > 0:
-				db.put(points)		# Сохраним GPS-точки
+				#logging.error("==> IMEI: %s" % result.user.imei)
+				if result.user.imei=='353358019726996':
+					_log += "Disabled save points. Imitate only.\r\n"
+				else:
+					db.put(points)		# Сохраним GPS-точки
 			else:
 				logging.error("points has no data")
 
