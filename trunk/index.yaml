@@ -50,6 +50,17 @@ indexes:
   - name: date
     direction: desc
 
+- kind: DBGPSPointP
+  properties:
+  - name: user
+  - name: date
+
+- kind: DBGPSPointP
+  properties:
+  - name: user
+  - name: date
+    direction: desc
+
 - kind: GPSLogs
   properties:
   - name: date<=

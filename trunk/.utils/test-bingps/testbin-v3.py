@@ -7,7 +7,7 @@ import httplib
 import socket
 
 HOST = "127.0.0.1"
-PORT = 8080
+PORT = 80
 
 #HOST = "gps-maps.appspot.com"
 #PORT = 80
@@ -15,8 +15,8 @@ PORT = 8080
 #HOST = "212.110.139.65"
 #PORT = 8015
 
-SYS = 1
-IMAGE = "binbackup (1000)"
+SYS = 5
+IMAGE = "binbackup"
 IMEI = ("0", "356895035376246", "356895035358996", "353358016204856", "356895035359317", "353358019726996")
 #IMEI = ("0", "35689503537624601", "35689503535899601", "35335801620485601")	#Fake
 

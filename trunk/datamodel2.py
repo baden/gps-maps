@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import zlib
 
 from google.appengine.ext import db
 
@@ -91,6 +92,9 @@ class GPSPoints(object):
 	def __str__(self):
 		return '%d:%s' % (len(self.points), self.points)
 
+
+PACK_STR = 'BBBBffffffBBBBii'
+PACK_LEN = 40
 		
 class GPSPointsProperty(db.Property):
 	data_type = GPSPoints
@@ -107,27 +111,51 @@ class GPSPointsProperty(db.Property):
 			#print(k)
 			#print(v)
 			#print("<br />")
-			pack += struct.pack('bbbbffiffffi',
-				k.hour, k.minute, k.second, 0, 
-				v['lat'], v['lon'], v['sats'], v['speed'], v['cource'], v['vout'], v['vin'], v['fsource'])
-		return db.Blob(pack)
+			#pack += struct.pack('bbbbffiffffiiiiiiii',
+			#logging.info("%d-%d-%d-%d-%f-%f-%f-%f-%f-%f-%d-%d-%d-%d-%d-%d" % (
+			#	k.hour, k.minute, k.second, v['sats'],		# 4 байта
+			#	v['lat'], v['lon'], v['speed'], v['cource'], v['vout'], v['vin'], # 6 float
+			#	v['fsource'], 0, 0, 0,	# 4 байта
+			#	0, 0	# Резерв 2 int
+			#))
+			pack += struct.pack(PACK_STR,
+				k.hour, k.minute, k.second, v['sats'],		# 4 байта
+				v['lat'], v['lon'], v['speed'], v['cource'], v['vout'], v['vin'], # 6 float
+				v['fsource'], 0, 0, 0,	# 4 байта
+				0, 0	# Резерв 2 int
+			)
+		#return db.Blob(pack)
+		logging.info("   ===> GPSPointsProperty: get_value_for_datastore(u:%d)" % len(pack))
+		compressed = zlib.compress(pack, 9)
+		logging.info("   ===> GPSPointsProperty: get_value_for_datastore (c:%d)" % len(compressed))
+		#return db.Blob(zlib.compress(pack, 9))
+		return db.Blob(compressed)
+
 	# For reading from datastore.
 	def make_value_from_datastore(self, value):
+		logging.info("   ===> GPSPointsProperty: make_value_from_datastore")
 		r = GPSPoints()
 		if value is None:
 			return r
+		value = zlib.decompress(value)
 		l = len(value)
 		#ss = "%d -" % l
 		#for c in value:
 		#	ss += " %02X" % ord(c)
 		#print(ss)
-		if l<40:
+		if l<(PACK_LEN+4):
 			return r
-		for i in xrange(int((l-4) / 36)):
+		#for i in xrange(int((l-4) / 64)):
+		for i in xrange(int((l-4) / PACK_LEN)):
 			#print(i*36+4)
 			#print(i)
-			u = struct.unpack('bbbbffiffffi', value[i*36+4:i*36+4+36])
-			r.append(time(u[0], u[1], u[2]), lat=u[4], lon=u[5], sats=u[6], speed=u[7], cource=u[8], vout=u[9], vin=u[10], fsource=u[11])
+			#u = struct.unpack('bbbbffiffffiiiiiiii', value[i*64+4:i*64+4+64])
+			#u = struct.unpack(PACK_STR, value[i*64+4:i*64+4+64])
+			u = struct.unpack(PACK_STR, value[i*PACK_LEN+4:i*PACK_LEN+4+PACK_LEN])
+			r.append(
+				time(u[0], u[1], u[2]),
+				lat=u[4], lon=u[5], sats=u[3], speed=u[6], cource=u[7], vout=u[8], vin=u[9], fsource=u[10]
+			)
 		return r
 	def validate(self, value):
 		if value is not None and not isinstance(value, GPSPoints):
@@ -144,5 +172,29 @@ class DBGPSPointC(db.Model):
 
 class DBGPSPointP(db.Model):
 	user = db.ReferenceProperty(DBUser, collection_name='geos_pack')
-	date = db.DateProperty(name='d')
-	points = GPSPointsProperty(name='p')
+	#date = db.DateProperty(name='d')
+	date = db.DateProperty()
+	#points = GPSPointsProperty(name='p')
+	points = GPSPointsProperty()
+	@property
+	def size(self):
+		return 123
+
+
+class DBGPSPointDP(db.Model):
+	user = db.ReferenceProperty(DBUser, collection_name='geos_daypack')
+	#date = db.DateProperty(name='d')
+	date = db.DateProperty()
+	#points = GPSPointsProperty(name='p')
+	#points = GPSPointsProperty()
+	raw = db.BlobProperty()
+	@property
+	def points(self):
+		return sorteddict({})
+	@staticmethod
+	def pack(self):
+		pass
+
+class DBGPSDateList(db.Model):
+	user = db.ReferenceProperty(DBUser, collection_name='geos_dates')
+	date = db.DateProperty()
