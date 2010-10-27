@@ -68,6 +68,12 @@
 		{% endfor %}
     </table>
 
+	{% if admin %}
+	Дата самой старой записи: {{ oldest }}<br />
+	Записей старее 1 месяца: {{ coldest }}<br />
+	<a class="pushLink" href="binbackup?cmd=delold" title="Удаляет записи старее 1 меняца">Очистить старые</a>
+	{% endif %}
+
 	{% endif %}
     
 <!-- Отладочная: {{ cacheuser.hello }} -->

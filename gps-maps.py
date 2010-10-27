@@ -2857,6 +2857,14 @@ class BinBackup(TemplatedPage):
 					db.delete(dbbindata)
 				self.redirect("/binbackup?imei=%s" % uimei)
 				return
+			elif cmd == 'delold':
+				dbbindata = datamodel.DBGPSBinBackup.all(keys_only=True).filter("cdate <=", datetime.now()-timedelta(days=30)).order('cdate').fetch(500)
+				#for bindata in dbbindata:
+				#	bindata.delete()
+				if dbbindata:
+					db.delete(dbbindata)
+				self.redirect("/binbackup")
+				return
 			elif cmd == 'pack':
 				self.response.headers['Content-Type'] = 'application/octet-stream'
 				pdata = ''
@@ -2959,6 +2967,7 @@ class BinBackup(TemplatedPage):
 
 			#dbbindata = datamodel.DBGPSBinBackup.all().filter('user =', userdb).order('-cdate').fetch(200)
 			q = userdb.gpsbackups.order('-cdate')
+			
 
 			cursor = self.request.get('cursor')
 			if cursor:
@@ -3005,6 +3014,12 @@ class BinBackup(TemplatedPage):
 		else:
 			dbbindata = None
 			allusers = datamodel.DBUser.all().fetch(100)
+			qoldest = datamodel.DBGPSBinBackup.all().order('cdate').fetch(1)
+			if qoldest:
+				oldest = fromUTC(qoldest[0].cdate)
+			else:
+				oldest = u"нет записей"
+			coldest = datamodel.DBGPSBinBackup.all(keys_only=True).filter("cdate <=", datetime.now()-timedelta(days=30)).order('cdate').count()
 
 		#template_values = {}
 		#template_values['imei'] = uimei
@@ -3018,7 +3033,9 @@ class BinBackup(TemplatedPage):
 			'dbbindata': dbbindata,
 			'total': total,
 			'userdb': userdb,
-			'allusers': allusers
+			'allusers': allusers,
+			'oldest': oldest,
+			'coldest': coldest,
 		})
 
 class GpsTestBin(webapp.RequestHandler):
