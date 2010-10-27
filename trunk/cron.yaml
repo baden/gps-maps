@@ -1,0 +1,7 @@
+cron:
+- description: flush old GPS points
+  url: /admin.flushold
+  schedule: every 30 minutes
+- description: flush old GPSBackup points
+  url: /admin.flushold2
+  schedule: every 6 hours

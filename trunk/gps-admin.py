@@ -33,7 +33,7 @@ import datamodel
 
 SERVER_NAME = os.environ['SERVER_NAME']
 
-OLDDATA = timedelta(30)
+OLDDATA = timedelta(days=30)
 
 def checkUser(uri, response):
 	user = users.get_current_user()
@@ -126,13 +126,19 @@ class AdminData(TemplatedPage):
 class AdminFlushOld(webapp.RequestHandler):
 	def get(self):
 		db.delete(datamodel.DBGPSPoint.all(keys_only=True).filter("date <", datetime.now() - OLDDATA).order('date').fetch(100))
-		self.redirect('/admin.data')
+		#self.redirect('/admin.data')
+
+class AdminFlushOld2(webapp.RequestHandler):
+	def get(self):
+		db.delete(datamodel.DBGPSBinBackup.all(keys_only=True).filter("cdate <=", datetime.now()-timedelta(days=30)).order('cdate').fetch(500))
+		#self.redirect('/admin.data')
 
 application = webapp.WSGIApplication(
 	[
 	('/admin', AdminPage),
 	('/admin.data', AdminData),
 	('/admin.flushold', AdminFlushOld),
+	('/admin.flushold2', AdminFlushOld2),
 	('/admin.closure', AdminClosure),
 	],
 	debug=True
