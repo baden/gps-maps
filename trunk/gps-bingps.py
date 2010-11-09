@@ -369,7 +369,7 @@ class BinGpsParse(webapp.RequestHandler):
 
 			result.delete()
 			self.response.out.write('BINGPS/PARSE: OK\r\n')
-			_log += '\nData deleted.'
+			_log += '\nData deleted.\n'
 			
 			#for name in os.environ.keys():
 			#	self.response.out.write("%s = %s\n" % (name, os.environ[name]))
