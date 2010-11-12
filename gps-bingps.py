@@ -133,8 +133,8 @@ def SaveGPSPointFromBin(pdata, result):
 	#logging.info('[%s]' % datestamp.strftime("%d/%m/%Y %H:%M:%S"))
 
 	#gpspoint = datamodel.DBGPSPoint()
-	#gpspoint = datamodel.DBGPSPoint(key_name = "gps_%s_%s" % (result.user.imei, datestamp.strftime("%Y%m%d%H%M%S")))
-	gpspoint = datamodel.DBGPSPoint()
+	gpspoint = datamodel.DBGPSPoint(key_name = "gps_%s_%s" % (result.user.imei, datestamp.strftime("%Y%m%d%H%M%S")))
+	#gpspoint = datamodel.DBGPSPoint()
 	gpspoint.user = result.user
 	gpspoint.date = datestamp
 	gpspoint.latitude = latitude
@@ -360,10 +360,11 @@ class BinGpsParse(webapp.RequestHandler):
 
 			if len(points) > 0:
 				#logging.error("==> IMEI: %s" % result.user.imei)
-				if result.user.imei=='353358019726996':
-					_log += "Disabled save points. Imitate only.\r\n"
-				else:
-					db.put(points)		# Сохраним GPS-точки
+				#if result.user.imei=='353358019726996':
+				#	_log += "Disabled save points. Imitate only.\r\n"
+				#else:
+				#	db.put(points)		# Сохраним GPS-точки
+				db.put(points)		# Сохраним GPS-точки
 			else:
 				logging.error("points has no data")
 
