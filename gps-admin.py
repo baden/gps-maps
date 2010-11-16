@@ -33,7 +33,7 @@ import datamodel
 
 SERVER_NAME = os.environ['SERVER_NAME']
 
-OLDDATA = timedelta(days=24)
+OLDDATA = timedelta(days=14)
 
 def checkUser(uri, response):
 	user = users.get_current_user()
