@@ -4,11 +4,13 @@ import os
 import logging
 import random
 from datetime import datetime, date, time, timedelta
+import time
 
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext import db
+from google.appengine.api.labs import taskqueue
 
 from django.utils import simplejson as json
 
@@ -224,6 +226,66 @@ class GetJson(webapp.RequestHandler):
 		self.response.out.write(callback + "(" + nejson + ")\r")
 
 
+class BenchmarkMulti(webapp.RequestHandler):
+	def get(self):
+		#userdb = getuser()
+
+		cmd = self.request.get("cmd", "None")
+		task = self.request.get("task", "None")
+		cnt = int(self.request.get("cnt", "1"))
+
+		if cmd == "put":
+			pdate = date.today()
+
+			dbv = datamodel2.DBmulti.get_by_key_name("multi_%d_%d_%d" % (pdate.year, pdate.month, pdate.day))
+			if dbv is None:
+			#points = datamodel2.DBGPSPointP(key_name="t_%d_%d_%d")
+				dbv = datamodel2.DBmulti(key_name="multi_%d_%d_%d" % (pdate.year, pdate.month, pdate.day))
+				dbv.date = pdate
+				dbv.rvalue = ["0"]
+			else:
+				last = dbv.rvalue[-1]
+				time.sleep(1)
+				logging.info("   ===> BencmarkMulti: cnahge %s to %s" % (last, str(int(last)+1)))
+				dbv.rvalue.append(str(int(last)+1))
+			dbv.put()
+
+			if task == "yes":
+				self.response.out.write('<html><body>OK<br /><a href="/benchmark/multi">Back</a></body></html>')
+				return
+			self.redirect("/benchmark/multi")
+			return
+		elif cmd == "maketask":
+			url = "/benchmark/multi?cmd=put&task=yes"
+			for i in xrange(cnt):
+				#countdown=i
+				countdown=0
+				taskqueue.add(url = url, method="GET", countdown=countdown)
+			self.redirect("/benchmark/multi")
+			return
+		elif cmd == "purge":
+			dbv = datamodel2.DBmulti.all(keys_only=True).fetch(500)
+			db.delete(dbv)
+			self.redirect("/benchmark/multi")
+			return
+
+
+		values = {}
+
+		#pdate = date.today()
+		dbv = datamodel2.DBmulti.all().fetch(100)
+		values['dbv'] = dbv
+
+		#values['pointscnt'] = datamodel.DBGPSPoint().all().filter('user =', userdb).count()
+		#values['pointscnt'] = datamodel.DBGPSPoint2().all().filter('user =', userdb).count()
+		#values['pointscnt'] = userdb.dbgpspoint2_set.count()
+		#values['pointscnt'] = userdb.geos_pack.count()
+		#points = 
+		#values['points'] = userdb.geos_pack.order("-date").fetch(30)	# Последние 30 штук (месяц)
+		path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
+		#self.response.headers['Content-Type']   = 'text/xml'
+		self.response.out.write(template.render(path, values))
+
 
 application = webapp.WSGIApplication(
 	[
@@ -231,6 +293,7 @@ application = webapp.WSGIApplication(
 		#('/benchmark/list-data.*', ListData),
 		('/benchmark/purge-data.*', PurgeData),
 		('/benchmark/get-json.*', GetJson),
+		('/benchmark/multi.*', BenchmarkMulti),
 		('/benchmark.*', Benchmark),
 	],
 	debug=True
