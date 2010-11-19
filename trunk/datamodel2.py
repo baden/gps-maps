@@ -180,6 +180,14 @@ class DBGPSPointP(db.Model):
 	def size(self):
 		return 123
 
+# Новая модель без использования наследования db.Property.
+# При таком подходе немного больше работы, но упрощаются простые запросы вроде, подсчета количества точек.
+
+# Пример использования.
+# 1. Добавление записи.
+#  При добавлении записи, предварительно запрашивается дневной пакет по дате точки.
+#   day = userdb.geos_daypack.get()
+
 
 class DBGPSPointDP(db.Model):
 	user = db.ReferenceProperty(DBUser, collection_name='geos_daypack')
@@ -187,7 +195,8 @@ class DBGPSPointDP(db.Model):
 	date = db.DateProperty()
 	#points = GPSPointsProperty(name='p')
 	#points = GPSPointsProperty()
-	raw = db.BlobProperty()
+	#raw = db.BlobProperty()
+	#raw = db.ListProperty(db.ReferenceProperty(DBUser))
 	@property
 	def points(self):
 		return sorteddict({})
@@ -198,3 +207,7 @@ class DBGPSPointDP(db.Model):
 class DBGPSDateList(db.Model):
 	user = db.ReferenceProperty(DBUser, collection_name='geos_dates')
 	date = db.DateProperty()
+
+class DBmulti(db.Model):
+	date = db.DateProperty()
+	rvalue = db.ListProperty(str)
