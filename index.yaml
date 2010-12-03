@@ -50,6 +50,17 @@ indexes:
   - name: date
     direction: desc
 
+- kind: DBGPSPointCM
+  ancestor: yes
+  properties:
+  - name: date
+
+- kind: DBGPSPointCM
+  ancestor: yes
+  properties:
+  - name: date
+    direction: desc
+
 - kind: DBGPSPointP
   properties:
   - name: user

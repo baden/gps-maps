@@ -93,13 +93,14 @@ class GPSPoints(object):
 		return '%d:%s' % (len(self.points), self.points)
 
 
-PACK_STR = 'BBBBffffffBBBBii'
-PACK_LEN = 40
+PACK_STR = 'bbbbffiffffiiiiiiii'
+PACK_LEN = 64
 		
 class GPSPointsProperty(db.Property):
 	data_type = GPSPoints
 	# For writing to datastore.
 	def get_value_for_datastore(self, model_instance):
+		logging.info("   ===> GPSPointsProperty: get_value_for_datastore")
 		#print("Content-Type: text/html\r\n")
 		#print("aaaaaaaaaa bbbbbbb<br/>")
 		points = super(GPSPointsProperty, self).get_value_for_datastore(model_instance)
@@ -112,22 +113,14 @@ class GPSPointsProperty(db.Property):
 			#print(v)
 			#print("<br />")
 			#pack += struct.pack('bbbbffiffffiiiiiiii',
-			#logging.info("%d-%d-%d-%d-%f-%f-%f-%f-%f-%f-%d-%d-%d-%d-%d-%d" % (
-			#	k.hour, k.minute, k.second, v['sats'],		# 4 байта
-			#	v['lat'], v['lon'], v['speed'], v['cource'], v['vout'], v['vin'], # 6 float
-			#	v['fsource'], 0, 0, 0,	# 4 байта
-			#	0, 0	# Резерв 2 int
-			#))
 			pack += struct.pack(PACK_STR,
-				k.hour, k.minute, k.second, v['sats'],		# 4 байта
-				v['lat'], v['lon'], v['speed'], v['cource'], v['vout'], v['vin'], # 6 float
-				v['fsource'], 0, 0, 0,	# 4 байта
-				0, 0	# Резерв 2 int
+				k.hour, k.minute, k.second, 0,
+				v['lat'], v['lon'], v['sats'], v['speed'], v['cource'], v['vout'], v['vin'], v['fsource'],
+				0, 0, 0, 0, 0, 0, 0	# Резерв
 			)
 		#return db.Blob(pack)
-		logging.info("   ===> GPSPointsProperty: get_value_for_datastore(u:%d)" % len(pack))
 		compressed = zlib.compress(pack, 9)
-		logging.info("   ===> GPSPointsProperty: get_value_for_datastore (c:%d)" % len(compressed))
+		logging.info("   ===> GPSPointsProperty: get_value_for_datastore (compressed size:%d)" % len(compressed))
 		#return db.Blob(zlib.compress(pack, 9))
 		return db.Blob(compressed)
 
@@ -143,7 +136,7 @@ class GPSPointsProperty(db.Property):
 		#for c in value:
 		#	ss += " %02X" % ord(c)
 		#print(ss)
-		if l<(PACK_LEN+4):
+		if l<40:
 			return r
 		#for i in xrange(int((l-4) / 64)):
 		for i in xrange(int((l-4) / PACK_LEN)):
@@ -154,7 +147,7 @@ class GPSPointsProperty(db.Property):
 			u = struct.unpack(PACK_STR, value[i*PACK_LEN+4:i*PACK_LEN+4+PACK_LEN])
 			r.append(
 				time(u[0], u[1], u[2]),
-				lat=u[4], lon=u[5], sats=u[3], speed=u[6], cource=u[7], vout=u[8], vin=u[9], fsource=u[10]
+				lat=u[4], lon=u[5], sats=u[6], speed=u[7], cource=u[8], vout=u[9], vin=u[10], fsource=u[11]
 			)
 		return r
 	def validate(self, value):
@@ -180,64 +173,6 @@ class DBGPSPointP(db.Model):
 	def size(self):
 		return 123
 
-# Новая модель без использования наследования db.Property.
-# При таком подходе немного больше работы, но упрощаются простые запросы вроде, подсчета количества точек.
-
-# Пример использования.
-# 1. Добавление записи.
-#  При добавлении записи, предварительно запрашивается дневной пакет по дате точки.
-#   day = userdb.geos_daypack.get()
-
-
-class DBGPSPointDP(db.Model):
-	user = db.ReferenceProperty(DBUser, collection_name='geos_daypack')
-	#date = db.DateProperty(name='d')
-	date = db.DateProperty()
-	#points = GPSPointsProperty(name='p')
-	#points = GPSPointsProperty()
-	#raw = db.BlobProperty()
-	#raw = db.ListProperty(db.ReferenceProperty(DBUser))
-	@property
-	def points(self):
-		return sorteddict({})
-	@staticmethod
-	def pack(self):
-		pass
-
 class DBGPSDateList(db.Model):
 	user = db.ReferenceProperty(DBUser, collection_name='geos_dates')
 	date = db.DateProperty()
-
-class DBmulti(db.Model):
-	date = db.DateProperty()
-	rvalue = db.ListProperty(str)
-
-
-
-#
-# При создании точки, необходимо указать:
-# parent = userdb
-# key_name = pt_datetime
-#
-class DBGPSPointCM(db.Model):
-#	user = db.ReferenceProperty(DBUser, collection_name='geos')
-	date = db.DateTimeProperty()
-	geo = db.GeoPtProperty()
-	# упакованая информация о точке
-	# представляет собой словарь записаный как repr(pinfo)
-	# где pinfo={"sats": 4, "fix": 0, ...}
-	info = db.StringProperty(multiline=False)
-	@property
-	def ldate(self):
-		#return fromUTC(self.date).strftime("%d/%m/%Y %H:%M:%S")
-		return fromUTC(self.date)
-	@property
-	def einfo(self):
-		return eval(self.info)
-	@property
-	def fsourced(self):
-		vinfo = eval(self.info)
-		if "fsource" in vinfo:
-			return FSOURCE[vinfo["fsource"]] #self.fsource
-		else:
-			return 0

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Benchmark - Измерение производительности сервера и базы данных</title>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<meta name="keywords" content="GPS" />
+		<script type="text/javascript">
+		function loadApp() {
+		}
+		</script>
+		<style type="text/css">
+			table, td, tr {
+				border: 1px solid black;
+			}
+			a {
+				margin: 2px;
+				line-space: 1px;
+				padding: 2px;
+				border: 1px solid black;
+    				line-height:1.5em;
+				text-decoration: none;
+			}
+			a:hover {
+				/*border: 3px solid red;*/
+				/*margin: 0px;*/
+				position: relative;
+				top: -1px;
+				left: -1px;
+				-webkit-box-shadow:1px 1px 6px #808080;
+    				-moz-box-shadow:1px 1px 6px #808080;
+				background-color: #FFFFF0;
+			}
+		</style>
+		
+	</head>
+<body>
+	<div style="float:left; width:40%;">
+    <h1>Информация:</h1>
+    Записей: {{ pointscnt }}
+    
+    <table>
+    {% for point in points %}
+	<tr>
+		<th>Время</th>
+		<th>Lat</th>
+		<th>Long</th>
+		<th>Sats</th>
+		<th>Speed</th>
+		<th>Cource</th>
+		<th>Vout</th>
+		<th>Vin</th>
+		<th>Vsource</th>
+	</tr>
+    	<tr>
+    		<!--td>{{ forloop.counter }}</td-->
+		<td>{{ point.date }}</td>
+		<td>SIZE:{{ point.size }}
+		<td colspan=7>{{ point.points.count }}
+		---{{ point }}</td>
+    	</tr>
+    	<tr>
+		<td>{{ apoint.points.points.items.0.0 }}</td>
+		<td>{{ apoint.points.points.items.0.1.lat }}</td>
+		<td>{{ apoint.points.points.items.0.1.lon }}</td>
+		<td>{{ apoint.points.points.items.0.1.sats }}</td>
+		<td>{{ apoint.points.points.items.0.1.speed }}</td>
+		<td>{{ apoint.points.points.items.0.1.cource }}</td>
+		<td>{{ apoint.points.points.items.0.1.vout }}</td>
+		<td>{{ apoint.points.points.items.0.1.vin }}</td>
+		<td>{{ apoint.points.points.items.0.1.fsource }}</td>
+    	</tr>
+
+    	<!--{ for k in point.points.points.items }
+    	<tr>
+		<td>{{ k.0 }}</td>
+		<td>{{ k.1.lat }}</td>
+		<td>{{ k.1.lon }}</td>
+		<td>{{ k.1.sats }}</td>
+		<td>{{ k.1.speed }}</td>
+		<td>{{ k.1.cource }}</td>
+		<td>{{ k.1.vout }}</td>
+		<td>{{ k.1.vin }}</td>
+		<td>{{ k.1.fsource }}</td>
+    	</tr>
+    	{ endfor }-->
+    {% endfor %}
+    </table>
+    </div>
+    <div style="margin-left:40%; width: 60%;">
+    <h1>Операции:</h1>
+    <ul>
+	<li><a href="benchmark/put-data?cnt=1">Добавить одиночную запись в базу</a></li>
+	<li><a href="benchmark/put-data?cnt=10">Добавить 10 записей в базу</a><a href="benchmark/put-data?cnt=10&day=-1">-день</a><a href="benchmark/put-data?cnt=10&day=1">+день</a></li>
+	<li><a href="benchmark/put-data?cnt=100">Добавить 100 записей в базу</a><a href="benchmark/put-data?cnt=100&day=-1">-день</a><a href="benchmark/put-data?cnt=100&day=1">+день</a></li>
+	<li><a href="benchmark/put-data?cnt=1000">Добавить 1000 записей в базу</a><a href="benchmark/put-data?cnt=1000&day=-1">-день</a><a href="benchmark/put-data?cnt=1000&day=1">+день</a></li>
+	<li><a href="benchmark/put-data?cnt=-1">Добавить 60*60*24 записей в базу</a><a href="benchmark/put-data?cnt=-1&day=-1">-день</a><a href="benchmark/put-data?cnt=-1&day=1">+день</a></li>
+	<li>
+		<a href="benchmark/put-data?cnt=-2">Добавить 10*60*24 записей в базу</a>
+		<a href="benchmark/put-data?cnt=-2&day=-7">-7 дней</a>
+		<a href="benchmark/put-data?cnt=-2&day=-6">-6 дней</a>
+		<a href="benchmark/put-data?cnt=-2&day=-5">-5 дней</a>
+		<a href="benchmark/put-data?cnt=-2&day=-4">-4 дня</a>
+		<a href="benchmark/put-data?cnt=-2&day=-3">-3 дня</a>
+		<a href="benchmark/put-data?cnt=-2&day=-2">-2 дня</a>
+		<a href="benchmark/put-data?cnt=-2&day=-1">-день</a>
+		<a href="benchmark/put-data?cnt=-2&day=1">+день</a>
+	</li>
+	<li><a href="benchmark/list-data">Просмотр тестовых записей</a></li>
+
+	<li>------------------------------</li>
+	<li><a href="benchmark/get-json?from=20100101000000&to=20201231235959">Запросить записи за период 2010/01/01 - 2020/12/31</a></li>
+
+	<li>------------------------------</li>
+	<li><a href="benchmark/purge-data">Удалить 1000 тестовых записей старее 30-ти дней</a></li>
+	<li><a href="benchmark/purge-data?all=yes">Удалить 1000 тестовых записей</a></li>
+	
+    </ul>
+Hello, world!!!
+	</div>
+</body>

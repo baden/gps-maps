@@ -36,10 +36,12 @@
 <body>
 	<div style="float:left; width:40%;">
     <h1>Информация:</h1>
-    Записей: {{ pointscnt }}
+    Записей: {{ pointscnt }} <br />
     
+    {% for user in points %}
+	{{ forloop.counter }}
     <table>
-    {% for point in points %}
+    {% for point in user %}
 	<tr>
 		<th>Время</th>
 		<th>Lat</th>
@@ -54,56 +56,27 @@
     	<tr>
     		<!--td>{{ forloop.counter }}</td-->
 		<td>{{ point.date }}</td>
-		<td>SIZE:{{ point.size }}
-		<td colspan=7>{{ point.points.count }}
-		---{{ point }}</td>
+		<td>{{ point.geo.lat }}</td>
+		<td>{{ point.geo.lon }}</td>
+		<td>{{ point.einfo.sats }}</td>
+		<td>{{ point.einfo.speed }}</td>
     	</tr>
-    	<tr>
-		<td>{{ apoint.points.points.items.0.0 }}</td>
-		<td>{{ apoint.points.points.items.0.1.lat }}</td>
-		<td>{{ apoint.points.points.items.0.1.lon }}</td>
-		<td>{{ apoint.points.points.items.0.1.sats }}</td>
-		<td>{{ apoint.points.points.items.0.1.speed }}</td>
-		<td>{{ apoint.points.points.items.0.1.cource }}</td>
-		<td>{{ apoint.points.points.items.0.1.vout }}</td>
-		<td>{{ apoint.points.points.items.0.1.vin }}</td>
-		<td>{{ apoint.points.points.items.0.1.fsource }}</td>
-    	</tr>
-
-    	<!--{ for k in point.points.points.items }
-    	<tr>
-		<td>{{ k.0 }}</td>
-		<td>{{ k.1.lat }}</td>
-		<td>{{ k.1.lon }}</td>
-		<td>{{ k.1.sats }}</td>
-		<td>{{ k.1.speed }}</td>
-		<td>{{ k.1.cource }}</td>
-		<td>{{ k.1.vout }}</td>
-		<td>{{ k.1.vin }}</td>
-		<td>{{ k.1.fsource }}</td>
-    	</tr>
-    	{ endfor }-->
     {% endfor %}
     </table>
+    {% endfor %}
     </div>
     <div style="margin-left:40%; width: 60%;">
     <h1>Операции:</h1>
     <ul>
 	<li><a href="benchmark/put-data?cnt=1">Добавить одиночную запись в базу</a></li>
-	<li><a href="benchmark/put-data?cnt=10">Добавить 10 записей в базу</a><a href="benchmark/put-data?cnt=10&day=-1">-день</a><a href="benchmark/put-data?cnt=10&day=1">+день</a></li>
-	<li><a href="benchmark/put-data?cnt=100">Добавить 100 записей в базу</a><a href="benchmark/put-data?cnt=100&day=-1">-день</a><a href="benchmark/put-data?cnt=100&day=1">+день</a></li>
-	<li><a href="benchmark/put-data?cnt=1000">Добавить 1000 записей в базу</a><a href="benchmark/put-data?cnt=1000&day=-1">-день</a><a href="benchmark/put-data?cnt=1000&day=1">+день</a></li>
-	<li><a href="benchmark/put-data?cnt=-1">Добавить 60*60*24 записей в базу</a><a href="benchmark/put-data?cnt=-1&day=-1">-день</a><a href="benchmark/put-data?cnt=-1&day=1">+день</a></li>
 	<li>
-		<a href="benchmark/put-data?cnt=-2">Добавить 10*60*24 записей в базу</a>
-		<a href="benchmark/put-data?cnt=-2&day=-7">-7 дней</a>
-		<a href="benchmark/put-data?cnt=-2&day=-6">-6 дней</a>
-		<a href="benchmark/put-data?cnt=-2&day=-5">-5 дней</a>
-		<a href="benchmark/put-data?cnt=-2&day=-4">-4 дня</a>
-		<a href="benchmark/put-data?cnt=-2&day=-3">-3 дня</a>
-		<a href="benchmark/put-data?cnt=-2&day=-2">-2 дня</a>
-		<a href="benchmark/put-data?cnt=-2&day=-1">-день</a>
-		<a href="benchmark/put-data?cnt=-2&day=1">+день</a>
+		<a href="benchmark/put-data?cnt=10">Добавить 10 записей в базу</a><a href="benchmark/put-data?cnt=10&batch=yes">B</a>
+	</li>
+	<li>
+		<a href="benchmark/put-data?cnt=100">Добавить 100 записей в базу</a><a href="benchmark/put-data?cnt=100&batch=yes">B</a>
+	</li>
+	<li>
+		<a href="benchmark/put-data?cnt=1000">Добавить 1000 записей в базу</a><a href="benchmark/put-data?cnt=1000&batch=yes">B</a>
 	</li>
 	<li><a href="benchmark/list-data">Просмотр тестовых записей</a></li>
 
