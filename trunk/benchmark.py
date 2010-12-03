@@ -19,7 +19,7 @@ import datamodel2
 
 from local import toUTC, fromUTC
 
-DBGIMEI='111222333444555'
+DBGIMEI=('111222333444555','111222333444556','111222333444557')
 
 def SaveGPSPoint(userdb):
 	#gpspoint = datamodel.DBGPSPoint(key_name = "gps_%s_%s" % (result.user.imei, datestamp.strftime("%Y%m%d%H%M%S")))
@@ -43,14 +43,15 @@ def SaveGPSPoint(userdb):
 	return gpspoint
 	#gpspoint.put()
 
-def getuser():
-	userdbq = datamodel2.DBUser.all().filter('imei =', DBGIMEI).fetch(1)
+def getuser(n=0):
+	userdbq = datamodel2.DBUser.all().filter('imei =', DBGIMEI[n]).fetch(1)
 	if userdbq:
 		userdb = userdbq[0]
 	else:
-		userdb = datamodel2.DBUser(key_name='IMEI_%s' % DBGIMEI, imei=DBGIMEI,phone='unknown',desc='nodesc')
+		userdb = datamodel2.DBUser(key_name='IMEI_%s' % DBGIMEI[n], imei=DBGIMEI[n], phone='unknown', desc='nodesc')
 		userdb.put()
 	return userdb
+
 
 class Benchmark(webapp.RequestHandler):
 	def get(self):
@@ -59,15 +60,72 @@ class Benchmark(webapp.RequestHandler):
 		#values['pointscnt'] = datamodel.DBGPSPoint().all().filter('user =', userdb).count()
 		#values['pointscnt'] = datamodel.DBGPSPoint2().all().filter('user =', userdb).count()
 		#values['pointscnt'] = userdb.dbgpspoint2_set.count()
-		values['pointscnt'] = userdb.geos_pack.count()
+		#values['pointscnt'] = userdb.geos_pack.count()
 		#points = 
-		values['points'] = userdb.geos_pack.order("-date").fetch(30)	# Последние 30 штук (месяц)
+		#values['points'] = userdb.geos_pack.order("-date").fetch(30)	# Последние 30 штук (месяц)
+
+		userdb = (getuser(0), getuser(1))
+		points = (
+			datamodel2.DBGPSPointCM.all().ancestor(userdb[0]).order("-date").fetch(100), # Последние 100 штук
+			datamodel2.DBGPSPointCM.all().ancestor(userdb[1]).order("-date").fetch(100) # Последние 100 штук
+		)
+		values['points'] = points
+		values['pointscnt'] = len(points)
+
 		path = os.path.join(os.path.dirname(__file__), 'templates', self.__class__.__name__ + '.html')
 		#self.response.headers['Content-Type']   = 'text/xml'
 		self.response.out.write(template.render(path, values))
 
 
 class PutData(webapp.RequestHandler):
+	def get(self):
+		cnt = int(self.request.get('cnt', '1'))
+		batch = self.request.get('batch', 'no')
+		pdate = date.today() + timedelta(days=int(self.request.get('day', default_value="0")))
+		datestamp = datetime.now()
+
+		rinfo = {"fsource": 0}
+
+		userdb = (getuser(0), getuser(1))
+		if batch == 'yes':
+			points = []
+
+		for x in xrange(cnt):
+			#iuserdb = userdb[0]
+			point = datamodel2.DBGPSPointCM(
+				parent = userdb[0],
+				key_name = "pt%s" % datestamp.strftime("%Y%m%d%H%M%S"),
+				date = datestamp,
+				geo = db.GeoPt(1.0, 2.0),
+				info = repr(rinfo)
+			)
+			if batch == 'yes':
+				points.append(point)
+			else:
+				point.put()
+
+			#userdb = getuser(1)
+			point = datamodel2.DBGPSPointCM(
+				parent = userdb[1],
+				key_name = "pt%s" % datestamp.strftime("%Y%m%d%H%M%S"),
+				date = datestamp,
+				geo = db.GeoPt(1.0, 2.0),
+				info = repr(rinfo)
+			)
+			if batch == 'yes':
+				points.append(point)
+			else:
+				point.put()
+
+			datestamp += timedelta(seconds=1)
+
+		if batch == 'yes':
+			db.put(points)
+			points = None
+
+		self.redirect("/benchmark")
+
+class PutDataMul(webapp.RequestHandler):
 	def get(self):
 		#logging.info("   ===> Bencmark: put-data")
 		#debuguser = 353358019726996
@@ -152,6 +210,37 @@ class PurgeData(webapp.RequestHandler):
 		logging.info("   ===> Bencmark: purge-data")
 		#logging.info("   ===> Bencmark: put-data")
 		#debuguser = 353358019726996
+		userdb = (getuser(0), getuser(1))
+		
+		#cnt = int(self.request.get('cnt'))
+		#cnt = 200
+		
+		#q = userdb.geos
+		#db.delete(userdb.geos(keys_only=True).fetch(cnt))
+
+		#db.delete(userdb.geos_pack.fetch(cnt))
+		if self.request.get('all'):
+			query = datamodel2.DBGPSPointCM.all(keys_only=True).ancestor(userdb[0]).order('date').fetch(1000)
+		else:
+			query = datamodel2.DBGPSPointCM.all(keys_only=True).ancestor(userdb[0]).filter('date <=', date.today()-timedelta(days=30)).order('date').fetch(1000)
+		db.delete(query)
+		logging.info("   ===> Bencmark: purge-data (%d)" % len(query))
+
+		if self.request.get('all'):
+			query = datamodel2.DBGPSPointCM.all(keys_only=True).ancestor(userdb[1]).order('date').fetch(1000)
+		else:
+			query = datamodel2.DBGPSPointCM.all(keys_only=True).ancestor(userdb[1]).filter('date <=', date.today()-timedelta(days=30)).order('date').fetch(1000)
+		db.delete(query)
+		logging.info("   ===> Bencmark: purge-data (%d)" % len(query))
+		
+		self.redirect("/benchmark")
+
+
+class PurgeData2(webapp.RequestHandler):
+	def get(self):
+		logging.info("   ===> Bencmark: purge-data")
+		#logging.info("   ===> Bencmark: put-data")
+		#debuguser = 353358019726996
 		userdb = getuser()
 		
 		#cnt = int(self.request.get('cnt'))
@@ -225,6 +314,14 @@ class GetJson(webapp.RequestHandler):
 		nejson = json.dumps(jsonresp, separators=(',',':'))
 		self.response.out.write(callback + "(" + nejson + ")\r")
 
+def fix_in_multi(key):
+	obj = db.get(key)
+	last = obj.rvalue[-1]
+	time.sleep(1)
+	logging.info("   ===> BencmarkMulti: cnahge %s to %s" % (last, str(int(last)+1)))
+	obj.rvalue.append(str(int(last)+1))
+	obj.put()
+
 
 class BenchmarkMulti(webapp.RequestHandler):
 	def get(self):
@@ -243,12 +340,14 @@ class BenchmarkMulti(webapp.RequestHandler):
 				dbv = datamodel2.DBmulti(key_name="multi_%d_%d_%d" % (pdate.year, pdate.month, pdate.day))
 				dbv.date = pdate
 				dbv.rvalue = ["0"]
+				dbv.put()
 			else:
-				last = dbv.rvalue[-1]
-				time.sleep(1)
-				logging.info("   ===> BencmarkMulti: cnahge %s to %s" % (last, str(int(last)+1)))
-				dbv.rvalue.append(str(int(last)+1))
-			dbv.put()
+				db.run_in_transaction(fix_in_multi, dbv.key())
+				#last = dbv.rvalue[-1]
+				#time.sleep(1)
+				#logging.info("   ===> BencmarkMulti: cnahge %s to %s" % (last, str(int(last)+1)))
+				#dbv.rvalue.append(str(int(last)+1))
+				#dbv.put()
 
 			if task == "yes":
 				self.response.out.write('<html><body>OK<br /><a href="/benchmark/multi">Back</a></body></html>')
